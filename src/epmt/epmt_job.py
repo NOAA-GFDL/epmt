@@ -1,40 +1,43 @@
 """
 EPMT job module - handles job-related data structures and operations.
 """
+
 # from __future__ import print_function
-from epmt.orm import *
-import epmt.epmt_settings as settings
+
 from os.path import basename, dirname
 from os import environ
 from logging import getLogger
 from json import dumps, loads
-from epmt.epmtlib import tag_from_string, sum_dicts, timing, dotdict, get_first_key_match, check_fix_metadata, logfn
-from epmt.epmt_query import is_job_post_processed
+
 from datetime import datetime, timedelta
-from functools import reduce
+
 import time
-import pytz
 import csv
 import sys
+
 from io import StringIO
+
+import pytz
+
+from epmt.orm import *
+import epmt.epmt_settings as settings
+from epmt.epmtlib import tag_from_string, sum_dicts, timing, dotdict, get_first_key_match, check_fix_metadata, logfn
+from epmt.epmt_query import is_job_post_processed
 
 logger = getLogger(__name__)  # you can use other name
 
-#
 # Spinning cursor sequence
 # from itertools import cycle
 # spinner = cycle(['-', '/', '|', '\\'])
-
 # Construct a number from the pattern
 
-
-def sortKeyFunc(s):
+def sort_key_func(s):
     t = basename(s)
-# if this changes we must adjust this
-#    assert settings.input_pattern == "papiex-[0-9]*-[0-9]*.csv"
-# skip papiex- and .csv
+    # if this changes we must adjust this
+    #    assert settings.input_pattern == "papiex-[0-9]*-[0-9]*.csv"
+    # skip papiex- and .csv
     t = t[7:-4]
-# append instance number
+    # append instance number
     t2 = t.split("-")
     return int(t2[0] + t2[1])
 
@@ -95,7 +98,7 @@ def lookup_or_create_host(hostname):
         # and so we don't want use our create_hosts map with Pony
         if settings.orm == 'sqlalchemy':
             created_hosts[hostname] = host
-    assert (host.name == hostname)
+    assert host.name == hostname
     return host
 
 
@@ -116,6 +119,7 @@ def lookup_or_create_host_safe(hostname):
 def lookup_or_create_user(username):
     logger = getLogger(__name__)  # you can use other name
     user = orm_get_or_create(User, name=username)
+    logger.debug('orm_get_or_create output for user is %s',user)
     # user = orm_get(User, username)
     # if user is None:
     #     logger.info("Creating user %s",username)
@@ -176,7 +180,7 @@ def get_proc_rows(csvfile, skiprows=0, fmt='1', metric_names=[]):
     non_numeric_keys = set(['exename', 'path', 'args', 'tags', 'hostname', 'threads_df'])
     for r in rows:
         for k in r.keys():
-            if (not (k in non_numeric_keys)) and r[k]:
+            if not k in non_numeric_keys and r[k]:
                 r[k] = int(r[k])
         if fmt == '2':
             # CSV v2 format has 'finish' instead of 'end'
@@ -186,7 +190,7 @@ def get_proc_rows(csvfile, skiprows=0, fmt='1', metric_names=[]):
 
     nrows = len(rows)
     row_num = 0
-    while (row_num < nrows):
+    while row_num < nrows:
         row = rows[row_num]
         try:
             thr_count = int(row['numtids'])
@@ -194,8 +198,8 @@ def get_proc_rows(csvfile, skiprows=0, fmt='1', metric_names=[]):
             logger.error("%s", e)
             logger.error("invalid or no value set for numtids in dataframe at index %d", row_num)
             return
-        if (thr_count < 1):
-            logger.error('invalid value({0}) set for numtids at index {1}'.format(thr_count, row_num))
+        if thr_count < 1:
+            logger.error('invalid value %d set for numtids at index %d', thr_count, row_num)
             return
         if fmt == '1':
             # now yield rows from [row ... row+thr_count]
@@ -269,7 +273,7 @@ def load_process_from_dictlist(proc, host, j, u, settings, profile):
     except Exception as e:
         logger.error("%s", e)
         logger.error("Corrupted CSV or invalid input type")
-        raise ValueError('Corrupted CSV or invalid input type')
+        raise ValueError('Corrupted CSV or invalid input type') from e
     profile.load_process.init += time.time() - _t
 
     _t = time.time()
@@ -364,14 +368,14 @@ def extract_tags_from_comment_line(jobdatafile, comment="#", tarfile=None):
     if tarfile:
         try:
             info = tarfile.getmember(jobdatafile)
-        except KeyError:
+        except KeyError as e:
             err_msg = 'BUG: Did not find %s in tar archive' % str(tarfile)
             logger.error(err_msg)
-            raise LookupError(err_msg)
-        else:
-            f = tarfile.extractfile(info)
+            logger.error(e)
+            raise LookupError(err_msg) from e
+        f = tarfile.extractfile(info)
     else:
-        f = open(jobdatafile, 'r')
+        f = open(jobdatafile, 'r', encoding='utf-8')
 
     line = f.readline()
     while line:
@@ -438,7 +442,7 @@ def _proc_ancestors(pid_map, proc, ancestor_pid, relations=None, descendant_map=
             descendant_map[ancestor.id].add(proc)
         else:
             descendant_map[ancestor.id] = set([proc])
-        if not (relations is None):
+        if not relations is None:
             relations.append({'ancestor': ancestor.id, 'descendant': proc.id})
         else:
             orm_add_to_collection(ancestor.descendants, proc)
@@ -474,7 +478,7 @@ def _mk_pid_map(all_procs):
 def _disambiguate_parent(entries, proc):
     sorted_entries = sorted(entries, key=lambda p: p.start)
     for p in sorted_entries:
-        if (p.end > proc.start):
+        if p.end > proc.start:
             # if (p.start > proc.start):
             #     for x in sorted_entries:
             #         print(x.pid, x.ppid, x.exename, x.start, x.end)
@@ -484,38 +488,43 @@ def _disambiguate_parent(entries, proc):
             return p
     # each process has a unique parent, so we know
     # control must never come here else something's broken
-    assert (False)
+    assert False
 
 
 def _create_process_tree(pid_map):
     logger = getLogger(__name__)  # you can use other name
     logger.info("  creating process tree..")
-    for (pid, procs) in pid_map.items():
+    for (_, procs) in pid_map.items(): # _ is pid
+
         for proc in procs:
             ppid = proc.ppid
-            if ppid in pid_map:
-                entries = pid_map[ppid]
-                if len(entries) == 1:
-                    # common case no hash collision
-                    parent = entries[0]
-                else:
-                    # the process must have execed so we have
-                    # multiple records for the PID.
-                    for e in entries:
-                        assert (e.pid == ppid)
-                    parent = _disambiguate_parent(entries, proc)
-                proc.parent = parent
-                # commented out line below as it's automatically
-                # implied by the proc.parent assignment above.
-                # If we uncomment it, then on sqlalchemy, each
-                # parent will have duplicate nodes for each child.
-                # orm_add_to_collection(parent.children, proc)
+            if not ppid in pid_map:
+                continue
+
+            entries = pid_map[ppid]
+            if len(entries) == 1:
+                # common case no hash collision
+                parent = entries[0]
+            else:
+                # the process must have execed so we have
+                # multiple records for the PID.
+                for e in entries:
+                    assert e.pid == ppid
+                parent = _disambiguate_parent(entries, proc)
+
+            proc.parent = parent
+
+            # commented out line below as it's automatically
+            # implied by the proc.parent assignment above.
+            # If we uncomment it, then on sqlalchemy, each
+            # parent will have duplicate nodes for each child.
+            # orm_add_to_collection(parent.children, proc)
 
     logger.debug('    creating ancestor/descendant relations..')
     r = [] if settings.bulk_insert else None
     # descendants map
     desc_map = {}
-    for (pid, procs) in pid_map.items():
+    for (_, procs) in pid_map.items(): # _ is pid
         for proc in procs:
             ppid = proc.ppid
             proc.depth = 0
@@ -546,7 +555,7 @@ def mk_process_tree(j, all_procs=None, pid_map=None):
         j = Job[j]
     info_dict = j.info_dict.copy()
     if info_dict.get('process_tree'):
-        # logger.debug('Process tree already exists. Skipping mk_process_tree')
+        logger.debug('Process tree already exists. Skipping mk_process_tree')
         return
     logger.info('computing process tree for job %s', j.jobid)
     if all_procs is None:
@@ -556,7 +565,7 @@ def mk_process_tree(j, all_procs=None, pid_map=None):
             all_procs.append(p)
         logger.debug('  re-populating %d processes took: %2.5f sec', len(all_procs), time.time() - _all_procs_t0)
 
-    if (pid_map is None):
+    if pid_map is None:
         _pid_t0 = time.time()
         pid_map = _mk_pid_map(all_procs)
         logger.debug("  recreating pid_map took: %2.5f sec", time.time() - _pid_t0)
@@ -597,7 +606,12 @@ def mk_process_tree(j, all_procs=None, pid_map=None):
 
 
 @timing
-def post_process_job(j, all_tags=None, all_procs=None, pid_map=None, update_unprocessed_jobs_table=True, force=False):
+def post_process_job( j,
+                      all_tags=None,
+                      all_procs=None,
+                      #pid_map=None,
+                      update_unprocessed_jobs_table=True,
+                      force=False):
     logger = getLogger(__name__)  # you can use other name
     if isinstance(j, str):
         jobid = j
@@ -611,7 +625,7 @@ def post_process_job(j, all_tags=None, all_procs=None, pid_map=None, update_unpr
 
     # we need to set up signal handlers so the user doesn't
     # abort the post-processing midway.
-    def sig_handler(signo, frame):
+    def sig_handler(signo): #, frame):
         if hasattr(sig_handler, 'interrupted'):
             sys.exit(signo)
         sig_handler.interrupted = True
@@ -872,6 +886,7 @@ def populate_process_table_from_staging(j):
     job_info_dict = j.info_dict
     logger.info('  moving job {} processes from staging -> process table..'.format(jobid))
     metric_names = j.info_dict['metric_names'].split(',')
+    logger.debug('metric_names are: %s', metric_names)
     # get the row IDs of the starting and ending row for the job
     # in the staging table
     (first_proc_id, last_proc_id) = j.info_dict['procs_staging_ids']
@@ -880,7 +895,7 @@ def populate_process_table_from_staging(j):
     # we process around 3K procs/sec, so if this operation will
     # take longer than 5sec, let's warn the user
     if num_procs > 15000:
-        logger.warning('Moving staged processes for job ' + jobid + ' will take approx. %2.0f sec..', num_procs / 3000)
+        logger.warning('Moving staged processes for job %s will take approx. %2.0f sec..', jobid, num_procs / 3000)
 
     staged_procs = orm_raw_sql(
         "SELECT id, threads_df, start, finish, tags, hostname, numtids, exename, path, args, pid, ppid, pgid, sid, generation, exitcode, exitsignal FROM processes_staging WHERE id BETWEEN {} AND {}".format(
@@ -891,11 +906,13 @@ def populate_process_table_from_staging(j):
     insert_sql = ""
     _start_time = time.time()
     # notice the quoted "end" field. end is a reserved word in SQL
-    prefix_insert_sql = "INSERT INTO processes(jobid,duration,tags,host_id,threads_df,threads_sums,numtids,cpu_time,exename,path,args,pid,ppid,pgid,sid,gen,exitcode,start,\"end\") VALUES "
+    prefix_insert_sql = "INSERT INTO processes(" + \
+        "jobid,duration,tags,host_id,threads_df,threads_sums,numtids,cpu_time,exename," + \
+        "path,args,pid,ppid,pgid,sid,gen,exitcode,start,\"end\") VALUES "
     for proc_row in staged_procs:
         nprocs += 1
-        (proc_id, threads_df, start, finish, tags, host_id, numtids, exename,
-         path, args, pid, ppid, pgid, sid, gen, exitcode, exitsignal) = proc_row
+        ( proc_id, threads_df, start, finish, tags, host_id, numtids, exename,
+          path, args, pid, ppid, pgid, sid, gen, exitcode, _ ) = proc_row # the _ is exitsignal
         proc_ids.append(proc_id)
         duration = finish - start  # in us
         # convert from unix timestamp to python datetime
@@ -906,8 +923,16 @@ def populate_process_table_from_staging(j):
         tags = psycopg2.extensions.adapt(dumps(tag_from_string(tags) if tags else {}))
         if args is None:
             args = ''
+
+        # necessary escapes for the postgreSQL db to hold the data sensibly
+        # without it, both % and : will convince postgreSQL to try to resolve a variable that does not exist
+        # logger.debug('args is \n %s', str(args) )
         args = args.replace('%', '%%')
+        args = args.replace(':', '\\:')
+        
+        # logger.debug('after arg.replace % with %%, args is now \n %s', str(args) )
         args = psycopg2.extensions.adapt(args)
+        # logger.debug('after psycopg2.extensions.adapt(args) % with %% and : with \\:, args is now \n %s, str(args) )
 
         threads_sums = {metric_names[i]: int(threads_df[i]) for i in range(len(metric_names))}
         for t in range(1, numtids):
@@ -915,6 +940,7 @@ def populate_process_table_from_staging(j):
                 # threads_df is a flattened list where each thread's metrics are
                 # adjacent to the previous
                 threads_sums[metric_names[i]] += int(threads_df[t * len(metric_names) + i])
+
         cpu_time = threads_sums.get('usertime', 0) + threads_sums.get('systemtime', 0)
         # threads_sums is to be saved as JSON
         threads_sums = dumps(threads_sums)
@@ -955,38 +981,53 @@ def populate_process_table_from_staging(j):
 
     job_info_dict['procs_in_process_table'] = 1
 
-    # these fields are meaningless after procs have been moved to the processes table
-    # so we remove them from the job info_dict
+    ## these fields are meaningless after procs have been moved to the processes table
+    ## so we remove them from the job info_dict
     del job_info_dict['procs_staging_ids']
 
-    # We want to retain the metric_names in the job info_dict, so don't remove
-    # it below, anymore
+    # We want to retain the metric_names in the job info_dict, so don't remove it below, anymore
     # del job_info_dict['metric_names']
 
     update_job_sql = "UPDATE jobs SET info_dict = '{}' WHERE jobid = '{}'".format(dumps(job_info_dict), jobid)
 
-    # now do a transaction
+    # INSERT SQL transaction
     try:
         # orm_raw_sql(insert_sql+delete_sql+update_job_sql, commit=True)
         logger.debug('executing: orm_raw_sql(insert_sql,commit=True)')
         orm_raw_sql(insert_sql, commit=True)
-        logger.debug('executing: orm_raw_sql(delete_sql,commit=True)')
-        orm_raw_sql(delete_sql, commit=True)
-        logger.debug('executing: orm_raw_sql(update_job_sql,commit=True)')
-        orm_raw_sql(update_job_sql, commit=True)
     except Exception as e:
         err_str = str(e)
         msg = 'Error copying from staging to process table for job ' + jobid
+        msg += '\nError occurred during INSERT/orm_raw_sql(insert_job_sql,...)'
         logger.error(msg)
         if 'permission denied' in err_str:
             logger.error('You do not have sufficient privileges for this operation')
         else:
-
             logger.error(
-                f'related to error? .... insert_sql[:{settings.max_log_statement_length}] = {insert_sql[:settings.max_log_statement_length]}')
-            logger.error(f'related to error? .... delete_sql = {delete_sql}')
-            logger.error(f'related to error? .... update_job_sql = {update_job_sql}')
+                f'INSERT aka insert_sql[:{settings.max_log_statement_length}] = \n {insert_sql[:settings.max_log_statement_length]}')
+            ## Only log the first 100 entries in the error string- it will largely be SQL statements
+            if len(err_str) > settings.max_log_statement_length:
+                logger.error(f'error (type is {type(err_str)}) too long to show ({len(err_str)})...')
+                logger.error(f'first {settings.max_log_statement_length} errors in err_str list are...')
+                logger.error(''.join(err_str[:settings.max_log_statement_length]))
+            else:
+                # some bugs require this line get uncommented
+                logger.error(err_str)
+        return False
 
+    # DELETE SQL transactionm
+    try:
+        logger.debug('executing: orm_raw_sql(delete_sql,commit=True)')
+        orm_raw_sql(delete_sql, commit=True)
+    except Exception as e:
+        err_str = str(e)
+        msg = 'Error copying from staging to process table for job ' + jobid
+        msg += '\nError occurred during DELETE/orm_raw_sql(delete_sql,...)'
+        logger.error(msg)
+        if 'permission denied' in err_str:
+            logger.error('You do not have sufficient privileges for this operation')
+        else:
+            logger.error(f'DELETE aka delete_sql = \n {delete_sql}')
             # Only log the first 100 or so of errors
             if len(err_str) > settings.max_log_statement_length:
                 logger.error(f'error (type is {type(err_str)}) too long to show ({len(err_str)})... ')
@@ -995,6 +1036,30 @@ def populate_process_table_from_staging(j):
             else:
                 logger.error(err_str)
         return False
+
+    # UPDATE SQL transaction
+    try:
+        logger.debug('executing: orm_raw_sql(update_job_sql,commit=True)')
+        orm_raw_sql(update_job_sql, commit=True)
+    except Exception as e:
+        err_str = str(e)
+        msg = 'Error copying from staging to process table for job ' + jobid
+        msg += '\nError occurred during UPDATE / orm_raw_sql(update_job_sql,...)'
+        logger.error(msg)
+        if 'permission denied' in err_str:
+            logger.error('You do not have sufficient privileges for this operation')
+        else:
+
+            logger.error(f'UPDATE aka update_job_sql = \n {update_job_sql}')
+            # Only log the first 100 or so of errors
+            if len(err_str) > settings.max_log_statement_length:
+                logger.error(f'error (type is {type(err_str)}) too long to show ({len(err_str)})... ')
+                logger.error(f'first {settings.max_log_statement_length} errors in err_str list are...')
+                logger.error(''.join(err_str[:settings.max_log_statement_length]))
+            else:
+                logger.error(err_str)
+        return False
+
     table_copy_time = time.time() - _start_time
     logger.warning("  copied %d processes from staging in %2.5f sec at %2.5f procs/sec",
                    nprocs, table_copy_time, nprocs / table_copy_time)
@@ -1054,20 +1119,23 @@ def ETL_job_dict(raw_metadata, filedict, settings, tarfile=None):
     exitcode = metadata['job_el_exitcode']
     env_changes_dict = metadata['job_env_changes']
     job_tags = metadata['job_tags']
+    
     annotations = metadata.get('annotations', {})
     if annotations:
         logger.info('Job annotations: {0}'.format(annotations))
-        if settings.job_tags_env in annotations:
+
+        if settings.job_tags_env in annotations:            
             job_tag_from_ann = tag_from_string(annotations[settings.job_tags_env])
-            if job_tags and job_tag_from_ann:
-                if (job_tags != job_tag_from_ann):
-                    err_msg = 'Metadata and annotations contain different job tags:\n{} (metadata),\n{} (annotations)'.format(
-                        job_tags, job_tag_from_ann)
-                    return (False, err_msg, ())
-                else:
-                    logger.warning('Both metadata and annotations have the same job tags')
+
+            if all( [ job_tags, job_tag_from_ann, job_tags != job_tag_from_ann ] ):
+                err_msg = 'Metadata and annotations contain different job tags:\n{} (metadata),\n{} (annotations)'.format(
+                    job_tags, job_tag_from_ann)
+                return ( False, err_msg, () )
+
+            logger.warning('Both metadata and annotations have the same job tags')                
             job_tags = job_tag_from_ann or job_tags
-    if job_tags and not (settings.job_tags_env in annotations):
+
+    if job_tags and not settings.job_tags_env in annotations:
         # set annotation based on metadata job tags (if it is not set)
         from epmt.epmtlib import tag_dict_to_string
         tag_str = tag_dict_to_string(job_tags)
@@ -1077,7 +1145,7 @@ def ETL_job_dict(raw_metadata, filedict, settings, tarfile=None):
         annotations[settings.job_tags_env] = tag_str
 
     # sometimes script name is to be found in the job tags
-    if (job_status.get('script_name') is None) and job_tags and job_tags.get('script_name'):
+    if job_status.get('script_name') is None and job_tags and job_tags.get('script_name'):
         job_status['script_name'] = job_tags.get('script_name')
 
     # info_dict = metadata['job_pl_from_batch'] # end batch also
@@ -1103,6 +1171,8 @@ def ETL_job_dict(raw_metadata, filedict, settings, tarfile=None):
     try:
         u = lookup_or_create_user(username)
     except exc.IntegrityError as e:
+        logger.warning('exception caught: IntegrityError = %s', e)
+        logger.warning('rolling back session and will again try to lookup or create username %s',username)
         # The insert failed due to a concurrent transaction
         Session.rollback()
         # the user must exist now
@@ -1192,7 +1262,7 @@ def ETL_job_dict(raw_metadata, filedict, settings, tarfile=None):
                 submit_dir = dirname(files[0])
                 full_hdr_path = submit_dir + '/' + header_filename
                 try:
-                    csv_hdr_flo = open(full_hdr_path, 'r')
+                    csv_hdr_flo = open(full_hdr_path, 'r', encoding='utf-8')
                 except Exception as e:
                     msg = 'Could not open {} for reading: {}'.format(full_hdr_path, str(e))
                     logger.error(msg)
@@ -1232,13 +1302,13 @@ def ETL_job_dict(raw_metadata, filedict, settings, tarfile=None):
             fileno += 1
             _file_io_start_ts = time.time()
             logger.debug("Processing file %s (%d of %d)", f, fileno, cntmax)
-#
-#            stdout.write('\b')            # erase the last written char
-#            stdout.write(spinner.next())  # write the next character
-#            stdout.flush()                # flush stdout buffer (actual character display)
-#
-# We need rows to skip
-# oldproctag (after comment char) is outdated as a process tag but kept for posterities sake
+            #
+            #            stdout.write('\b')            # erase the last written char
+            #            stdout.write(spinner.next())  # write the next character
+            #            stdout.flush()                # flush stdout buffer (actual character display)
+            #
+            # We need rows to skip
+            # oldproctag (after comment char) is outdated as a process tag but kept for posterities sake
             skiprows, oldproctag = extract_tags_from_comment_line(f, tarfile=tarfile)
             logger.debug("%s had %d comment rows, oldproctags %s", f, skiprows, oldproctag)
             if tarfile:
@@ -1263,7 +1333,7 @@ def ETL_job_dict(raw_metadata, filedict, settings, tarfile=None):
                 logger.debug('establishing connection to DB took: %2.5f sec', _copy_start_ts - _conn_start_ts)
                 copy_sql = "COPY processes_staging({}) FROM STDIN DELIMITER '{}' CSV QUOTE E'\b'".format(
                     ",".join(OUTPUT_CSV_FIELDS), OUTPUT_CSV_SEP)
-                logger.debug('Issuing direct-copy SQL: ' + copy_sql)
+                logger.debug('Issuing direct-copy SQL: %s' , copy_sql)
                 try:
                     # copy_from is deprecated and copy_expert is recommended
                     # Also, copy_from cannot handle a HEADER option
@@ -1308,7 +1378,9 @@ def ETL_job_dict(raw_metadata, filedict, settings, tarfile=None):
             #                        #dtype=dtype_dic,
             #                        converters=conv_dic,
             #                        skiprows=rows, escapechar='\\')
+            
             file_io_time += time.time() - _file_io_start_ts
+            
             # if collated_df.empty:
             #     logger.error("Something wrong with file %s, readcsv returned empty, skipping...",f)
             #     continue
@@ -1345,14 +1417,14 @@ def ETL_job_dict(raw_metadata, filedict, settings, tarfile=None):
                     all_tags.add(dumps(p.tags, sort_keys=True))
                 proc_tag_process_time += time.time() - _proc_tag_start_ts
                 _t = time.time()
-                
+
                 # We shouldn't be seeing a pid repeat in a job.
                 # Theoretically it's posssible but it would complicate the pid map a bit
                 # assert(p.pid not in pid_map)
                 pid_map[p.pid] = p
                 all_procs.append(p)
                 total_procs += 1
-                
+
                 # Compute duration of job
                 if (p.start < earliest_process):
                     earliest_process = p.start
@@ -1370,7 +1442,7 @@ def ETL_job_dict(raw_metadata, filedict, settings, tarfile=None):
                         p.exename, p.pid, p.start, p.end, start_ts, stop_ts)
                     logger.error(msg)
                     raise ValueError(msg)
-                
+
                 # save naive datetime objects in the database
                 p.start = p.start.replace(tzinfo=None)
                 p.end = p.end.replace(tzinfo=None)
@@ -1432,7 +1504,8 @@ def ETL_job_dict(raw_metadata, filedict, settings, tarfile=None):
 
         if root_proc:
             # if root_proc.exitcode != j.exitcode:
-            #     logger.warning('metadata shows the job exit code is {0}, but root process exit code is {1}'.format(j.exitcode, root_proc.exitcode))
+            #     logger.warning('metadata shows the job exit code is {0}, but root process exit code is {1}'.format(
+            #                                                                           j.exitcode, root_proc.exitcode))
             j.exitcode = root_proc.exitcode
             logger.info('job exit code (using exit code of root process): {0}'.format(j.exitcode))
         if j.exitcode != 0:
@@ -1502,7 +1575,7 @@ def post_process_pending_jobs():
     did_process = []
     for u in unproc_jobs:
         jobid = u.jobid
-        j = u.job
+        #j = u.job
         logger.debug('post-processing {0}'.format(jobid))
         if post_process_job(jobid):
             did_process.append(jobid)

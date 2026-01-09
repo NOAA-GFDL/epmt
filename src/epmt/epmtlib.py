@@ -578,7 +578,9 @@ class dotdict(dict):
 # https://stackoverflow.com/questions/43600878/merging-overlapping-intervals
 #
 # For e.g.,
-# input: [[-25, -14], [-21, -16], [-20, -15], [-10, -7], [-8, -5], [-6, -3], [2, 4], [2, 3], [3, 6], [12, 15], [13, 18], [14, 17], [22, 27], [25, 30], [26, 29]]
+#  input: [[-25, -14], [-21, -16], [-20, -15], [-10, -7], [-8, -5], [-6, -3],
+#          [2, 4], [2, 3], [3, 6], [12, 15], [13, 18], [14, 17], [22, 27],
+#          [25, 30], [26, 29]]
 # output: [[-25, -14], [-10, -3], [2, 6], [12, 18], [22, 30]]
 
 
@@ -886,21 +888,21 @@ def dframe_encode_features(df, features=[], reversible=False):
 
          df: Input dataframe possibly containing non-numeric feature columns
 
-   features: If supplied, only these columns will be assumed to have
-             non-numeric values, and hence only these columns will be
-             mapped.
+    features: If supplied, only these columns will be assumed to have
+              non-numeric values, and hence only these columns will be
+              mapped.
 
- reversible: If set, a reversible encoding is done so that the integer
-             columns can be converted to the original strings if needed.
-             It is not recommended that you enable this option as the
-             resultant integers can be inordinately long for long strings
+    reversible: If set, a reversible encoding is done so that the integer
+                columns can be converted to the original strings if needed.
+                It is not recommended that you enable this option as the
+                resultant integers can be inordinately long for long strings
 
     RETURNS: (encoded_df, mapped_features)
 
-         encoded_df: Output dataframe which contains non-numeric
-                     feature columns replaced with encoded integer features.
-   encoded_features: List of feature column names that were replaced with
-                     encoded integers.
+    encoded_df: Output dataframe which contains non-numeric
+                feature columns replaced with encoded integer features.
+    encoded_features: List of feature column names that were replaced with
+                      encoded integers.
 
     NOTE: If encoded_features is empty, no features were encoded.
     '''
