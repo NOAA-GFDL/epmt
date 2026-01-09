@@ -85,7 +85,10 @@ def conv_jobs(jobs, fmt='dict', merge_sums=True, trigger_post_process=True):
     #     post_process_jobs(jobids)
 
     # convert the ORM into a list of dictionaries, excluding blacklisted fields
-    out_list = [orm_to_dict(j, exclude='processes', trigger_post_process=trigger_post_process) for j in jobs]
+    out_list = [ orm_to_dict( j,
+                              exclude = 'processes',
+                              trigger_post_process = trigger_post_process ) for j in jobs ]
+
     # do we need to merge process' sum fields into the job?
     if merge_sums:
         for j in out_list:
@@ -386,7 +389,8 @@ def get_jobs(
              tags may also be specified as a list of strings or dicts. In that
              case the resulting match is a superset of the matches from the
              individual tags. For example:
-             eq.get_jobs(tags=['ocn_res:0.5l75;exp_component:ocean_cobalt_fdet_100', 'ocn_res:0.5l75;exp_component:ocean_annual_rho2_1x1deg'], fmt='terse')
+                 eq.get_jobs( tags = ['ocn_res:0.5l75;exp_component:ocean_cobalt_fdet_100', 
+                                      'ocn_res:0.5l75;exp_component:ocean_annual_rho2_1x1deg'], fmt='terse')
              This returns a union of jobs that match 'ocn_res:0.5l75;exp_component:ocean_cobalt_fdet_100'
              and those that match 'ocn_res:0.5l75;exp_component:ocean_annual_rho2_1x1deg'
 

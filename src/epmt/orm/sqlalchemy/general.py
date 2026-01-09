@@ -205,17 +205,18 @@ def orm_delete_jobs(jobs, use_orm=False):
             # make sure the process rows corresponding to the job
             # in the staging table are deleted as part of this transaction
             if not j.info_dict.get('procs_in_process_table', 1):
+                logger.warning('process job is in staging- removing process rows corresponding to the job in the staging table')
                 (first_proc_id, last_proc_id) = j.info_dict['procs_staging_ids']
-                stmts.append(
-                    "DELETE FROM processes_staging WHERE id BETWEEN {} AND {};\n".format(
-                        first_proc_id, last_proc_id))
-            stmts.append(
-                'DELETE FROM ancestor_descendant_associations WHERE EXISTS (SELECT ad.* from ancestor_descendant_associations ad INNER JOIN processes p ON (ad.ancestor = p.id OR ad.descendant = p.id) WHERE p.jobid = \'{0}\')'.format(jobid))
-            stmts.append('DELETE FROM host_job_associations WHERE host_job_associations.jobid = \'{0}\''.format(jobid))
-            stmts.append(
-                'DELETE FROM refmodel_job_associations WHERE refmodel_job_associations.jobid = \'{0}\''.format(jobid))
-            stmts.append('DELETE FROM processes WHERE processes.jobid = \'{0}\''.format(jobid))
-            stmts.append('DELETE FROM jobs WHERE jobs.jobid = \'{0}\''.format(jobid))
+                logger.warning(f'first and last proc_ids pulled are: {first_proc_id} and {last_proc_id}')
+                stmts.append( "DELETE FROM processes_staging WHERE id BETWEEN {} AND {};\n".format( first_proc_id,
+                                                                                                    last_proc_id  ) )
+            else:
+                logger.debug('process job is NOT in staging table- no processes_staging targets will be added to query')
+            stmts.append( 'DELETE FROM ancestor_descendant_associations WHERE EXISTS (SELECT ad.* from ancestor_descendant_associations ad INNER JOIN processes p ON (ad.ancestor = p.id OR ad.descendant = p.id) WHERE p.jobid = \'{0}\')'.format(jobid))
+            stmts.append( 'DELETE FROM host_job_associations WHERE host_job_associations.jobid = \'{0}\''.format(jobid) )
+            stmts.append( 'DELETE FROM refmodel_job_associations WHERE refmodel_job_associations.jobid = \'{0}\''.format(jobid) )
+            stmts.append( 'DELETE FROM processes WHERE processes.jobid = \'{0}\''.format(jobid) )
+            stmts.append( 'DELETE FROM jobs WHERE jobs.jobid = \'{0}\''.format(jobid) )
         try:
             orm_raw_sql(stmts, commit=True)
             return True
@@ -224,8 +225,8 @@ def orm_delete_jobs(jobs, use_orm=False):
             if 'permission denied' in str(e):
                 logger.error('You do not have sufficient privileges to delete jobs')
                 return False
-            logger.warning("Could not execute delete SQL: {0}".format(str(e)))
-            # return False #REMOVE ME
+            logger.error("Could not execute delete SQL: {0}".format(str(e)))
+            return False #REMOVE ME
 
     # do a slow delete using ORM
     logger.warning("Fast-path delete did not work. Doing a slow delete using ORM..")

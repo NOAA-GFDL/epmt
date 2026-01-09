@@ -84,14 +84,14 @@ outlier_features_blacklist = ['env_dict', 'tags', 'info_dict', 'env_changes_dict
 # You will need to run `epmt retire` in a cron job for this to happen
 # Remember, jobs that have dependent trained models will not be retired
 # retire_jobs_ndays = 40   # specify in number of days; set to 0 to not retire jobs
-retire_jobs_ndays = 17   # specify in number of days; set to 0 to not retire jobs
+retire_jobs_ndays = 10   # specify in number of days; set to 0 to not retire jobs
 retire_models_ndays = 0  # specify in number of days; set to 0 to not retire models
 retire_jobs_per_delete_max = 20  # specify the chunk-size to delete jobs in
 
 # we expect the settings below to be overriden in settings.py
 # depending on the template of your choice
 orm = 'sqlalchemy'
-db_params = {'url': 'sqlite:///:memory:', 'echo': False}
+db_params = {'url': 'sqlite:///:memory:', 'echo': True}
 
 bulk_insert = True
 
