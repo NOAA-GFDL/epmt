@@ -245,7 +245,7 @@ class Process(with_metaclass(CommonMeta, Base)):
                               ondelete="CASCADE"),
                    index=True)
     job = relationship('Job',
-                       back_populates='processes')\
+                       back_populates='processes')
     start = Column(DateTime,
                    default=datetime.now,
                    index=True)
