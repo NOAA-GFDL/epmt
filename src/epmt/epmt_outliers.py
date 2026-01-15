@@ -24,7 +24,9 @@ from epmt.orm import db_session, ReferenceModel, orm_get, orm_col_len
 # the first epmt import must be epmt_query as it sets up logging
 import epmt.epmt_query as eq
 from epmt.epmtlib import tags_list, tag_from_string, dict_in_list
-from epmt.epmt_stat import thresholds, outliers_iqr, outliers_modified_z_score, rca, get_classifier_name, is_classifier_mv, partition_classifiers_uv_mv, mvod_scores_using_model, uvod_classifiers, modified_z_score
+from epmt.epmt_stat import ( thresholds, outliers_iqr, outliers_modified_z_score, rca, get_classifier_name,
+                             is_classifier_mv, partition_classifiers_uv_mv, mvod_scores_using_model,
+                             uvod_classifiers, modified_z_score )
 
 logger = getLogger(__name__)  # you can use other name
 
@@ -1737,7 +1739,6 @@ def get_feature_distributions(jobs, features=[]):
     # the features, all the numeric features are selected.
     >>> eod.get_feature_distributions(['kern-6656-20190614-190245', 'kern-6656-20190614-191138', 'kern-6656-20190614-192044-outlier', 'kern-6656-20190614-194024'], features=['cpu_time', 'rssmax'])
     {'cpu_time': 'unknown', 'rssmax': 'norm'}
-
     '''
     eq._empty_collection_check(jobs)
     eq._warn_incomparable_jobs(jobs)
@@ -1764,9 +1765,10 @@ def get_feature_distributions(jobs, features=[]):
     return dist_dict
 
 
-# Raise an exception if the length of a collection is less than
-# min_length
 def _err_col_len(c, min_length=1, msg=None):
+    '''
+    Raise an exception if the length of a collection is less than min_length
+    '''
     l = orm_col_len(c)
     if l < min_length:
         msg = msg or "length of collection is less than the minimum ({0})".format(min_length)

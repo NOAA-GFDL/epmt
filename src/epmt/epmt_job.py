@@ -24,7 +24,7 @@ import epmt.epmt_settings as settings
 from epmt.epmtlib import tag_from_string, sum_dicts, timing, dotdict, get_first_key_match, check_fix_metadata, logfn
 from epmt.epmt_query import is_job_post_processed
 
-logger = getLogger(__name__)  # you can use other name
+logger = getLogger(__name__)
 
 # Spinning cursor sequence
 # from itertools import cycle
@@ -44,7 +44,10 @@ def sort_key_func(s):
 
 @logfn
 def create_job(jobid, user):
-    # This code sucks, it should not get before create. It should properly handle the exception, rollback and restart
+    '''
+    This code is insufficient, it should not get before create. It should properly handle the exception,
+    rollback and restart TODO
+    '''
     job = orm_get(Job, jobid)
     if job:
         return None
@@ -102,9 +105,10 @@ def lookup_or_create_host(hostname):
     return host
 
 
-# This function handles a race condition when submitting jobs using
-# multiple processes
 def lookup_or_create_host_safe(hostname):
+    '''
+    This function handles a race condition when submitting jobs using multiple processes
+    '''
     from sqlalchemy import exc
     try:
         h = lookup_or_create_host(hostname)
@@ -117,7 +121,7 @@ def lookup_or_create_host_safe(hostname):
 
 
 def lookup_or_create_user(username):
-    logger = getLogger(__name__)  # you can use other name
+    logger = getLogger(__name__)
     user = orm_get_or_create(User, name=username)
     logger.debug('orm_get_or_create output for user is %s',user)
     # user = orm_get(User, username)
@@ -150,8 +154,11 @@ def lookup_or_create_user(username):
 #         row += thr_count
 
 
-# Generator function that returns a
 def get_proc_rows(csvfile, skiprows=0, fmt='1', metric_names=[]):
+    '''
+    Generator function that returns a list of rows corresponding to metric names from csv, with optional skipping
+    '''
+
     from epmt.epmt_convert_csv import OUTPUT_CSV_FIELDS, OUTPUT_CSV_SEP
     # we only support two formats at present
     if fmt not in ('1', '2'):
@@ -231,14 +238,14 @@ def get_proc_rows(csvfile, skiprows=0, fmt='1', metric_names=[]):
             row_num += 1
 
 
-# 'proc' is a list of dicts, where each list item is a
-# a dictionary containing data for a single thread
-# The first list item (thread 0) is special in that it has values for fields pertaining
-# to the process such as 'exename', 'args', etc. The other threads
-# may not have process fields set.
 def load_process_from_dictlist(proc, host, j, u, settings, profile):
+    '''
+    proc is a list of dicts, where each list item is a dictionary containing data for a single thread
+    The first list item (thread 0) is special in that it has values for fields pertaining to the 
+    process such as 'exename', 'args', etc. The other threads may not have process fields set.
+    '''
     from pandas import Timestamp
-    logger = getLogger(__name__)  # you can use other name
+    logger = getLogger(__name__)
 
     hostname = proc[0].get('hostname', '')
     if hostname:
@@ -356,12 +363,11 @@ def load_process_from_dictlist(proc, host, j, u, settings, profile):
 
     return p
 
-#
-# Extract a dictionary from the rows of header on the file
-#
-
-
 def extract_tags_from_comment_line(jobdatafile, comment="#", tarfile=None):
+    '''
+    Extract a dictionary from the rows of header on the file
+    '''
+
     rows = 0
     retstr = None
 
@@ -456,12 +462,11 @@ def _proc_ancestors(pid_map, proc, ancestor_pid, relations=None, descendant_map=
         _proc_ancestors(pid_map, proc, ancestor.ppid, relations, descendant_map)
     return (relations, descendant_map)
 
-# Makes a pid map (a dictionary referenced by PIDs).
-# Each dict entry is a list containing one or more Process
-# (or dotdict if using bulk inserts) objects.
-
-
 def _mk_pid_map(all_procs):
+    '''
+    Makes a pid map (a dictionary referenced by PIDs). Each dict entry is a list containing 
+    one or more Process (or dotdict if using bulk inserts) objects.
+    '''
     pid_map = {}
     for p in all_procs:
         if p.pid in pid_map:
@@ -472,10 +477,12 @@ def _mk_pid_map(all_procs):
     return pid_map
 
 
-# determines the actual parent of a process give a list
-# of candidates whose PID matches the PPID of proc.
-# proc is a dotdict or a Process object
 def _disambiguate_parent(entries, proc):
+    '''
+    determines the actual parent of a process give a list
+    of candidates whose PID matches the PPID of proc.
+    proc is a dotdict or a Process object
+    '''
     sorted_entries = sorted(entries, key=lambda p: p.start)
     for p in sorted_entries:
         if p.end > proc.start:
@@ -492,7 +499,7 @@ def _disambiguate_parent(entries, proc):
 
 
 def _create_process_tree(pid_map):
-    logger = getLogger(__name__)  # you can use other name
+    logger = getLogger(__name__)
     logger.info("  creating process tree..")
     for (_, procs) in pid_map.items(): # _ is pid
 
@@ -541,16 +548,13 @@ def _create_process_tree(pid_map):
 def is_process_tree_computed(j):
     return bool(j.info_dict.get('process_tree'))
 
-# High-level function to create and persist a process tree
-# It will also compute and save process inclusive_cpu_times.
-# You should be using this function instead of directly calling
-# _create_process_tree.
-# 'all_procs' and 'pid_map' are optional and if supplied
-# will reduce processing time.
-
-
 @db_session
 def mk_process_tree(j, all_procs=None, pid_map=None):
+    '''
+    High-level function to create and persist a process tree. It will also compute and save process inclusive_cpu_times.
+    You should be using this function instead of directly calling _create_process_tree.
+    'all_procs' and 'pid_map' are optional and if supplied will reduce processing time.
+    '''
     if isinstance(j, str):
         j = Job[j]
     info_dict = j.info_dict.copy()
@@ -595,16 +599,6 @@ def mk_process_tree(j, all_procs=None, pid_map=None):
     logger.debug('  commit time : %2.5f sec', time.time() - _t3)
     return
 
-# This method will compute sums across processes/threads of a job,
-# and do post-processing on tags. It will also call _create_process_tree
-# to create process tree.
-#
-# The function is tolerant to missing datastructures for all_tags
-# all_procs and pid_map. If any of them are missing, it will
-# build them by using the data in the database/ORM.
-#
-
-
 @timing
 def post_process_job( j,
                       all_tags=None,
@@ -612,6 +606,11 @@ def post_process_job( j,
                       #pid_map=None,
                       update_unprocessed_jobs_table=True,
                       force=False):
+    '''
+    This method will compute sums across processes/threads of a job, and do post-processing on tags. It will also call 
+    _create_process_tree to create process tree. The function is tolerant to missing datastructures for all_tags,
+    all_procs and pid_map. If any of them are missing, it will Build them by using the data in the database/ORM.
+    '''
     logger = getLogger(__name__)  # you can use other name
     if isinstance(j, str):
         jobid = j
@@ -1562,9 +1561,8 @@ def ETL_job_dict(raw_metadata, filedict, settings, tarfile=None):
 
 def post_process_pending_jobs():
     '''
-       This function will post-process all pending jobs that have
-       not been post-processed.
-       It returns the list of jobids that were post-processed.
+    This function will post-process all pending jobs that have not been post-processed. It returns the list 
+    of jobids that were post-processed.
     '''
     # we only support post-processing for SQLA at the moment
     if settings.orm != 'sqlalchemy':

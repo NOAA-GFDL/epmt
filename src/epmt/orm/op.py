@@ -1,10 +1,11 @@
+"""
+This file houses a class for an abstract model representing an operation. This will NOT be persisted in the database
+as it is NOT used for defining the ORM nor the DB tables. It is for manipulating data and measurements
+"""
+
 class Operation(dict):
     '''
-    Defines an abstract model for an operation. This will
-    NOT be persisted in the database.
-
-    An operation is defined as a collection of processes
-    spanning one or more jobs where each processes' tag is
+    An operation is defined as a collection of processes spanning one or more jobs where each processes' tag is
     a superset of the operation tag.
     '''
 
@@ -14,21 +15,27 @@ class Operation(dict):
 
     # op_duration_method is one of "sum", "sum-minus-overlap", "finish-minus-start"
     def __init__(self, jobs, tags, exact_tag_only=False, op_duration_method="sum"):
-        #        from orm import orm_is_query, orm_jobs_col
+
+        #from orm import orm_is_query, orm_jobs_col
         from . import orm_is_query, orm_jobs_col  # rocky-8 change
         from epmt.epmtlib import tag_from_string, tags_list
+
         from logging import getLogger
         logger = getLogger(__name__)
+
         if op_duration_method not in ("sum", "sum-minus-overlap", "finish-minus-start"):
             raise ValueError('op_duration_method must be one of ("sum", "sum-minus-overlap", "finish-minus-start")')
+
         jobs = orm_jobs_col(jobs)
-        if (jobs.count() == 0):
+        if jobs.count() == 0:
             raise ValueError("jobs count should be greater than zero")
+
         self.jobs = jobs
         self.tags = tags_list(tags) if (isinstance(tags, list)) else tag_from_string(tags)
         self.exact_tag_only = exact_tag_only
         self.op_duration_method = op_duration_method
-        # this will be initialized on first reference
+
+        # these will be initialized on first reference
         self._processes = None
         self._proc_sums = None
         self._intervals = None

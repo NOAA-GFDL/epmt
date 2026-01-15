@@ -13,7 +13,8 @@ The format can be selected using the `fmt` argument.
 """
 
 from epmt.epmt_stat import get_classifier_name, is_classifier_mv, mvod_scores, uvod_classifiers
-from epmt.epmtlib import tag_from_string, tags_list, init_settings, sum_dicts, unique_dicts, fold_dicts, isString, group_dicts_by_key, conv_to_datetime
+from epmt.epmtlib import ( tag_from_string, tags_list, init_settings, sum_dicts, unique_dicts, fold_dicts,
+                           isString, group_dicts_by_key, conv_to_datetime )
 from datetime import datetime
 import pandas as pd
 
@@ -26,6 +27,7 @@ import epmt.epmt_settings as settings
 # do NOT do any epmt imports until logging is set up
 # using epmt_logging_init, other than import epmt_logging_init
 from epmt.epmtlib import epmt_logging_init, version
+
 logger = getLogger(__name__)  # you can use other name
 epmt_logging_init(settings.verbose if hasattr(settings, 'verbose') else 0, check=True)
 

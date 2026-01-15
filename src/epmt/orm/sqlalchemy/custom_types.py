@@ -1,10 +1,10 @@
+"""
+custom type definitions
+not clear this was ever used
+"""
+
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.types import ARRAY
-
-
-@compiles(ARRAY, "sqlite")
-def compile_array_sqlite(type_, compiler, **kw):
-    return "JSON"
 
 # from sqlalchemy.schema import Column
 # from sqlalchemy.types import (
@@ -14,7 +14,11 @@ def compile_array_sqlite(type_, compiler, **kw):
 #     )
 # from sqlalchemy import Sequence
 # import json
-#
+
+@compiles(ARRAY, "sqlite")
+def compile_array_sqlite(type_, compiler, **kw):
+    return "JSON"
+
 # class ArrayType(TypeDecorator):
 #     """ Sqlite-like does not support arrays.
 #         Let's use a custom type decorator.

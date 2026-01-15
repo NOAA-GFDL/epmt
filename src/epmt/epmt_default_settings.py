@@ -9,8 +9,6 @@ from present_settings/*.py and and edit that file.
 cp preset_settings/<choose_file_to_match_your_storage>.py settings.py
 and then edit the copied over file
 """
-#
-#
 
 from epmt.epmtlib import get_install_root
 from os import path
@@ -84,7 +82,7 @@ outlier_features_blacklist = ['env_dict', 'tags', 'info_dict', 'env_changes_dict
 # You will need to run `epmt retire` in a cron job for this to happen
 # Remember, jobs that have dependent trained models will not be retired
 # retire_jobs_ndays = 40   # specify in number of days; set to 0 to not retire jobs
-retire_jobs_ndays = 10   # specify in number of days; set to 0 to not retire jobs
+retire_jobs_ndays = 11   # specify in number of days; set to 0 to not retire jobs
 retire_models_ndays = 0  # specify in number of days; set to 0 to not retire models
 retire_jobs_per_delete_max = 20  # specify the chunk-size to delete jobs in
 
