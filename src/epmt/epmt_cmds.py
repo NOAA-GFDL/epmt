@@ -1895,7 +1895,9 @@ def epmt_entrypoint(args):
 
     if args.command == 'dbcare':
         from epmt.epmt_cmd_dbcare import epmt_dbcare
-        epmt_dbcare()
+        epmt_dbcare( retire_jobs = args.retire_jobs ,
+                     vacuum_tables = args.vacuum_tables,
+                     post_process = args.post_process )
         return 0
 
     if args.command == 'check':

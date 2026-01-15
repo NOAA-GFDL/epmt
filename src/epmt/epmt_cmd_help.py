@@ -5,11 +5,10 @@ EPMT help command module - provides help functionality.
 from inspect import signature
 from sys import stderr
 
-# ian - what is this???
-
-
 def epmt_help_api(funcs=[]):
-    """Provide help documentation for EPMT API functions."""
+    """
+    Provide help documentation for EPMT API functions.
+    """
     import epmt.epmt_settings as settings
     import epmt.epmt_query as eq
     import epmt.epmt_outliers as eod

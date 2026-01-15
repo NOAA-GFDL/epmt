@@ -1,13 +1,16 @@
 """
 EPMT delete command module - handles job deletion functionality.
 """
-from epmt.epmt_query import delete_jobs
 from logging import getLogger
+
+from epmt.epmt_query import delete_jobs
+
 logger = getLogger(__name__)  # you can use other name
 
 
 def epmt_delete_jobs(joblist):
-    ''' Takes string
+    ''' 
+    Takes string
     Returns a boolean? if the list of successfully deleted jobid's as strings is as long as the delete_jobs return
     i.e. if there are jobs that were not deleted, return false. if all jobs were deleted successfully, return true.
     '''
@@ -17,8 +20,9 @@ def epmt_delete_jobs(joblist):
         raise ValueError()
 
     # Delete jobs should return which ones don't get deleted if it cannot guarantee atomicity
-    logger.info("deleted jobs %s", str(joblist))
+    logger.info("deleting jobs %s", ' '.join(joblist))
     n_del_jobs = delete_jobs(joblist, force=True)
     if n_del_jobs != len(joblist):
-        logger.warning("Warning! Some jobs could not be deleted.")
-    return (delete_jobs(joblist, force=True) == len(joblist))
+        logger.warning("Warning! Some jobs could not be delted.")
+
+    return delete_jobs(joblist, force=True) == len(joblist)

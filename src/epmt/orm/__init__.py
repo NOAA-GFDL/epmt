@@ -1,17 +1,22 @@
+"""
+init file for epmt.orm
+houses API calls below that have the same implementation on all ORMs considered. 
+"""
+
 from os import environ
 import epmt.epmt_settings as settings
 from .op import *
 
-#
-# Below are API calls that have the same implementation on all ORMs
-#
 
-# Note, the function below is not ATOMIC! There is a potential
-# for a race condition here.
+if settings.orm == 'sqlalchemy':
+    from .sqlalchemy import *
+else:
+    from .pony import *
 
 
 def orm_get_or_create(model, **kwargs):
-    return (orm_get(model, **kwargs) or orm_create(model, **kwargs))
+    # Note, this function is not ATOMIC- There is a potential for a race condition here. TODO
+    return orm_get(model, **kwargs) or orm_create(model, **kwargs)
 
 
 def orm_db_provider():
@@ -33,12 +38,13 @@ def orm_drop_db():
 def orm_sql(sql):
     return orm_raw_sql(sql)
 
-# return the length of a collection
-# For most collections, the len function suffices. However,
-# for ORM queries under SQLA, we need to use the count method.
-
 
 def orm_col_len(c):
+    '''
+    return the length of a collection
+    For most collections, the len function suffices. However,
+    for ORM queries under SQLA, we need to use the count method.
+    '''
     try:
         return len(c)
     except BaseException:
@@ -52,9 +58,8 @@ def orm_db_size(findwhat=['database', 'table', 'index', 'tablespace'], usejson=T
     findwhat: List of entities to find the size of, default is [database, index, table, tablespace]
     usejson: Printed in JSON, default.
     usebytes: All data reported in bytes, default.
-
     """
-#    from orm import orm_db_provider, orm_dump_schema, orm_sql, setup_db
+    #from orm import orm_db_provider, orm_dump_schema, orm_sql, setup_db
     from sys import exc_info
     from datetime import datetime
     from json import dumps
@@ -63,18 +68,18 @@ def orm_db_size(findwhat=['database', 'table', 'index', 'tablespace'], usejson=T
     provider = orm_db_provider()
     if provider != 'postgres':
         logger.warning("%s not supported for dbsize", provider)
-        return (False)
+        return False
 
     if setup_db(settings) == False:
         logger.error("Could not connect to db")
-        return (False)
+        return False
 
     struct = {}
     for arg in findwhat:
         if arg == 'database':
             databased = {}
-            cmd = 'SELECT pg_database.datname, pg_database_size(pg_database.datname) AS size FROM pg_database'
             try:
+                cmd = 'SELECT pg_database.datname, pg_database_size(pg_database.datname) AS size FROM pg_database'
                 sizes = orm_sql(cmd)
                 for name, size in sizes:
                     databased[name] = int(size)
@@ -86,6 +91,7 @@ def orm_db_size(findwhat=['database', 'table', 'index', 'tablespace'], usejson=T
 
         if arg == 'table':
             tabled = {}
+            #            try:
             for table in orm_dump_schema(show_attributes=False):
                 cmd = "SELECT pg_total_relation_size(\'" + table + "\')"
                 size = orm_sql(cmd).fetchall()[0][0]
@@ -94,9 +100,9 @@ def orm_db_size(findwhat=['database', 'table', 'index', 'tablespace'], usejson=T
                 tabled[table] = [int(size), int(count)]
                 logger.debug("table[%s]=[%d,%d]", table, int(size), int(count))
                 struct[arg] = tabled
-#            except:
-#                e = exc_info()[0]
-#                logger.warning("Table size query failed: %s" % e )
+            #            except:
+            #                e = exc_info()[0]
+            #                logger.warning("Table size query failed: %s" % e )
 
         if arg == 'index':
             indexd = {}
@@ -127,19 +133,18 @@ def orm_db_size(findwhat=['database', 'table', 'index', 'tablespace'], usejson=T
                 logger.warning("Tablespace size query failed: %s" % e)
 
     current_time = datetime.utcnow().isoformat() + "Z"
+
     printsettings = {}
     printsettings["orm"] = settings.orm
     printsettings.update(settings.db_params)
+
     struct["timestamp"] = current_time
     struct["settings"] = printsettings
+
     if not usejson:
         print(struct)
     else:
         print(dumps(struct, indent=4))
-    return (True)
 
+    return True
 
-if settings.orm == 'sqlalchemy':
-    from .sqlalchemy import *
-else:
-    from .pony import *

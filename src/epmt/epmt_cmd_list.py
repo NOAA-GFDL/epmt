@@ -1,46 +1,49 @@
 """
 EPMT list command module - handles job listing functionality.
 """
+
 # from __future__ import print_function
 from sys import stderr
-from pandas import DataFrame
 from logging import getLogger
 
-from epmt.epmt_query import get_unanalyzed_jobs, get_unprocessed_jobs, get_jobs, get_procs, get_refmodels, get_thread_metrics, get_job_proc_tags, get_op_metrics
+from pandas import DataFrame
+
+from epmt.epmt_query import ( get_unanalyzed_jobs, get_unprocessed_jobs, get_jobs, get_procs, get_refmodels,
+                              get_thread_metrics, get_job_proc_tags, get_op_metrics )
 from epmt.epmtlib import kwargify
-# import pandas
+
 logger = getLogger(__name__)  # you can use other name
 
 
 def epmt_list(arglist):
     logger.info("epmt_list: %s", str(arglist))
     if not arglist:
-        return (epmt_list_jobs(arglist))
+        return epmt_list_jobs(arglist)
     if arglist[0] == "jobs":
         arglist = arglist[1:]
-        return (epmt_list_jobs(arglist))
+        return epmt_list_jobs(arglist)
     if arglist[0] == "unprocessed_jobs":
         arglist = arglist[1:]
-        return (epmt_list_unprocessed_jobs(arglist))
+        return epmt_list_unprocessed_jobs(arglist)
     if arglist[0] == "unanalyzed_jobs":
         arglist = arglist[1:]
-        return (epmt_list_unanalyzed_jobs(arglist))
+        return epmt_list_unanalyzed_jobs(arglist)
     if arglist[0] == "refmodels":
         arglist = arglist[1:]
-        return (epmt_list_refmodels(arglist))
+        return epmt_list_refmodels(arglist)
     if arglist[0] == "procs" or arglist[0] == "processes":
         arglist = arglist[1:]
-        return (epmt_list_procs(arglist))
+        return epmt_list_procs(arglist)
     if arglist[0] == "thread_metrics":
         arglist = arglist[1:]
-        return (epmt_list_thread_metrics(arglist))
+        return epmt_list_thread_metrics(arglist)
     if arglist[0] == "op_metrics":
         arglist = arglist[1:]
-        return (epmt_list_op_metrics(arglist))
+        return epmt_list_op_metrics(arglist)
     if arglist[0] == "job_proc_tags":
         arglist = arglist[1:]
-        return (epmt_list_job_proc_tags(arglist))
-    return (epmt_list_jobs(arglist))
+        return epmt_list_job_proc_tags(arglist)
+    return epmt_list_jobs(arglist)
 
 
 def epmt_list_unanalyzed_jobs(arglist):
@@ -51,6 +54,7 @@ def epmt_list_unanalyzed_jobs(arglist):
         if len(arglist):
             return False
         return True
+
     if len(arglist):
         jobids_in = set()
         jobids = set()
@@ -73,6 +77,7 @@ def epmt_list_unprocessed_jobs(arglist):
         if len(arglist):
             return False
         return True
+
     if len(arglist):
         jobids_in = set()
         jobids = set()
@@ -93,10 +98,7 @@ def epmt_list_jobs(arglist):
     if kwargs.get('fmt') is None:
         kwargs['fmt'] = 'terse'
     jobs = get_jobs(**kwargs)
-#    if type(jobs) == pandas.core.frame.DataFrame:
-    # if len(jobs) == 0:
-    #     logger.info("get_jobs %s returned no jobs",str(kwargs))
-    #     return False
+
     print(jobs)
     return True
 
@@ -130,7 +132,7 @@ def epmt_list_op_metrics(arglist):
     logger.info("epmt_list_op_metrics: %s", str(arglist))
     kwargs = kwargify(arglist)
     ops = get_op_metrics(**kwargs)
-    if (not isinstance(ops, DataFrame)) or (len(ops) == 0):
+    if not isinstance(ops, DataFrame) or len(ops) == 0:
         logger.info("get_op_metrics %s returned no op metrics", str(kwargs))
         return False
     print(ops)

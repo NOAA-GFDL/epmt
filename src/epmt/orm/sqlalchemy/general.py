@@ -1,5 +1,10 @@
+"""
+a set of functions for managing/working with an ORM defined for SQLAlchemy 
+"""
 from __future__ import print_function
+
 import epmt.epmt_settings as settings
+
 from sqlalchemy import engine_from_config, text, inspect, MetaData, desc
 # from sqlalchemy.event import listens_for
 # from sqlalchemy.pool import Pool
@@ -7,6 +12,7 @@ from sqlalchemy import sql as sqla_sql
 from sqlalchemy.orm import sessionmaker, scoped_session, mapperlib
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm.query import Query
+
 import threading
 from functools import wraps
 from os import chdir, getcwd
@@ -27,8 +33,6 @@ engine = None
 db_setup_complete = False
 
 ### sqlalchemy-specific API implementation ###
-
-
 def db_session(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
@@ -67,8 +71,6 @@ def db_session(func):
     return wrapper
 
 # This is a low-level function, which is meant for internal use only
-
-
 def _connect_engine():
     global engine
     if engine is None:
@@ -86,7 +88,7 @@ def setup_db(settings, drop=False, create=True):
     global db_setup_complete
     global engine
 
-    if db_setup_complete and not (drop):
+    if db_setup_complete and not drop:
         logger.info('skipping DB setup as it has already been initialized')
         return True
     logger.info("Creating engine with db_params: %s", settings.db_params)
