@@ -5,10 +5,6 @@ EPMT commands module - main command interface for EPMT functionality.
 
 from __future__ import print_function
 
-from epmt.epmtlib import ( get_username, epmt_logging_init, init_settings, conv_dict_byte2str, cmd_exists,
-                           run_shell_cmd, safe_rm, dict_filter, check_fix_metadata, logfn )
-import epmt.epmt_settings as settings
-
 from datetime import datetime
 from os import environ, makedirs, mkdir, path, getpid, remove, uname, kill
 from os.path import basename
@@ -28,6 +24,10 @@ import pickle
 import time
 
 from logging import getLogger
+
+from epmt.epmtlib import ( get_username, epmt_logging_init, init_settings, conv_dict_byte2str, cmd_exists,
+                           run_shell_cmd, safe_rm, dict_filter, check_fix_metadata, logfn )
+import epmt.epmt_settings as settings
 
 logger = getLogger(__name__)
 

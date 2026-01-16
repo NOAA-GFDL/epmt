@@ -5,17 +5,15 @@ EPMT Misc. Library
 This module provides miscellaneous functions such as those needed
 for manipulating data structures.
 """
+from contextlib import contextmanager
 from functools import wraps
-from time import time
+from io import StringIO
+from json import dumps, loads
 from logging import getLogger, DEBUG, ERROR, INFO, WARNING, CRITICAL
 from os import environ, unlink, devnull, getuid
-from contextlib import contextmanager
-from subprocess import call
-from json import dumps, loads
 from pwd import getpwuid
-
-from io import StringIO
-
+from subprocess import call
+from time import time
 
 # semantic version
 # first element is the major version number
