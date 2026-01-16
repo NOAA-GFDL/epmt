@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
+'''
+entry-point script to the epmt package
+'''
 
 import argparse
 from io import StringIO
-from sys import exit, stdout, stderr, version_info, argv
+from sys import exit as sysexit
+from sys import stderr, argv
 
 import epmt.epmt_settings as settings
 
@@ -10,19 +14,20 @@ from epmt.epmt_cmds import epmt_entrypoint, dump_config
 from epmt.epmt_cmd_help import epmt_help_api
 from epmt.epmtlib import version_str, suggested_cpu_count_for_submit
 
-# Display help when errors occur without dump_config
 class DefaultHelpParser(argparse.ArgumentParser):
+    '''
+    Class for displaying help when errors occur without dump_config   
+    '''
     def error(self, message):
-        stderr.write('error: %s\n' % message)
+        stderr.write(f'error: {message}\n')
         self.epilog = ''
         self.print_help()
-        exit(2)
+        sysexit(2)
 
 if __name__ != "__main__":
     print("ERROR: This module cannot be imported.", file=stderr)
-    exit(1)
+    sysexit(1)
 else:
-    # print('!!!!__name__==__main__ AND scripts.epmt used!!!!')
 
     # Generate config variable for epilog on long help
     config_string_file = StringIO()
@@ -32,10 +37,10 @@ else:
     parser = DefaultHelpParser(
         prog='epmt',
         add_help=True, epilog=config_string_file.getvalue(),
-        description="This is a tool to collect metadata and performance data about an entire job" +
-        "\ndown to the individual threads in individual processes." +
-        "\nThis tool uses EPMT to perform the process monitoring." +
-        "\nThis tool is targeted at batch or ephemeral jobs, not daemon processes.",
+        description="This is a tool to collect metadata and performance data about an entire job- "
+        "down to the individual threads in individual processes. "
+        "This tool, EPMT, uses papiex to perform the process monitoring. "
+        "It is targeted at batch or ephemeral jobs, not daemon processes.",
         formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument(
         '-V', '--version',
@@ -88,8 +93,8 @@ else:
     stage_parser = subparser.add_parser(
         'stage',
         help="Generate job archive",
-        description="Stage will compress job or job directories into tgz files for midterm storage then remove \
-            original job files and job directory.")
+        description="Stage will compress job or job directories into tgz files for midterm storage then remove "
+        "original job files and job directory.")
     stage_parser.add_argument(
         'epmt_cmd_args',
         nargs='*',
@@ -155,7 +160,7 @@ else:
     db_migrate_parser = subparser.add_parser(
         'migrate',
         help="Migrate the database schema",
-        description="Migrate the database schema (if needed). It is safe to use this option on an already migrated database")
+        description="Migrate the database schema (if needed). Safe to use this option on an already migrated database")
 
     # Convert PARSER
     csv_convert_parser = subparser.add_parser(
@@ -175,7 +180,8 @@ else:
     run_parser = subparser.add_parser(
         'run',
         help="Execute a process",
-        description="Run will execute a command in the shell, typically used with the auto -a flag to perform metadata collection before and after instrumentation.")
+        description="Run will execute a command in the shell, typically used with the auto -a flag to perform metadata "
+        "collection before and after instrumentation.")
     run_parser.add_argument(
         '-a', '--auto',
         action='store_true',
@@ -186,7 +192,8 @@ else:
     run_parser.add_argument(
         'epmt_cmd_args',
         default=[], nargs='+',
-        help="Command to run, **must** be preceded with double dash followed by a space if options are used, i.e. epmt run -- ls -C ",
+        help="Command to run, **must** be preceded with double dash followed by a space if options are used, "
+        "i.e. epmt run -- ls -C ",
         metavar="cmd_line")
     run_parser.set_defaults(dry_run=False, wrapit=False)
 
@@ -210,8 +217,8 @@ else:
         '-i', '--ingest',
         nargs='?', default=False, const=settings.stage_command_dest,
         metavar='path',
-        help="path to monitor for incoming data. If no path specified, the staging destination directory ({}) from settings is used".format(
-            settings.stage_command_dest ) )
+        help="path to monitor for incoming data. If no path specified, the staging destination directory "
+        f"({settings.stage_command_dest}) from settings is used")
     daemon_parser.add_argument(
         '-s', '--start',
         action='store_true',
@@ -327,7 +334,7 @@ else:
     dbcare_parser.add_argument(
         '-p', '--post-process',
         default = False, action = 'store_true',
-        help = 'postprocess jobs in the DB that are not yet post processed (associated with entries in processes table)' )
+        help = 'postprocess jobs in the DB that are unprocessed (i.e. not associated with entries in processes table)')
 
     # Retire PARSER
     retire_parser = subparser.add_parser(
@@ -347,9 +354,9 @@ else:
     submit_parser = subparser.add_parser(
         'submit',
         help="Submit/ingest job into database",
-        description="Submit accepts job directories and updates the database configured with \
-            directories given.  When run with -n submit will not touch the database and displays the commands leading \
-                up to submission.")
+        description="Submit accepts job directories and updates the database configured with "
+        "directories given.  When run with -n submit will not touch the database and displays the commands leading "
+        "up to submission.")
     submit_parser.add_argument(
         'epmt_cmd_args',
         nargs='*',
@@ -375,12 +382,12 @@ else:
         '--drop',
         action='store_true',
         help="Drop all tables/data and recreate before submission")
-    optimal_cpus = suggested_cpu_count_for_submit()
+    OPTIMAL_CPUS = suggested_cpu_count_for_submit()
     submit_parser.add_argument(
         '-p', '--num-cpus',
-        type=int, nargs='?', default=1, const=optimal_cpus,
-        help='Number of parallel processes to use for submission. '
-        'If this option is selected, but no value is specified, then the discovered value ({0}) will be used.'.format(optimal_cpus))
+        type=int, nargs='?', default=1, const=OPTIMAL_CPUS,
+        help='Number of parallel processes to use for submission. If specified with no value, then the '
+        f'discovered value ({OPTIMAL_CPUS}) will be used.')
 
     # DBSize PARSER
     dbsize_parser = subparser.add_parser(
@@ -421,7 +428,8 @@ else:
     list_parser.add_argument(
         'epmt_cmd_args',
         nargs='*', metavar="jobids",
-        help="Either keyword: jobs, unprocessed_jobs, unanalyzed_jobs, refmodels, procs/processes, thread_metrics, op_metrics, job_proc_tags or list job IDs to search for")
+        help="Either keyword: jobs, unprocessed_jobs, unanalyzed_jobs, refmodels, procs/processes, "
+        "thread_metrics, op_metrics, job_proc_tags or list job IDs to search for")
 
     # Notebook PARSER
     notebook_parser = subparser.add_parser(
@@ -458,13 +466,13 @@ else:
     help_parser.add_argument(
         'api',
         nargs='*',
-        help="Display help on one or more API functions. If none given then an index of available API functions will be printed")
+        help="Display help on API functions. If none given then an index of available API functions will be printed")
 
     # Print help without dump config
     if len(argv) == 1:
         parser.epilog = ''
         parser.print_help()
-        exit(1)
+        sysexit(1)
 
     args = parser.parse_args()
 
@@ -475,12 +483,12 @@ else:
         else:
             # skip the first api string in list and pass the rest (function names) to the function
             epmt_help_api(args.api[1:])
-        exit(0)
+        sysexit(0)
 
     # Print help if
     if args.command is None:
         parser.print_help()
-        exit(0)
+        sysexit(0)
 
     # in the entry point, settings, logging, etc all gets setup there.
     retval = epmt_entrypoint(args)
@@ -504,4 +512,4 @@ else:
     #     # except:
     #     #     pass
 
-    exit(retval)
+    sysexit(retval)
