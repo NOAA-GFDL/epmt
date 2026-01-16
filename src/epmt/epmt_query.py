@@ -2485,7 +2485,7 @@ def analyze_comparable_jobs(jobids, check_comparable=True, keys=('exp_name', 'ex
         # Can we run a detect_outlier_jobs on the exisiting job set?
         if len(jobids) < 4:
             logger.warning(
-                '%d -- No trained model found, and too few jobs for outlier detection (need at least 4)', jobids)
+                '%s -- No trained model found, and too few jobs for outlier detection (need at least 4)', jobids)
         else:
             d = detect_outlier_jobs(jobids)[1]
             # make the results JSON serializable (sets aren't unfortunately)
@@ -3013,6 +3013,8 @@ def get_features(jobs):
     return sorted(all_cols - set(settings.outlier_features_blacklist))
 
 
+
+
 @db_session
 def is_job_post_processed(job):
     '''
@@ -3069,7 +3071,7 @@ def get_job_staging_ids(j):
     return j.info_dict.get('procs_staging_ids', ())
 
 
-@db_session
+#@db_session
 def post_process_jobs(jobs, check=True):
     '''
     Post-process a collection of jobs::Jobs

@@ -41,6 +41,11 @@ def db_session(func):
         session = thr_data.session
         if hasattr(thr_data, 'nestlevel'):
             thr_data.nestlevel += 1
+            # warning for deep nesting
+            if thr_data.nestlevel > 3:
+                logger.warning(
+                    f"Deep session nesting detected (level={thr_data. nestlevel}) "
+                    f"in {func.__module__}.{func.__name__}" )
         else:
             thr_data.nestlevel = 1
         completed = False
