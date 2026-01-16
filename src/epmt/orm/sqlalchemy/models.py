@@ -2,7 +2,7 @@
 Data models for defining an ORM
 WARNING be careful when editing things in this file directly if you've already set up your DB.
 if you have to edit this after setting up the DB, you'll need to manage a migration via alembic
-see the migrations guide for more information. long story short, you'll need to write a 
+see the migrations guide for more information. long story short, you'll need to write a
 migration script and then run 'alembic upgrade head'
 """
 
@@ -20,8 +20,16 @@ if 'postgres' in settings.db_params.get('url', ''):
 
 # Control what gets exported when using "from .models import *"
 __all__ = [
-    'CommonMeta', 'User', 'Host', 'ReferenceModel', 'Job', 'UnprocessedJob', 'Process',
-    'refmodel_job_associations_table', 'host_job_associations_table', 'ancestor_descendant_associations_table'
+    'CommonMeta',
+    'User',
+    'Host',
+    'ReferenceModel',
+    'Job',
+    'UnprocessedJob',
+    'Process',
+    'refmodel_job_associations_table',
+    'host_job_associations_table',
+    'ancestor_descendant_associations_table',
 ]
 
 
@@ -83,9 +91,11 @@ class User(with_metaclass(CommonMeta, Base)):
                              back_populates='user')
 
     # representation
-    @db_session
     def __repr__(self):
-        return "User['%s']" % (self.name)
+        try:
+            return "User['%s']" % (self.name)
+        except:
+            return "User[<detached>]"
 
 
 class Host(with_metaclass(CommonMeta, Base)):
@@ -108,9 +118,11 @@ class Host(with_metaclass(CommonMeta, Base)):
                         secondary=host_job_associations_table)
 
     # representation
-    @db_session
     def __repr__(self):
-        return "Host['%s']" % (self.name)
+        try:
+            return "Host['%s']" % (self.name)
+        except:
+            return "Host[<detached>]"
 
 
 class ReferenceModel(with_metaclass(CommonMeta, Base)):
@@ -134,16 +146,18 @@ class ReferenceModel(with_metaclass(CommonMeta, Base)):
     name = Column(String,
                   index=True,
                   unique=True)
-    
+
     # relationships
     jobs = relationship('Job',
                         back_populates='ref_models',
                         secondary=refmodel_job_associations_table)
 
     # representation
-    @db_session
     def __repr__(self):
-        return "ReferenceModel[%d]" % (self.id)
+        try:
+            return "ReferenceModel['%s']" % (self.id)
+        except:
+            return "ReferenceModel[<detached>]"
 
 
 class Job(with_metaclass(CommonMeta, Base)):
@@ -184,7 +198,7 @@ class Job(with_metaclass(CommonMeta, Base)):
     tags = Column(JSON,
                   index=True)
     cpu_time = Column(Float) # exclusive cpu time
-    
+
     # relationships
     user = relationship('User',
                         back_populates="jobs")
@@ -199,9 +213,11 @@ class Job(with_metaclass(CommonMeta, Base)):
                               secondary=refmodel_job_associations_table)
 
     # representation
-    @db_session
     def __repr__(self):
-        return "Job['%s']" % (self.jobid)
+        try:
+            return "Job['%s']" % (self.jobid)
+        except:
+            return "Job[<detached>]"
 
 
 class UnprocessedJob(with_metaclass(CommonMeta, Base)):
@@ -222,7 +238,10 @@ class UnprocessedJob(with_metaclass(CommonMeta, Base)):
 
     # representation
     def __repr__(self):
-        return "UnprocessedJob['%s']" % (self.jobid)
+        try:
+            return "UnprocessedJob['%s']" % (self.jobid)
+        except:
+            return "UnprocessedJob[<detached>]"
 
 
 class Process(with_metaclass(CommonMeta, Base)):
@@ -290,12 +309,9 @@ class Process(with_metaclass(CommonMeta, Base)):
                              secondaryjoin=id == ancestor_descendant_associations_table.c.ancestor)
 
     # representation
-    @db_session
     def __repr__(self):
-        return "Process[%d]" % (self.id)
+        try:
+            return "Process[%d]" % (self.id)
+        except:
+            return "Process[<detached>]"
 
-# from sqlalchemy import event
-# @event.listens_for(Table, "column_reflect")
-# def column_reflect(inspector, table, column_info):
-#     # set column.key = "attr_<lower_case_name>"
-#     column_info['key'] = column_info['name']
