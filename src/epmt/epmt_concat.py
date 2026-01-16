@@ -21,12 +21,15 @@
 # from __future__ import print_function
 from __future__ import unicode_literals
 from epmt.epmtlib import epmt_logging_init, logfn
+
 from sys import exit
 from re import findall, search
 from os import path, remove, makedirs
 from shutil import copyfile
 from glob import glob
+
 from logging import getLogger
+
 logger = getLogger('epmt_concat')  # you can use other name
 
 
