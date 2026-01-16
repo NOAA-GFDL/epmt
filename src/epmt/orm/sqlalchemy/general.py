@@ -1,5 +1,5 @@
 """
-a set of functions for managing/working with an ORM defined for SQLAlchemy 
+a set of functions for managing/working with an ORM defined for SQLAlchemy
 """
 from __future__ import print_function
 
@@ -70,8 +70,10 @@ def db_session(func):
         return retval
     return wrapper
 
-# This is a low-level function, which is meant for internal use only
 def _connect_engine():
+    '''
+    This is a low-level function, which is meant for internal use only.
+    '''
     global engine
     if engine is None:
         try:
@@ -164,7 +166,11 @@ def generate_schema_from_models():
 # or
 # orm_get(User, name='John.Doe')
 def orm_get(model, pk=None, **kwargs):
-    return Session.query(model).get(pk) if (pk is not None) else Session.query(model).filter_by(**kwargs).one_or_none()
+    if pk is not None:
+        return Session.query(model).get(pk)
+    else:
+        return Session.query(model).filter_by(**kwargs).one_or_none()
+    #return Session.query(model).get(pk) if (pk is not None) else Session.query(model).filter_by(**kwargs).one_or_none()
 
 # def orm_get_or_create(model, **kwargs):
 #     o = Session.query(model).with_for_update(of=model).filter_by(**kwargs).one()
@@ -199,43 +205,52 @@ def orm_delete(o):
 
 
 def orm_delete_jobs(jobs, use_orm=False):
-    if not use_orm:
-        stmts = []
-        for j in jobs:
-            jobid = j.jobid
-            # is the job processed in staging? If so, we need to
-            # make sure the process rows corresponding to the job
-            # in the staging table are deleted as part of this transaction
-            if not j.info_dict.get('procs_in_process_table', 1):
-                logger.warning('process job is in staging- removing process rows corresponding to the job in the staging table')
-                (first_proc_id, last_proc_id) = j.info_dict['procs_staging_ids']
-                logger.warning(f'first and last proc_ids pulled are: {first_proc_id} and {last_proc_id}')
-                stmts.append( "DELETE FROM processes_staging WHERE id BETWEEN {} AND {};\n".format( first_proc_id,
-                                                                                                    last_proc_id  ) )
-            else:
-                logger.debug('process job is NOT in staging table- no processes_staging targets will be added to query')
-            stmts.append( 'DELETE FROM ancestor_descendant_associations WHERE EXISTS (SELECT ad.* from ancestor_descendant_associations ad INNER JOIN processes p ON (ad.ancestor = p.id OR ad.descendant = p.id) WHERE p.jobid = \'{0}\')'.format(jobid))
-            stmts.append( 'DELETE FROM host_job_associations WHERE host_job_associations.jobid = \'{0}\''.format(jobid) )
-            stmts.append( 'DELETE FROM refmodel_job_associations WHERE refmodel_job_associations.jobid = \'{0}\''.format(jobid) )
-            stmts.append( 'DELETE FROM processes WHERE processes.jobid = \'{0}\''.format(jobid) )
-            stmts.append( 'DELETE FROM jobs WHERE jobs.jobid = \'{0}\''.format(jobid) )
-        try:
-            orm_raw_sql(stmts, commit=True)
-            return True
-        except Exception as e:
-            # postgres permission denied for R/O accounts
-            if 'permission denied' in str(e):
-                logger.error('You do not have sufficient privileges to delete jobs')
-                return False
-            logger.error("Could not execute delete SQL: {0}".format(str(e)))
-            return False #REMOVE ME
 
-    # do a slow delete using ORM
-    logger.warning("Fast-path delete did not work. Doing a slow delete using ORM..")
+    if use_orm:
+        # do a slow delete using ORM
+        logger.warning("Doing a slow delete using ORM..")
+        for j in jobs:
+            Session.delete(j)
+        Session.commit()
+        return True
+
+    # otherwise, do this
+    stmts = []
     for j in jobs:
-        Session.delete(j)
-    Session.commit()
-    return True
+        jobid = j.jobid
+        # is the job processed in staging? If so, we need to
+        # make sure the process rows corresponding to the job
+        # in the staging table are deleted as part of this transaction
+        if not j.info_dict.get('procs_in_process_table', 1):
+            logger.warning(
+                'process job is in staging- removing process rows corresponding to the job in the staging table')
+            (first_proc_id, last_proc_id) = j.info_dict['procs_staging_ids']
+            logger.warning(f'first and last proc_ids pulled are: {first_proc_id} and {last_proc_id}')
+            stmts.append( "DELETE FROM processes_staging WHERE id BETWEEN {} AND {};\n".format( first_proc_id,
+                                                                                                last_proc_id  ) )
+        else:
+            logger.debug('process job is NOT in staging table- no processes_staging targets will be added to query')
+        stmts.append( 'DELETE FROM ancestor_descendant_associations WHERE EXISTS (' +
+                      'SELECT ad.* from ancestor_descendant_associations ad INNER JOIN ' +
+                      'processes p ON (ad.ancestor = p.id OR ad.descendant = p.id) ' +
+                      'WHERE p.jobid = \'{0}\')'.format(jobid) )
+        stmts.append( 'DELETE FROM host_job_associations ' +
+                      'WHERE host_job_associations.jobid = \'{0}\''.format(jobid) )
+        stmts.append( 'DELETE FROM refmodel_job_associations '+
+                      'WHERE refmodel_job_associations.jobid = \'{0}\''.format(jobid) )
+        stmts.append( 'DELETE FROM processes WHERE processes.jobid = \'{0}\''.format(jobid) )
+        stmts.append( 'DELETE FROM jobs WHERE jobs.jobid = \'{0}\''.format(jobid) )
+
+    # now try executing the statement we put together above
+    try:
+        orm_raw_sql(stmts, commit=True)
+        return True
+    except Exception as e:
+        # postgres permission denied for R/O accounts TODO
+        if 'permission denied' in str(e):
+            logger.error('You do not have sufficient privileges to delete jobs')
+        logger.error("Could not execute delete SQL: {0}".format(str(e)))
+        return False
 
 
 def orm_delete_refmodels(ref_ids):
@@ -244,9 +259,7 @@ def orm_delete_refmodels(ref_ids):
     n = ref_models.count()
     if n < len(ref_ids):
         logger.warning(
-            "Request for deleting {0} model(s), but only found {1} models from your selection to delete".format(
-                len(ref_ids),
-                n))
+            "Request for deleting %d model(s), but only found %d models from your selection to delete", len(ref_ids), n)
     if n > 0:
         try:
             for r in ref_models:
@@ -272,11 +285,11 @@ def orm_add_to_collection(collection, item):
 
 
 def orm_sum_attribute(collection, attribute):
-    return sum([getattr(c, attribute) for c in collection])
+    return sum( [getattr(c, attribute) for c in collection] )
 
 
 def orm_is_query(obj):
-    return (isinstance(obj, Query))
+    return isinstance(obj, Query)
 
 
 def orm_procs_col(procs):
@@ -288,13 +301,17 @@ def orm_procs_col(procs):
     from pandas import DataFrame
     from .models import Process
     from epmt.epmtlib import isString
+
     if orm_is_query(procs):
         return procs
-    if ((not isinstance(procs, DataFrame)) and not (procs)):
+
+    if not ( isinstance(procs, DataFrame) or procs ):
         # empty list => select all processes
         return Session.query(Process)
+
     if isinstance(procs, DataFrame):
         procs = [int(pk) for pk in list(procs['id'])]
+
     if isString(procs):
         if ',' in procs:
             # procs a string of comma-separated ids
@@ -302,6 +319,7 @@ def orm_procs_col(procs):
         else:
             # procs is a single id, but specified as a string
             procs = [int(procs)]
+
     if isinstance(procs, int):
         # a single primary key
         procs = [procs]
@@ -317,6 +335,7 @@ def orm_procs_col(procs):
         procs = [p.id if isinstance(p, Process) else p for p in procs]
         # and now convert to a pony Query object so the user can chain
         procs = Session.query(Process).filter(Process.id.in_(procs))
+
     return procs
 
 
@@ -329,12 +348,16 @@ def orm_jobs_col(jobs):
     from pandas import DataFrame
     from epmt.epmtlib import isString
     from .models import Job
+
     if orm_is_query(jobs):
         return jobs
-    if ((not isinstance(jobs, DataFrame)) and not (jobs)):
+
+    if not ( isinstance(jobs, DataFrame) or jobs ):
         return Session.query(Job)
+
     if isinstance(jobs, DataFrame):
         jobs = list(jobs['jobid'])
+
     if isString(jobs):
         if ',' in jobs:
             # jobs a string of comma-separated job ids
@@ -342,9 +365,11 @@ def orm_jobs_col(jobs):
         else:
             # job is a single jobid
             jobs = Session.query(Job).filter_by(jobid=jobs)
+
     if isinstance(jobs, Job):
         # is it a singular job?
         return Session.query(Job).filter(Job.jobid == jobs.jobid)
+
     if type(jobs) in [list, set]:
         # jobs is a list of Job objects or a list of jobids or a list of dicts
         # so first convert the dict list to a jobid list
@@ -352,17 +377,19 @@ def orm_jobs_col(jobs):
         jobs = [j.jobid if isinstance(j, Job) else j for j in jobs]
         # and now convert to a Query object so the user can chain
         jobs = Session.query(Job).filter(Job.jobid.in_(jobs))
+
     return jobs
 
 
 def orm_to_dict(obj, **kwargs):
     from .models import Job, Process, Host, ReferenceModel
     from epmt.epmtlib import isString
+
     # we need to make sure jobs are post-processed first and foremost
     # This step has to be done before we get a dict from the object
     if isinstance(obj, Job):
         from epmt.epmt_query import is_job_post_processed
-        if not (is_job_post_processed(obj.jobid)):
+        if not is_job_post_processed(obj.jobid):
             from epmt.epmt_job import post_process_job
             trigger_pp = kwargs.get('trigger_post_process', True)
             if trigger_pp:
@@ -375,33 +402,42 @@ def orm_to_dict(obj, **kwargs):
     for k in excludes:
         if k in d:
             del d[k]
+
     if '_sa_instance_state' in d:
         del d['_sa_instance_state']
+
     if isinstance(obj, ReferenceModel):
         if kwargs.get('with_collections'):
             d['jobs'] = [j.jobid if isinstance(j, Job) else j for j in obj.jobs]
         else:
             del d['jobs']
+
     if isinstance(obj, Job):
         if 'processes' in d:
             del d['processes']
+
     if isinstance(obj, Process):
         d['job'] = obj.jobid
         d['jobid'] = obj.jobid
         del d['parent_id']
+
         if 'host_id' in d:
             d['host'] = d['host_id']
             del d['host_id']
+
         d['parent'] = obj.parent.id if obj.parent else None
+
     if 'hosts' in d:
         if kwargs.get('with_collections'):
             d['hosts'] = [h.name if isinstance(h, Host) else h for h in obj.hosts]
         else:
             del d['hosts']
+
     if 'user_id' in d:
         # d['user'] = Session.query(User).get(d['user_id']).name
         d['user'] = d['user_id']
         del d['user_id']
+
     return d
 
 
@@ -409,8 +445,10 @@ def orm_get_procs(jobs, tags, fltr, order, limit, offset, when, hosts, exact_tag
     from .models import Process, Host
     from epmt.epmtlib import tags_list, isString
     from datetime import datetime
+
     if columns is None:
         columns = [Process]
+
     if jobs:
         jobs = orm_jobs_col(jobs)
         jobs = [j.jobid for j in jobs]
@@ -419,7 +457,8 @@ def orm_get_procs(jobs, tags, fltr, order, limit, offset, when, hosts, exact_tag
         # no jobs set, so expand the scope to all Process objects
         qs = Session.query(*columns)
 
-    if not (fltr is None):
+    #if not (fltr is None):
+    if fltr is not  None:
         if isString(fltr):
             # sql query, so use the text function
             qs = qs.filter(text(fltr))
@@ -450,7 +489,7 @@ def orm_get_procs(jobs, tags, fltr, order, limit, offset, when, hosts, exact_tag
     if hosts:
         qs = qs.join(Host, Process.host).filter(Host.name.in_(hosts))
 
-    if not (order is None):
+    if order is not None:
         qs = qs.order_by(order)
 
     # finally set limits on the number of jobs returned
@@ -520,7 +559,7 @@ def orm_get_jobs(qs, tags, fltr, order, limit, offset, when, before, after,
     if processed is not None:
         qs = _attribute_filter(qs, 'info_dict', {'post_processed': 1 if processed else 0}, model=Job, conv_to_str=True)
 
-    if not (order is None):
+    if order is not None:
         qs = qs.order_by(order)
 
     # finally set limits on the number of jobs returned
@@ -535,18 +574,19 @@ def orm_get_jobs(qs, tags, fltr, order, limit, offset, when, before, after,
 def _tag_filter(qs, tag, exact_match, model=None):
     return _attribute_filter(qs, 'tags', tag, exact_match, model)
 
-# common low-level function to handle dict attribute filters
-
-
 def _attribute_filter(qs, attr, target, exact_match=False, model=None, conv_to_str=True):
+    '''
+    common low-level function to handle dict attribute filters
+    '''
     from .models import Job
+
     using_sqlite = 'sqlite' in settings.db_params.get('url', '')
     using_postgres = 'postgres' in settings.db_params.get('url', '')
     if not (using_sqlite or using_postgres):
         raise NotImplementedError("sqlalchemy JSON attribute filtering only works for SQLite and Postgresql at present")
-    if (model is None):
+    if model is None:
         model = Job
-    if exact_match or (target == {}):
+    if exact_match or target == {}:
         qs = qs.filter(getattr(model, attr) == target)
     else:
         # we consider a match if the model attribute is a superset
@@ -596,16 +636,16 @@ def orm_get_refmodels(name=None, tag={}, fltr=None, limit=0, order=None, before=
         qs = _tag_filter(qs, tag, exact_tag_only, ReferenceModel)
 
     # if fltr is a lambda function or a string apply it
-    if not (fltr is None):
+    if fltr is not None:
         qs = qs.filter(fltr)
 
-    if not (before is None):
+    if before is not None:
         qs = qs.filter(ReferenceModel.created_at <= before)
 
-    if not (after is None):
+    if after is not None:
         qs = qs.filter(ReferenceModel.created_at >= after)
 
-    if not (order is None):
+    if order is not None:
         qs = qs.order_by(order)
 
     # finally set limits on the number of processes returned
@@ -643,22 +683,23 @@ def orm_dump_schema(show_attributes=True):
 ### end API ###
 
 
-# utility function to get Mapper from table
 def get_mapper(tbl):
+    '''
+     utility function to get Mapper from table
+    '''
     mappers = [
         mapper for mapper in mapperlib._mapper_registry
         if tbl in mapper.tables
     ]
     if len(mappers) > 1:
         raise ValueError(
-            "Multiple mappers found for table '%s'." % tbl.name
-        )
-    elif not mappers:
+            "Multiple mappers found for table '%s'." % tbl.name )
+
+    if not mappers:
         raise ValueError(
-            "Could not get mapper for table '%s'." % tbl.name
-        )
-    else:
-        return mappers[0]
+            "Could not get mapper for table '%s'." % tbl.name )
+
+    return mappers[0]
 
 
 # This function is vulnerable to injection attacks. It's expected that
@@ -669,7 +710,13 @@ def orm_raw_sql(sql, commit=False):
     # only log the first 100 or so of long queries
     if len(sql) > settings.max_log_statement_length:
         logger.debug(f'Executing very long (length={len(sql)} SQL statement(s): ... ')
-        logger.debug(''.join(map(str, sql[:settings.max_log_statement_length])))
+        logger.debug(
+            ''.join(
+                map(str,
+                    sql[:settings.max_log_statement_length]
+                )
+            )
+        )
     else:
         logger.debug('Executing: {0}'.format((sql)))
 
@@ -695,12 +742,12 @@ def set_sql_debug(discard):
     print('Try changing the value of the "echo" key in the settings.py:db_params')
     return False
 
-# This decorator will change the directory to the directory
-# containing alembic.ini (install dir) and then restore
-# the working directory on end of function
-
 
 def chdir_for_alembic_and_restore_cwd(function):
+    '''
+    This decorator will change the directory to the directory containing alembic.ini (install dir)
+    and then restore the working directory on end of function
+    '''
     def decorator(*args, **kwargs):
         cwd = getcwd()
         # change dir to install root
@@ -714,11 +761,11 @@ def chdir_for_alembic_and_restore_cwd(function):
         # try:
         #     chdir(settings.install_prefix + "/../../epmt")
         # except FileNotFoundError:
-#     #      logger.warning(settings.install_prefix + "/../../epmt")
+        #     #      logger.warning(settings.install_prefix + "/../../epmt")
         #     try:
         #         chdir(settings.install_prefix + "/../epmt-install/epmt")
         #     except FileNotFoundError:
-#     #          logger.warning(settings.install_prefix + "/../epmt-install/epmt")
+        #     #          logger.warning(settings.install_prefix + "/../epmt-install/epmt")
         #         pass
         from epmt.epmtlib import get_install_root
         install_dir = get_install_root()
@@ -741,14 +788,12 @@ def check_and_apply_migrations():
     alembic_cfg = config.Config('alembic.ini')
     script_ = script.ScriptDirectory.from_config(alembic_cfg)
     epmt_schema_head = script_.get_current_head()
-
     if database_schema_version != epmt_schema_head:
         logger.debug('database schema version: {}'.format(database_schema_version))
         logger.debug('EPMT schema HEAD: {}'.format(epmt_schema_head))
         logger.info('Database needs to be upgraded..')
         return migrate_db()
-    else:
-        logger.info('database schema up-to-date (version {})'.format(epmt_schema_head))
+    logger.info('database schema up-to-date (version {})'.format(epmt_schema_head))
     return True
 
 
@@ -785,7 +830,7 @@ def migrate_db():
                 updated_version, epmt_schema_head))
     else:
         logger.info('Database successfully migrated to: {}'.format(epmt_schema_head))
-    return (epmt_schema_head == updated_version)
+    return epmt_schema_head == updated_version
 
 
 @chdir_for_alembic_and_restore_cwd
