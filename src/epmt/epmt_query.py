@@ -1893,6 +1893,7 @@ def delete_jobs(jobs, force=False, before=None, after=None, warn=True, remove_mo
             these options.
 
     warn : boolean, optional
+            THIS ARGUMENT IS DEPRECATED
             This option is only useful in daemon mode where we want to
             disable unnecessary copious warnings in logs.
             Default True. When disabled, no warnings will be given about attempting
@@ -1927,27 +1928,33 @@ def delete_jobs(jobs, force=False, before=None, after=None, warn=True, remove_mo
         >>> delete_jobs([], force=True, after=-7)
 
     """
-
-    logger.debug("Jobs sent in" + str(jobs))
+    if not warn:
+        logger.warning('verbosity is controlled elsewhere, this argument is now impotent as evidenced by this message.')
+    logger.debug("Jobs sent in %s", str(jobs) )
     jobs = orm_jobs_col(jobs)
 
-    if any([before is not None, after is not None,
-            limit is not None, offset > 0]):
+    if any( [ before is not None,
+              after is not None,
+              limit is not None,
+              offset > 0, ] ):
         logger.info('(delete_jobs) offset = {}'.format(offset))
-        jobs = get_jobs(jobs, before=before, after=after, limit=limit,
-                        offset=offset, fmt='orm',
-                        trigger_post_process=(not skip_unprocessed))
+        jobs = get_jobs( jobs,
+                         before=before,
+                         after=after,
+                         limit=limit,
+                         offset=offset,
+                         fmt='orm',
+                         trigger_post_process=not skip_unprocessed )
 
     num_jobs = jobs.count()
     init_num_jobs = num_jobs
     if dry_run:
-        logger.info("(delete_jobs) # of jobs in collection: " + str(num_jobs))
+        logger.info("(delete_jobs) # of jobs in collection: %d", num_jobs)
     else:
-        logger.debug("(delete_jobs) # of jobs in collection: " + str(num_jobs))
+        logger.debug("(delete_jobs) # of jobs in collection: %d", num_jobs)
 
     if num_jobs == 0:
-        if warn:
-            logger.warning('No jobs matched; none deleted')
+        logger.warning('No jobs matched; none deleted')
         return 0
     if num_jobs > 1 and not force:
         logger.warning('set force=True when calling this function if deleting more than one job')
@@ -1959,12 +1966,17 @@ def delete_jobs(jobs, force=False, before=None, after=None, warn=True, remove_mo
     jobs_to_delete = []
     for j in jobs:
         logger.debug("Job to delete: %s", j.jobid)
-        if j.ref_models:  # if a job has a model, it's processed.
+        if j.ref_models:
+            # if a job has a model, it's processed.
+            #logger.debug('job has ref model, will not delete if sparing model jobs')
             jobs_with_models[j.jobid] = [r.id for r in j.ref_models]
-        # no model? then if skip_unprocessed, check if processed.
-        elif (skip_unprocessed and (not is_job_post_processed(j.jobid))):
+        elif skip_unprocessed and (not is_job_post_processed(j.jobid)):
+            # no model? then if skip_unprocessed, check if processed.
+            #logger.debug('skipping unprocessed job')
             jobs_unprocessed.append(j.jobid)
-        else:  # no model? processed and/or deleting unprocessed? We're gonna delete it.
+        else:
+            # no model? processed and/or deleting unprocessed? We're gonna delete it.
+            #logger.debug('this job should be deleted')
             jobs_to_delete.append(j.jobid)
 
     num_jobs_with_models_unremoved = len(jobs_with_models)
@@ -1978,10 +1990,10 @@ def delete_jobs(jobs, force=False, before=None, after=None, warn=True, remove_mo
             logger.info("Deleting dependent reference models: {}".format(models_to_remove))
             delete_refmodels(*models_to_remove)
         else:
-            if warn:
-                logger.warning(
-                    'The following jobs have models (their IDs have been mentioned in square brackets) associated with them and these jobs will not be deleted:\n\t%s\n',
-                    str(jobs_with_models))
+            logger.warning(
+                'The following jobs have models (their IDs have been mentioned in square brackets) ' + \
+                'associated with them and these jobs will not be deleted:\n\t%s\n',
+                str(jobs_with_models) )
 
     if not jobs_to_delete:
         logger.info('No jobs match criteria to delete. Bailing..')
@@ -2242,7 +2254,7 @@ def get_job_status(jobid):
       - exit_reason
       - exit_status
     '''
-    j = orm_get(Job, jobid) if (isinstance(jobid, str)) else jobid
+    j = orm_get(Job, jobid) if isinstance(jobid, str) else jobid
     return j.info_dict.get('status', {})
 
 
@@ -2473,7 +2485,7 @@ def analyze_comparable_jobs(jobids, check_comparable=True, keys=('exp_name', 'ex
         # Can we run a detect_outlier_jobs on the exisiting job set?
         if len(jobids) < 4:
             logger.warning(
-                '{0} -- No trained model found, and too few jobs for outlier detection (need at least 4)'.format(jobids))
+                '%d -- No trained model found, and too few jobs for outlier detection (need at least 4)', jobids)
         else:
             d = detect_outlier_jobs(jobids)[1]
             # make the results JSON serializable (sets aren't unfortunately)
@@ -2625,21 +2637,27 @@ matching_keys : list of strings, optional
     Returns
     -------
     A list of lists, where each sub-list is of the form:
-    [(val1, val2,..), { j1, j2,..}]
-    where val1, val2.. are the values of the matching keys that jobs
-    j1, j2, .. share.
+        [(val1, val2,..), { j1, j2,..}]
+
+    where val1, val2.. are the values of the matching keys that jobs j1, j2, .. share.
 
     Examples
     --------
     For example, suppose the following jobs have the following tags:
         685000 -> {'exp_name': 'ESM4_historical_D151', 'exp_component': 'ocean_annual_rho2_1x1deg',
-'exp_time': '18840101', 'atm_res': 'c96l49', 'ocn_res': '0.5l75', 'script_name': 'ESM4_historical_D151_oce
-an_annual_rho2_1x1deg_18840101'}
-        685003 -> {'exp_name': 'ESM4_historical_D151', 'exp_component': 'ocean_cobalt_fdet_100', 'exp_time': '18840101', 'atm_res': 'c96l49', 'ocn_res': '0.5l75', 'script_name': 'ESM4_historical_D151_ocean_cobalt_fdet_100_18840101'}
-        And 625151, 627907, 633114, 629322, 685001  share the tag:
-        {u'ocn_res': u'0.5l75', u'atm_res': u'c96l49', u'exp_component': u'ocean_annual_z_1x1deg', u'exp_name': u'ESM4_historical_D151'}`. The difference is only that they have different values for `('exp_time', 'script_name')
+                   'exp_time': '18840101', 'atm_res': 'c96l49', 'ocn_res': '0.5l75', 
+                   'script_name': 'ESM4_historical_D151_ocean_annual_rho2_1x1deg_18840101'}
+        685003 -> {'exp_name': 'ESM4_historical_D151', 'exp_component': 'ocean_cobalt_fdet_100', 'exp_time': '18840101',
+                   'atm_res': 'c96l49', 'ocn_res': '0.5l75', 
+                   'script_name': 'ESM4_historical_D151_ocean_cobalt_fdet_100_18840101'}
 
-    Then calling comparable_job_partitions(['625151', '627907', '633114', '629322', '685001', '685000', '685003'])
+    And 625151, 627907, 633114, 629322, 685001  share the tag:
+        {u'ocn_res': u'0.5l75', u'atm_res': u'c96l49', u'exp_component': u'ocean_annual_z_1x1deg', 
+         u'exp_name': u'ESM4_historical_D151'}`
+
+    The difference is only that they have different values for `('exp_time', 'script_name'). Then calling:
+        comparable_job_partitions(['625151', '627907', '633114', '629322', '685001', '685000', '685003'])
+
     returns:
         [
           (('ESM4_historical_D151', 'ocean_annual_z_1x1deg'), { '625151', '627907', '633114', '629322', '685001'} ),
@@ -2921,7 +2939,9 @@ added_fetaures: list of strings
     Examples
     --------
 
-    >>> jobs_df = eq.get_jobs(['625151', '627907', '629322', '633114', '675992', '680163', '685001', '691209', '693129'], fmt='pandas')
+    >>> jobs_df = eq.get_jobs(
+           jobs = ['625151', '627907', '629322', '633114', '675992', '680163', '685001', '691209', '693129'], 
+           fmt='pandas')
     >>> new_df, added_features = eq.add_features_df(jobs_df)
     >>> added_features
     ['procs_histogram', 'procs_set']
@@ -2983,8 +3003,10 @@ def get_features(jobs):
     --------
 
      >>> eq.get_features(jobs)
-     ['PERF_COUNT_SW_CPU_CLOCK', 'cancelled_write_bytes', 'cpu_time', 'delayacct_blkio_time', 'duration',  'exitcode', 'guest_time', 'inblock', 'invol_ctxsw', 'majflt', 'minflt', 'num_procs', 'num_threads', 'outblock', 'processor', 'rchar', 'rdtsc_duration', 'read_bytes', 'rssmax', 'submit', 'syscr', 'syscw', 'systemtime', 'time_oncpu', 'time_waiting', 'timeslices', 'updated_at', 'usertime', 'vol_ctxsw', 'wchar', 'write_bytes']
-
+     [ 'PERF_COUNT_SW_CPU_CLOCK', 'cancelled_write_bytes', 'cpu_time', 'delayacct_blkio_time', 'duration',  'exitcode',
+       'guest_time', 'inblock', 'invol_ctxsw', 'majflt', 'minflt', 'num_procs', 'num_threads', 'outblock', 'processor',
+       'rchar', 'rdtsc_duration', 'read_bytes', 'rssmax', 'submit', 'syscr', 'syscw', 'systemtime', 'time_oncpu', 
+       'time_waiting', 'timeslices', 'updated_at', 'usertime', 'vol_ctxsw', 'wchar', 'write_bytes' ]
     '''
     df = get_jobs(jobs, fmt='pandas')
     all_cols = set(df.columns.values)
@@ -3016,7 +3038,7 @@ def is_job_post_processed(job):
     # only processed jobs have this set
     info_dict = job.info_dict or {}
     retval = info_dict.get('post_processed', 0) > 0
-    # logger.debug("is_job_post_processed(%s): %s",job.jobid,retval)
+    logger.info("is_job_post_processed(%s): %s",job.jobid, retval)
     return retval
 
 
