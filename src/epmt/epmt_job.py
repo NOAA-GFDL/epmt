@@ -599,6 +599,15 @@ def mk_process_tree(j, all_procs=None, pid_map=None):
     logger.debug('  commit time : %2.5f sec', time.time() - _t3)
     return
 
+
+def _is_job_post_processed_internal(job):
+    """Internal version - caller must ensure session context."""
+    if isinstance(job, str):
+        job = Job[job]
+    info_dict = job.info_dict or {}
+    return info_dict.get('post_processed', 0) > 0
+
+@db_session
 @timing
 def post_process_job( j,
                       all_tags=None,
@@ -618,7 +627,8 @@ def post_process_job( j,
     else:
         jobid = j.jobid
     if not force:
-        if is_job_post_processed(j):
+        #if is_job_post_processed(j):
+        if _is_job_post_processed_internal(j):
             logger.warning('skipped processing jobid {0} as it has been already processed'.format(j.jobid))
             return False
 
