@@ -1,15 +1,10 @@
 .ONESHELL:
 
 # OS / python / SQLITE_VERSION
-#OS_TARGET=centos-7
 OS_TARGET=rocky-8
 
-#PYTHON_VERSION=3.9.16
-#PYTHON_VERSION=3.9.21
 PYTHON_VERSION=3.9.22
 
-#SQLITE_YEAR=2023
-#SQLITE_VERSION=3430100
 SQLITE_YEAR=2025
 SQLITE_VERSION=3490100
 
@@ -37,7 +32,7 @@ DOCKER_BUILD:=docker build -f
 
 # minimal-metrics src url for the epmt project- includes this repo, papiex, and epmt-dash (aka ui)
 MM_SRC_URL_BASE=https://gitlab.com/minimal-metrics-llc/epmt
-INL_SRC_URL_BASE=https://github.com/ilaflott
+NOAAGFDL_SRC_URL_BASE=https://github.com/noaa-gfdl
 
 # papiex details
 PAPIEX_VERSION?=2.3.15
@@ -49,7 +44,7 @@ PAPIEX_SRC_BRANCH=main
 #PAPIEX_SRC_TARBALL=papiex-epmt.tar.gz
 PAPIEX_SRC_TARBALL=$(PAPIEX_SRC_BRANCH).tar.gz
 #PAPIEX_SRC_URL=$(MM_SRC_URL_BASE)/papiex/-/archive/$(PAPIEX_SRC_BRANCH)/$(PAPIEX_SRC_TARBALL)
-PAPIEX_SRC_URL=$(INL_SRC_URL_BASE)/papiex/archive/$(PAPIEX_SRC_TARBALL)
+PAPIEX_SRC_URL=$(NOAAGFDL_SRC_URL_BASE)/papiex/archive/$(PAPIEX_SRC_TARBALL)
 PAPIEX_RELEASE=papiex-epmt-$(PAPIEX_VERSION)-$(OS_TARGET).tgz
 
 # epmt details
@@ -65,7 +60,7 @@ EPMT_INSTALL_PREFIX=$(EPMT_INSTALL_PATH)/epmt-$(EPMT_VERSION)/epmt-install
 EPMT_DASH_SRC_BRANCH=autopep8.poke
 #EPMT_DASH_SRC_TARBALL=epmt-dash-$(EPMT_DASH_SRC_BRANCH).tar.gz
 EPMT_DASH_SRC_TARBALL=$(EPMT_DASH_SRC_BRANCH).tar.gz
-EPMT_DASH_SRC_URL=$(INL_SRC_URL_BASE)/epmt-dash/archive/$(EPMT_DASH_SRC_TARBALL)
+EPMT_DASH_SRC_URL=$(NOAAGFDL_SRC_URL_BASE)/epmt-dash/archive/$(EPMT_DASH_SRC_TARBALL)
 #EPMT_DASH_SRC_TARBALL=epmt-dash.tar.gz
 #EPMT_DASH_SRC_BRANCH=multi_page
 #EPMT_DASH_SRC_URL=$(MM_SRC_URL_BASE)/epmt-dash/-/archive/$(EPMT_DASH_SRC_BRANCH)/$(EPMT_DASH_SRC_TARBALL)
@@ -253,8 +248,6 @@ $(EPMT_DASH_SRC): $(EPMT_DASH_SRC_TARBALL)
 	@echo   "EPMT_DASH_SRC_URL     = ${EPMT_DASH_SRC_URL}"
 	@echo
 	@echo
-#	@echo "cloning ${EPMT_DASH_SRC}"
-#	git clone https://github.com/ilaflott/epmt-dash $(EPMT_DASH_SRC)
 	echo "untarring ${EPMT_DASH_SRC_TARBALL}"; \
 	tar zxf $(EPMT_DASH_SRC_TARBALL); \
 	mv `tar ztf ${EPMT_DASH_SRC_TARBALL} | head -1` $(EPMT_DASH_SRC); \
