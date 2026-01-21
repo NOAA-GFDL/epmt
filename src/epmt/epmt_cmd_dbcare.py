@@ -100,7 +100,7 @@ def epmt_dbcare(retire_jobs = False, vacuum_tables = False, post_process = False
 
 
         # postprocess the unprocessed jobs
-        num_jobs_ppd=post_process_jobs(jobs=job_list)
+        num_jobs_ppd=len(post_process_jobs(jobs=job_list))
         if num_jobs_ppd > 0:
             logger.info('success, num_jobs_ppd = %s', num_jobs_ppd )
         else:
