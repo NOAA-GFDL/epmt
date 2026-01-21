@@ -16,7 +16,7 @@ except ImportError:
     DaemonContext = None
     pidfile = None
 
-logger = logging.getLogger(__name__)  # you can use other name
+logger = logging.getLogger(__name__)
 
 # DO NOT IMPORT ANYTHING FROM ANY EPMT FILES HERE
 # **** IT WILL BREAK WHEN THE DAEMON FORKS ****
@@ -37,17 +37,19 @@ SIG_COUNT = 0
 
 
 def is_daemon_running(pidf=PID_FILE):
-    """Check if daemon is running based on PID file."""
+    """
+    Check if daemon is running based on PID file.
+    """
     from epmt.epmtlib import check_pid
-    
+
     current_logger = logging.getLogger(is_daemon_running.__name__)
     current_logger.debug("Looking for file %s to fetch daemon pid", pidf)
     try:
         with open(pidf, 'r', encoding='utf-8') as f:
             pid = f.read().strip()
         current_logger.debug(f'Found daemon lockfile with PID({pid})')
-#    except IOError:
-#        return -1
+    #except IOError:
+    #    return -1
     except Exception as e:
         current_logger.debug(str(e))
         return False, -1
@@ -56,7 +58,7 @@ def is_daemon_running(pidf=PID_FILE):
         return False, -1
     stat, msg = check_pid(int(pid))
     if not stat:
-        #        current_logger.warning("PID %d for daemon doesn't seem alive: %s",int(pid),msg)
+        #current_logger.warning("PID %d for daemon doesn't seem alive: %s",int(pid),msg)
         current_logger.error("You should check PID %d and consider removing the stale lock file %s.",
                             int(pid), pidf)
         return False, -1
@@ -64,7 +66,9 @@ def is_daemon_running(pidf=PID_FILE):
 
 
 def start_daemon(foreground=False, pidf=PID_FILE, **daemon_args):
-    """Start the daemon process."""
+    """
+    Start the daemon process.
+    """
     current_logger = logging.getLogger(start_daemon.__name__)
     stat, pid = is_daemon_running(pidf)
     if stat:
@@ -72,6 +76,7 @@ def start_daemon(foreground=False, pidf=PID_FILE, **daemon_args):
             'Daemon may be still running at pid %d. If not, please remove the lock file %s and try again',
             pid, pidf)
         return -1
+
     # set up signal handlers
     # from signal import SIGHUP, SIGTERM, SIGQUIT, SIGINT, SIGUSR1, signal
     # for sig in [SIGHUP, SIGTERM, SIGQUIT, SIGINT, SIGUSR1]:
@@ -100,6 +105,7 @@ def start_daemon(foreground=False, pidf=PID_FILE, **daemon_args):
         except BaseException:
             logger.warning('could not get file descriptor for logging in daemon')
     context.signal_map = {}
+
     # set up signal handlers
     for sig in [SIGHUP, SIGTERM, SIGQUIT, SIGINT, SIGUSR1]:
         context.signal_map[sig] = signal_handler
@@ -110,6 +116,9 @@ def start_daemon(foreground=False, pidf=PID_FILE, **daemon_args):
 
 
 def stop_daemon(pidf=PID_FILE):
+    """
+    Stop the daemon process.
+    """
     logger = logging.getLogger(stop_daemon.__name__)
     stat, pid = is_daemon_running(pidf)
     if stat:
@@ -136,24 +145,28 @@ def stop_daemon(pidf=PID_FILE):
 
 
 def print_daemon_status(pidf=PID_FILE):
-    """Print status of daemon."""
+    """
+    Print status of daemon.
+    """
     current_logger = logging.getLogger(print_daemon_status.__name__)
     stat, pid = is_daemon_running(pidf)
     if not stat:
         print('EPMT daemon not running, start with "epmt daemon --start"')
         return -1
     print(f'EPMT daemon running PID {pid}. stop with "epmt daemon --stop"')
+
     return 0
 
-# if niters is set, then the daemon loop will end after 'niters' iterations
-# otherwise loop forever or until we get interrupted by a signal
 
-
+# set niters=1 to help with debugging
 def daemon_loop(context, niters=0, post_process=True, analyze=True, retire=False,
                 ingest=False, recursive=False, keep=False, move_away=True, verbose=0):
     '''
     Runs a daemon loop niters times, performing enabled actions
     such as post-processing, ingestion, etc.
+
+    if niters is set, then the daemon loop will end after 'niters' iterations
+    otherwise loop forever or until we get interrupted by a signal
 
          context: Python daemon context
           niters: Number of times to run the daemon loop, 0 = forever
@@ -170,7 +183,7 @@ def daemon_loop(context, niters=0, post_process=True, analyze=True, retire=False
                   on successful ingest the file should be retained or not.
                   By default, False; meaning the files will be removed on
                   successful submission to the database.
-            move_away: Only meaningful when ingest is set. It indicates whether
+       move_away: Only meaningful when ingest is set. It indicates whether
                   on failed ingest the file should be moved away to the value
                   in settings.failed_ingest_dir
                   By default, True; meaning the files will be moved away on
@@ -200,8 +213,10 @@ def daemon_loop(context, niters=0, post_process=True, analyze=True, retire=False
         verbose)
 
     if retire:
-        if (settings.retire_jobs_ndays == 0) and (settings.retire_models_ndays == 0):
-            logger.error('You have enabled retire mode for the daemon. However, settings.py has it disabled. Please set a non-zero value for "retire_jobs_ndays" and/or "retire_models_ndays". Alternatively, disable retire mode for the daemon')
+        if settings.retire_jobs_ndays == 0 and settings.retire_models_ndays == 0:
+            logger.error('You have enabled retire mode for the daemon. However, settings.py has it disabled. '
+                         'Please set a non-zero value for "retire_jobs_ndays" and/or "retire_models_ndays". '
+                         'Alternatively, disable retire mode for the daemon')
             return True
         logger.info('retire mode enabled for daemon')
         logger.info('jobs will be retired after {} days'.format(settings.retire_jobs_ndays))
@@ -212,13 +227,15 @@ def daemon_loop(context, niters=0, post_process=True, analyze=True, retire=False
         logger.info(
             'ingestion mode (path={},recursive={},keep={},move_away={})'.format(
                 ingest, recursive, keep, move_away))
-        if not (path.isdir(ingest)):
+        if not path.isdir(ingest):
             logger.error('Ingest path ({}) does not exist'.format(ingest))
             return True
+
         from epmt.epmtlib import suggested_cpu_count_for_submit
         ncpus = suggested_cpu_count_for_submit()
+
         from epmt.orm import orm_db_provider
-        if (ncpus > 1) and ((settings.orm != 'sqlalchemy') or (orm_db_provider() != "postgres")):
+        if ncpus > 1 and ( settings.orm != 'sqlalchemy' or orm_db_provider() != "postgres" ):
             logger.warning('Parallel submit only supported for Postgres+SQLAlchemy, using 1 cpu')
             ncpus = 1
 
@@ -251,9 +268,9 @@ def daemon_loop(context, niters=0, post_process=True, analyze=True, retire=False
         tot_ua_jobs = 0
         iters = 0
 
-        while (True):
+        while True:
             logger.info('starting daemon loop - iteration %d', iters)
-            if (sig_count > 0):
+            if sig_count > 0:
                 logger.info('Terminating EPMT daemon gracefully')
                 return False
 
@@ -274,7 +291,7 @@ def daemon_loop(context, niters=0, post_process=True, analyze=True, retire=False
                         ncpus=ncpus,
                         dry_run=False,
                         keep_going=True,
-                        remove_on_success=not (keep),
+                        remove_on_success=not keep,
                         move_on_failure=move_away)
 
             if post_process:
@@ -317,10 +334,11 @@ def daemon_loop(context, niters=0, post_process=True, analyze=True, retire=False
                     epmt_retire()
 
             iters += 1
-            _loop_time = (time() - _t1)
+            _loop_time = time() - _t1
             delay = MAX_DELAY - _loop_time
             #if (niters > 0) and (iters >= niters):
-            if 0 < niters <= iters:
+            #if 0 < niters <= iters:
+            if 0 < iters <= niters:
                 logger.debug('ending daemon loop, as requested %d iterations completed', niters)
                 break
             if delay > 0:
@@ -336,9 +354,9 @@ def signal_handler(signum, frame):
     if sig_count > 0:
         logger.warning('Received multiple signals to terminate. Terminating now!')
         exit(signum)
-    else:
-        # let the daemon loop know that we should exit gracefully at the
-        # very next opportunity
-        logger.info('Received signal; will terminate shortly')
-        sig_count = 1
+
+    # let the daemon loop know that we should exit gracefully at the
+    # very next opportunity
+    logger.info('Received signal; will terminate shortly')
+    sig_count = 1
     return None
