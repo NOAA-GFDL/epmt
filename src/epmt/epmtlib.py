@@ -36,10 +36,11 @@ def version_str(terse=False):
 def get_username():
     return getpwuid(getuid())[0]
 
-# if check is set, then we will bail if logging has already been initialized
-
 
 def epmt_logging_init(intlvl=0, check=False, log_pid=False):
+    '''
+    if check is set, then we will bail if logging has already been initialized
+    '''
     import logging
     import epmt.epmt_settings as settings
 
@@ -107,8 +108,8 @@ def epmt_logging_init(intlvl=0, check=False, log_pid=False):
     # to show the sqlalchemy's INFO level messages (but instead
     # a level higher).
     sqlalchemy_logger = logging.getLogger('sqlalchemy')
-    # sqlalchemy_logger.setLevel(level+10)
-    # sqlalchemy_logger.setLevel(level+20)
+    #sqlalchemy_logger.setLevel(level + 10)
+    #sqlalchemy_logger.setLevel(level + 20)
     sqlalchemy_logger.setLevel(level + 30)
 
 
@@ -205,12 +206,12 @@ def init_settings(settings):
     if not hasattr(settings, 'bulk_insert'):
         logger.warning("missing settings.bulk_insert")
         settings.bulk_insert = False
-    if (settings.orm != 'sqlalchemy' and settings.bulk_insert):
+    if settings.orm != 'sqlalchemy' and settings.bulk_insert:
         err_msg += '\n - bulk_insert is only supported by sqlalchemy'
     if not hasattr(settings, 'post_process_job_on_ingest'):
         logger.warning("missing settings.post_process_job_on_ingest")
         settings.post_process_job_on_ingest = False
-        if (settings.orm == 'sqlalchemy'):
+        if settings.orm == 'sqlalchemy':
             settings.post_process_job_on_ingest = True
     if settings.post_process_job_on_ingest and settings.orm != 'sqlalchemy':
         logger.warning("settings.post_process_job_on_ingest = True only supported for sqlalchemy, now False")
@@ -244,7 +245,7 @@ def cmd_exists(cmd):
 
 
 def safe_rm(f):
-    if not (f):
+    if not f:
         return False
     try:
         unlink(f)
@@ -287,16 +288,18 @@ def capture():
 def tag_from_string(s, delim=';', sep=':', tag_default_value='1'):
     '''
     we assume tag is of the format:
-     "key1:value1 ; key2:value2"
+        "key1:value1 ; key2:value2"
+
     where the whitespace is optional and discarded. The output would be:
-    { "key1": value1, "key2": value2 }
+        { "key1": value1, "key2": value2 }
 
     We can also handle the case where a value is not set for
     a key, by assigning a default value for the key
     For example, for the input:
-    "multitheaded;app=fft" and a tag_default_value="1"
+        "multitheaded;app=fft" and a tag_default_value="1"
+
     the output would be:
-    { "multithreaded": "1", "app": "fft" }
+        { "multithreaded": "1", "app": "fft" }
 
     Note, both key and values will be strings and no attempt will be made to
     guess the type for integer/floats
@@ -304,10 +307,10 @@ def tag_from_string(s, delim=';', sep=':', tag_default_value='1'):
     import warnings
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore", category=DeprecationWarning)
-        # from pony.orm.ormtypes import TrackedDict
-#    if type(s) in (dict, TrackedDict): return s
+
     if isinstance(s, dict):
         return s
+
     if not s:
         return (None if s is None else {})
 
@@ -355,29 +358,30 @@ def tags_list(tags):
     tags = [tag_from_string(t) if isString(t) else t for t in tags]
     return tags
 
-# Returns True if at least one dictionary in L is contained by d
-# where containment is defined as all keys of the containee
-# are in the container with matching values. Container may have
-# additional key/values.
-# For example:
-# for input ({'abc':100, 'def':200}, [{'hello': 50}, {'abc':100}]
-# we get True
-
 
 def dict_in_list(d, L):
+    '''
+    Returns True if at least one dictionary in L is contained by d
+    where containment is defined as all keys of the containee
+    are in the container with matching values. Container may have
+    additional key/values.
+
+    For example, we get True for the following input 
+        ({'abc':100, 'def':200}, [{'hello': 50}, {'abc':100}]
+    '''
     for item in L:
         flag = True
         for (k, v) in item.items():
-            if (k not in d) or not (d[k] == v):
+            if k not in d or d[k] != v:
                 flag = False
-        if (flag):
+        if flag:
             return True
     return False
 
 
 def sum_chk_overflow(x, y):
     z = x + y
-    if (abs(z) > (2 ** 31 - 1)):
+    if abs(z) > (2 ** 31 - 1):
         z = float(x) + float(y)
     return z
 
@@ -404,12 +408,12 @@ def sum_dicts_list(dicts, exclude=[]):
             sum_dict[k] += d.get(k, 0)
     return sum_dict
 
-# from list of dictionaries, get the unique ones
-# exclude keys is an optional list of keys that are removed
-# from
-
 
 def unique_dicts(dicts, exclude_keys=[]):
+    '''
+    from list of dictionaries, get the unique ones exclude keys is an optional list of keys that are removed from
+    '''
+
     new_dicts = []
     if exclude_keys:
         for d in dicts:
@@ -435,12 +439,13 @@ def unique_dicts(dicts, exclude_keys=[]):
             ordered_dicts.append(d)
     return ordered_dicts
 
-# fold a list of dictionaries such as:
-# INPUT: [{'abc': 100, 'def': 200}, {'abc': 150, 'ghi': 10}
-# OUTPUT: { 'abc': [100, 150], 'def': 200, 'ghi': 10 }
-
 
 def fold_dicts(dicts):
+    '''
+    fold a list of dictionaries such as:
+        INPUT: [{'abc': 100, 'def': 200}, {'abc': 150, 'ghi': 10}
+        OUTPUT: { 'abc': [100, 150], 'def': 200, 'ghi': 10 }    
+    '''
     folded_dict = {}
     for d in dicts:
         for (k, v) in d.items():
@@ -450,20 +455,25 @@ def fold_dicts(dicts):
     return {k: list(v) if len(v) > 1 else v.pop() for (k, v) in folded_dict.items()}
 
 
-# given a list of dictionaries, we aggregate like fields across the dictionaries
-# but only when they share the same value for 'key'
-# The 'exclude' fields will be skipped and not present in the output.
-# Example:
-#  d = [{'jobid': "3451", 'tags': {'op': 'hsmget'}, 'duration': 1000},
-#       {'jobid': "1251", 'tags': {'op': 'hsmget'}, 'duration': 2000},
-#       {'jobid': "3451", 'tags': {'op': 'gcp'}, 'duration': 100},
-#       {'jobid': "1251", 'tags': {'op': 'gcp'}, 'duration': 200}]
-#
-#  group_dicts_by_key(d, key='tags', exclude = ['job', 'jobid'])
-#  would return:
-#  [{'tags': {'op': 'hsmget'}, duration: 3000},
-#   {'tags': {'op': 'gcp'},  duration: 300}]
 def group_dicts_by_key(dicts, key='tags', exclude=[]):
+    '''
+    given a list of dictionaries, we aggregate like fields across the dictionaries
+    but only when they share the same value for 'key'
+    The 'exclude' fields will be skipped and not present in the output.
+    
+    Example:
+        d = [{'jobid': "3451", 'tags': {'op': 'hsmget'}, 'duration': 1000},
+             {'jobid': "1251", 'tags': {'op': 'hsmget'}, 'duration': 2000},
+             {'jobid': "3451", 'tags': {'op': 'gcp'}, 'duration': 100},
+             {'jobid': "1251", 'tags': {'op': 'gcp'}, 'duration': 200}]
+    
+    so:
+        group_dicts_by_key(d, key='tags', exclude = ['job', 'jobid'])
+    
+    would return:
+        [{'tags': {'op': 'hsmget'}, duration: 3000},
+         {'tags': {'op': 'gcp'},  duration: 300}]
+    '''
     groups = {}
     for d in dicts:
         k = dumps(d[key], sort_keys=True)
@@ -491,21 +501,18 @@ def check_int(s):
 
 
 def check_boolean(s):
-    if s.upper() in ('TRUE', 'FALSE'):
-        return True
-    return False
+    return s.upper() in ('TRUE', 'FALSE')
 
 
 def check_none(s):
-    if s.upper() in ('NONE'):
-        return True
-    return False
-
-# Checks on a few types
-# strict doesn't let anything in other than x=y
+    return s.upper() in ('NONE')
 
 
 def kwargify(list_of_str, strict=False):
+    '''
+    Checks on a few types
+    strict doesn't let anything in other than x=y
+    '''
     myDict = {}
     jobs = []
     for s in list_of_str:
@@ -527,12 +534,13 @@ def kwargify(list_of_str, strict=False):
         myDict['jobs'] = jobs
     return myDict
 
-# this function recursively converts a dict of byte k/v pairs to
-# strings. It's primarily of use when converting unpickled data in
-# python 3 from data pickled using python 2
-
 
 def conv_dict_byte2str(bytes_dict):
+    '''
+    this function recursively converts a dict of byte k/v pairs to
+    strings. It's primarily of use when converting unpickled data in
+    python 3 from data pickled using python 2
+    '''
     str_dict = {}
     for key, value in bytes_dict.items():
         if isinstance(key, bytes):
@@ -545,18 +553,20 @@ def conv_dict_byte2str(bytes_dict):
             str_dict[key] = value
     return str_dict
 
-# returns a hashable dict in the form of a frozenset of dict items
-# ordered by dict keys
-
 
 def frozen_dict(d):
+    '''
+    returns a hashable dict in the form of a frozenset of dict items
+    ordered by dict keys
+    '''
     l = [(str(k), str(d[k]) if isString(d[k]) else d[k]) for k in d.keys()]
     return frozenset(l)
 
-# return a stringified version of the dictionary
-
 
 def str_dict(d):
+    '''
+    return a stringified version of the dictionary
+    '''
     new_dict = {str(k): str(v) if isString(v) else v for k, v in d.items()}
     return dumps(new_dict, sort_keys=True)
 
@@ -571,18 +581,22 @@ class dotdict(dict):
     __setattr__ = dict.__setitem__
     __delattr__ = dict.__delitem__
 
-# given a list of overlapping intervals this will return a sorted
-# list of merged intervals. See,
-# https://stackoverflow.com/questions/43600878/merging-overlapping-intervals
-#
-# For e.g.,
-#  input: [[-25, -14], [-21, -16], [-20, -15], [-10, -7], [-8, -5], [-6, -3],
-#          [2, 4], [2, 3], [3, 6], [12, 15], [13, 18], [14, 17], [22, 27],
-#          [25, 30], [26, 29]]
-# output: [[-25, -14], [-10, -3], [2, 6], [12, 18], [22, 30]]
-
 
 def merge_intervals(intervals):
+    '''
+    given a list of overlapping intervals this will return a sorted
+    list of merged intervals. See,
+    https://stackoverflow.com/questions/43600878/merging-overlapping-intervals
+    
+    For e.g., input: 
+        [[-25, -14], [-21, -16], [-20, -15], [-10, -7], [-8, -5], [-6, -3],
+         [2, 4], [2, 3], [3, 6], [12, 15], [13, 18], [14, 17], [22, 27],
+         [25, 30], [26, 29]]
+
+    output: 
+        [[-25, -14], [-10, -3], [2, 6], [12, 18], [22, 30]]
+    '''
+
     intervals.sort(key=lambda interval: interval[0])
     merged = [intervals[0]]
     for current in intervals:
@@ -593,21 +607,23 @@ def merge_intervals(intervals):
             merged.append(current)
     return merged
 
-# checks the dictionary (d) for keys in sequence
-# and returns the value for the first key found
-# Returns None if no key matched
-
 
 def get_first_key_match(d, *keys):
+    '''
+    checks the dictionary (d) for keys in sequence
+    and returns the value for the first key found
+    Returns None if no key matched
+    '''
     for k in keys:
         if k in d:
             return d[k]
     return None
 
-# Remove those with _ at beginning and blacklist
-
 
 def dict_filter(kvdict, blacklisted_keys, remove_underscores=True):
+    '''
+    Remove those with _ at beginning and blacklist
+    '''
     d = {k: kvdict[k] for k in kvdict.keys() if k not in blacklisted_keys}
     if remove_underscores:
         d = {k: d[k] for k in d.keys() if not k.startswith('_')}
@@ -632,7 +648,7 @@ def compare_dicts(d1, d2):
 
 
 def get_batch_envvar(var, where):
-    logger = getLogger(__name__)  # you can use other name
+    logger = getLogger(__name__)
     key2slurm = {
         "JOB_NAME": "SLURM_JOB_NAME",
         "JOB_USER": "SLURM_JOB_USER"
@@ -650,7 +666,7 @@ def get_batch_envvar(var, where):
 
 
 def get_metadata_env_changes(metadata):
-    logger = getLogger(__name__)  # you can use other name
+    logger = getLogger(__name__)
     start_env = metadata['job_pl_env']
     stop_env = metadata['job_el_env']
     (added, removed, modified, same) = compare_dicts(stop_env, start_env)
@@ -668,20 +684,22 @@ def get_metadata_env_changes(metadata):
         env_changes[e] = stop_env[e]
     return (env_changes, added, removed, modified, same)
 
-# This function will do a sanity check on the metadata.
-# It will mark the metadata as checked, so it's safe and
-# fast to call the function (idempotently)
-
 
 def check_fix_metadata(raw_metadata):
+    '''
+    This function will do a sanity check on the metadata.
+    It will mark the metadata as checked, so it's safe and
+    fast to call the function (idempotently)
+    '''
     # fast path: if we have already checked the metadata
     # we don't check it again
     if raw_metadata.get('checked'):
         return raw_metadata
 
     import epmt.epmt_settings as settings
-    logger = getLogger(__name__)  # you can use other name
-# First check what should be here
+    logger = getLogger(__name__)
+
+    # First check what should be here
     try:
         for n in ['job_pl_id', 'job_pl_submit_ts', 'job_pl_start_ts', 'job_pl_env',
                   'job_el_stop_ts', 'job_el_exitcode', 'job_el_reason', 'job_el_env']:
@@ -708,20 +726,20 @@ def check_fix_metadata(raw_metadata):
             return False
         metadata['job_pl_username'] = username
 
-    if not ('job_jobname' in metadata):
+    if 'job_jobname' not in metadata:
         jobname = get_batch_envvar("JOB_NAME", raw_metadata['job_pl_env'])
         if jobname is False or len(jobname) < 1:
             jobname = "unknown"
             logger.warning("No job name found found in environment, defaulting to %s", jobname)
         metadata['job_jobname'] = jobname
 
-    if not ('job_tags' in metadata):
+    if 'job_tags' not in metadata:
         # Look up job tags from stop environment
         job_tags = tag_from_string(raw_metadata['job_el_env'].get(settings.job_tags_env))
         logger.debug("job_tags: %s", str(job_tags))
         metadata['job_tags'] = job_tags
 
-    if not ('job_env_changes' in metadata):
+    if 'job_env_changes' not in metadata:
         # Compute difference in start vs stop environment
         # we can ignore all the fields returned except the first
         env_changes = get_metadata_env_changes(raw_metadata)[0]
@@ -977,8 +995,8 @@ def find_files_in_dir(path, pattern='*.tgz', recursive=False):
     Find files matching a pattern under a directory.
 
        path: Top-level directory to scan
-    pattern: glob pattern to match. Defaults to '*.tgz'
-  recursive: Scan recursively down or not
+       pattern: glob pattern to match. Defaults to '*.tgz'
+       recursive: Scan recursively down or not
 
     RETURNS: List of files that match
     '''
@@ -986,12 +1004,10 @@ def find_files_in_dir(path, pattern='*.tgz', recursive=False):
     pathname = '{}/{}{}'.format(path, '**/' if recursive else '', pattern)
     return glob(pathname, recursive=recursive)
 
-# https://www.python.org/dev/peps/pep-0257/
-
 
 def docs_trim(docstring):
     '''
-    Formats a docstring
+    Formats a docstring, see https://www.python.org/dev/peps/pep-0257/
     '''
     if not docstring:
         return ''
@@ -1195,13 +1211,14 @@ def csv_probe_format(f):
     # if we reached here, then we don't understand the CSV format
     raise ValueError("CSV file -- {} -- has an unknown file format. Is it corrupted?".format(f.name))
 
-# Set up signal handlers. If no signals are specified, sensible
-# defaults are used. If no handler is specified, the default
-# handler is assumed (this means the signal handler will be restored
-# to the default)
-
 
 def set_signal_handlers(signals=[], handler=None):
+    '''
+    Set up signal handlers. If no signals are specified, sensible
+    defaults are used. If no handler is specified, the default
+    handler is assumed (this means the signal handler will be restored
+    to the default)
+    '''
     from signal import SIGHUP, SIGTERM, SIGINT, signal, SIG_DFL
     logger = getLogger(__name__)
 
