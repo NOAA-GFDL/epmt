@@ -1372,7 +1372,7 @@ def ETL_job_dict(raw_metadata, filedict, settings, tarfile=None):
                 flo.close()
                 logger.info('direct CSV copy of %d processes took: %2.5f sec, at %2.5f procs/sec',
                             num_procs_copied, copy_processes_time, num_procs_copied / copy_processes_time)
-                didsomething = (num_procs_copied > 0)
+                didsomething = num_procs_copied > 0
                 copy_csv_direct = True
                 total_procs += num_procs_copied
                 # save the staging table row id range for the job
@@ -1437,7 +1437,7 @@ def ETL_job_dict(raw_metadata, filedict, settings, tarfile=None):
                 total_procs += 1
 
                 # Compute duration of job
-                if (p.start < earliest_process):
+                if p.start < earliest_process:
                     earliest_process = p.start
                     root_proc = p
                 #if (p.end > latest_process):
@@ -1448,7 +1448,7 @@ def ETL_job_dict(raw_metadata, filedict, settings, tarfile=None):
                 # start_ts and end_ts are timezone-aware datetime objects
                 p.start = p.start.replace(tzinfo=pytz.utc).astimezone(tz=tz_default)
                 p.end = p.end.replace(tzinfo=pytz.utc).astimezone(tz=tz_default)
-                if ((p.start < start_ts) or (p.end > stop_ts)):
+                if p.start < start_ts or p.end > stop_ts:
                     msg = 'Corrupted CSV detected: Process ({0}, pid {1}) start/finish times ({2}, {3}) do not fall within job interval ({4}, {5}). Bailing on job ingest..'.format(
                         p.exename, p.pid, p.start, p.end, start_ts, stop_ts)
                     logger.error(msg)
@@ -1462,9 +1462,10 @@ def ETL_job_dict(raw_metadata, filedict, settings, tarfile=None):
                 cnt += 1
                 nrecs += p.numtids
                 csvt = datetime.now() - csv
-                if (((nrecs % 1000) == 0) or
-                    ((cntmax == 1) and (nrecs == nrows)) or
-                        ((cntmax > 1) and (fileno == cntmax))):
+
+                if any( [ nrecs % 1000 == 0,
+                          cntmax == 1 and nrecs == nrows,
+                          cntmax > 1 and fileno == cntmax, ] ):
                     if cntmax > 1:
                         # many small files each with a single process
                         logger.info("Did %d (%d/%d files)...%.2f/sec", nrecs,

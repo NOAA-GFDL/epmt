@@ -129,7 +129,7 @@ def parseLine(infile, line, masterHeader, masterHeaderFile, headerDelimCount, he
     lineDelimCount = len(findall(Delim, line))
     # we have no header: set it
     # Set Header, compare against Master
-    if headerFound is False:
+    if not headerFound: #headerFound is False:
         # logger.debug("Found Header: {}".format(header))
         # if "hostname" not in header:
         #     # Adding host to header
@@ -157,7 +157,7 @@ def parseLine(infile, line, masterHeader, masterHeaderFile, headerDelimCount, he
             return (None, None, headerDelimCount, headerFound, masterHeader, masterHeaderFile)
     # header is known: line is data
     # match data against header
-    elif headerFound is True and line != "":
+    elif headerFound and line != "":
         # if(hostFlag):
         #     fn = path.basename(infile).split("-papiex")
         #     if(len(fn) > 1):
@@ -166,7 +166,7 @@ def parseLine(infile, line, masterHeader, masterHeaderFile, headerDelimCount, he
         #     else:
         #         logger.warning("{} filename missing host before -papiex".format(str(fn[0])))
         #         raise ValueError("Invalid filename -- missing host")
-        if (lineDelimCount == headerDelimCount):
+        if lineDelimCount == headerDelimCount:
             return (None, line, headerDelimCount, headerFound, masterHeader, masterHeaderFile)
         else:
             logger.error(
@@ -193,7 +193,9 @@ def parseLine(infile, line, masterHeader, masterHeaderFile, headerDelimCount, he
 # dataList - Aggrigated list of csv data
 #   ex:[",asus,sleep,/bin/sleep,1,0,26577,0,26576,26497"]
 def writeCSV(outfile, comments, masterHeader, dataList):
-    """ Write our output file"""
+    """
+    Write our output file
+    """
     logger = getLogger('writeCSV')
     try:
         logger.info("Writing file({})".format(outfile))
@@ -213,15 +215,13 @@ def writeCSV(outfile, comments, masterHeader, dataList):
         return False
     return True
 
-# Count lines in input directory compare result with length of output file lines
-
-
 def verifyOut(fileList, outfile):
-    """ VerifyOut will take a list of files, count the csv files and compare
-        the length against the outfile.
-
-        Return: True if line count matches
-        """
+    """ 
+    VerifyOut will take a list of files, count the csv files and compare the length against the outfile.
+    Count lines in input directory compare result with length of output file lines
+    
+    Return: True if line count matches
+    """
     logger = getLogger('verifyOut')
     outputLines = file_len(outfile)
     lines = 0
@@ -232,22 +232,20 @@ def verifyOut(fileList, outfile):
     logger.debug("{} input files have {} lines".format(len(fileList), lines))
     logger.debug("{} output file has {} lines".format(outfile, outputLines))
     logger.debug("{} output file expected {} lines".format(outfile, result))
-    if (result != outputLines):
+    if result != outputLines:
         logger.error(
             "Output file {} smaller than expected, off by {} lines, expected {}".format(
                 outfile, result - outputLines, result))
         logger.error("Input files {} have {} lines".format(str(fileList), str(lines)))
         logger.error("Total header lines removed - 1 {}".format(str(headers2Remove)))
         return False
-    else:
-        return True
 
-# fname: file name to count lines of
-# Returns number of lines
-
+    return True
 
 def file_len(fname):
-    """Helper function for counting file lines"""
+    """
+    Helper function that returns the number of file lines
+    """
     ind = None
     with open(fname) as f:
         for i, ln in enumerate(f):
@@ -280,8 +278,10 @@ def csvjoiner(indir,
               outfile="",
               outpath="",
               delim=',', comment='#', debug=0, keep_going=True, errdir="/tmp/"):
-    """ CSVJoiner will collate the csv files within the indir
-        The resulting collated file can be designated with outfile paramater. """
+    """
+    CSVJoiner will collate the csv files within the indir
+    The resulting collated file can be designated with outfile paramater.
+    """
 
     logger = getLogger("csvjoiner")
     epmt_logging_init(intlvl=debug, check=True)
@@ -310,7 +310,7 @@ def csvjoiner(indir,
     #     if(isinstance(indir, basestring)):
     #         indir = str(indir.encode('ascii'))
 # String (Directory) Mode ##################################
-    if (isinstance(indir, str)):
+    if isinstance(indir, str):
         if not path.isdir(indir):
             msg = "{} does not exist or is not a directory".format(indir)
             logger.error(msg)
@@ -319,7 +319,7 @@ def csvjoiner(indir,
         fileList = sorted(glob(indir + "/*.csv"))
         logger.debug("Filelist:{}".format(fileList))
 # List Mode #########################################
-    if (isinstance(indir, list)):
+    if isinstance(indir, list):
         logger.info("Collate list")
         fileList = indir
         if (len(fileList) != len(set(fileList))):
@@ -331,7 +331,7 @@ def csvjoiner(indir,
             if (not path.isfile(test)):
                 logger.error(test + " does not exist or is not a file")
                 return False, None, badfiles
-    if (len(fileList) == 0):
+    if len(fileList) == 0:
         msg = "{} has no CSV files to concatenate".format(indir)
         logger.warning(msg)
         return True, None, badfiles
@@ -343,7 +343,7 @@ def csvjoiner(indir,
         if outfile == "":
             return False, None, badfiles
     outfile = outpath + outfile
-    if (path.exists(outfile)):
+    if path.exists(outfile):
         logger.error("Output {} already exists".format(outfile))
         return False, None, badfiles
 
@@ -366,9 +366,9 @@ def csvjoiner(indir,
             return False, None, badfiles
         badfiles_renamed = rename_bad_files(outfile, errdir, badfiles)
 
-    if masterHeader and masterHeaderFile and dataList:
+    if all( [ masterHeader,  masterHeaderFile , dataList ] ):
         rv = writeCSV(outfile, commentsList, masterHeader, dataList)
-        if (rv is True) and verifyOut(list(set(fileList) - set(badfiles)), outfile):
+        if rv and verifyOut(list(set(fileList) - set(badfiles)), outfile):
             return True, outfile, badfiles_renamed
         else:
             return False, None, badfiles_renamed
@@ -380,23 +380,30 @@ def csvjoiner(indir,
 if __name__ == '__main__':
     from argparse import ArgumentParser
     parser = ArgumentParser(description="Concatenate CSV files. It returns 0 on success and < 0 on error")
-    parser.add_argument('files', nargs='+', metavar='FILE',
-                        help='Two or more CSV files to concatenate OR a directory containing CSV files')
-    parser.add_argument('-v', '--verbose', action="count", default=0, help="increase verbosity")
     parser.add_argument(
-        '-o',
-        '--output-file',
+        'files', nargs='+', metavar='FILE',
+        help='Two or more CSV files to concatenate OR a directory containing CSV files')
+    parser.add_argument(
+        '-v', '--verbose',
+        action="count",
+        default=0,
+        help="increase verbosity")
+    parser.add_argument(
+        '-o', '--output-file',
         help="Name of the output file, determined from input if not specified",
         default='')
-    parser.add_argument('-e', '--error', action='store_true', help="Exit at the first sign of trouble", default=False)
     parser.add_argument(
-        '-E',
-        '--error-dir',
+        '-e', '--error',
+        action='store_true',
+        help="Exit at the first sign of trouble",
+        default=False)
+    parser.add_argument(
+        '-E', '--error-dir',
         help="Name of the directory to save files with errors, disabled if not specified",
         default='')
     args = parser.parse_args()
     retval, of, bf = csvjoiner(debug=args.verbose,
-                               indir=(args.files[0] if (len(args.files) == 1) else args.files),
+                               indir=(args.files[0] if len(args.files) == 1 else args.files),
                                outfile=args.output_file,
                                keep_going=not args.error,
                                errdir=args.error_dir)
