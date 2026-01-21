@@ -130,10 +130,10 @@ jobs:
           COVERAGE_FILE: .coverage.db_schema
 
       - name: test_explore call
-        run:  |
+        run: |
           TZ=UTC pytest -x -vv --cov=epmt --cov-report=term src/epmt/test/test_explore.py
         env:
-          COVERAGE_FILE: . coverage.explore
+          COVERAGE_FILE: .coverage.explore
 
       - name: test_lib call
         run: |
@@ -142,7 +142,7 @@ jobs:
           COVERAGE_FILE: .coverage.lib
 
       - name:  test_outliers call
-        run:  |
+        run: |
           TZ=UTC pytest -x -vv --cov=epmt --cov-report=term src/epmt/test/test_outliers.py
         env:
           COVERAGE_FILE: .coverage.outliers
@@ -166,7 +166,7 @@ jobs:
           COVERAGE_FILE: .coverage.settings
 
       - name: test_shell call
-        run:  |
+        run: |
           TZ=UTC pytest -x -vv --cov=epmt --cov-report=term src/epmt/test/test_shell.py
         env:
           COVERAGE_FILE: .coverage.shell
@@ -190,9 +190,9 @@ jobs:
           coverage combine .coverage.*
           coverage xml -o coverage.xml
           coverage report --show-missing
+          ls -l coverage.xml
 
       - name: Upload coverage to Codecov
-        continue-on-error: true
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
