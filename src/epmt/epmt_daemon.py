@@ -158,18 +158,18 @@ def print_daemon_status(pidf=PID_FILE):
     return 0
 
 
-# set niters=1 to help with debugging
-def daemon_loop(context, niters=0, post_process=True, analyze=True, retire=False,
+# set maxiters=1 to help with debugging
+def daemon_loop(context, maxiters=0, post_process=True, analyze=True, retire=False,
                 ingest=False, recursive=False, keep=False, move_away=True, verbose=0):
     '''
-    Runs a daemon loop niters times, performing enabled actions
+    Runs a daemon loop maxiters times, performing enabled actions
     such as post-processing, ingestion, etc.
 
-    if niters is set, then the daemon loop will end after 'niters' iterations
+    if maxiters is set, then the daemon loop will end after 'maxiters' iterations
     otherwise loop forever or until we get interrupted by a signal
 
          context: Python daemon context
-          niters: Number of times to run the daemon loop, 0 = forever
+        maxiters: Number of times to run the daemon loop, 0 = forever
     post_process: Perform post-process of unprocessed
                   jobs. Default True.
          analyze: Perform analysis on post-processed jobs. Default True.
@@ -200,9 +200,9 @@ def daemon_loop(context, niters=0, post_process=True, analyze=True, retire=False
 
     logger = logging.getLogger(daemon_loop.__name__)
     logger.debug(
-        '(context=%s,niters=%d,post_process=%s,analyze=%s,retire=%s,ingest=%s,recursive=%s,keep=%s,moveaway=%s,verbose=%d)',
+        '(context=%s,maxiters=%d,post_process=%s,analyze=%s,retire=%s,ingest=%s,recursive=%s,keep=%s,moveaway=%s,verbose=%d)',
         type(context),
-        niters,
+        maxiters,
         post_process,
         analyze,
         retire,
@@ -336,10 +336,8 @@ def daemon_loop(context, niters=0, post_process=True, analyze=True, retire=False
             iters += 1
             _loop_time = time() - _t1
             delay = MAX_DELAY - _loop_time
-            #if (niters > 0) and (iters >= niters):
-            #if 0 < niters <= iters:
-            if 0 < iters <= niters:
-                logger.debug('ending daemon loop, as requested %d iterations completed', niters)
+            if 0 < maxiters <= iters:
+                logger.debug('ending daemon loop, as requested %d iterations completed', maxiters)
                 break
             if delay > 0:
                 logger.debug('sleeping for {0:.3f} sec'.format(delay))
