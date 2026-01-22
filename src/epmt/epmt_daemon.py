@@ -4,7 +4,8 @@ EPMT daemon module - handles background daemon functionality.
 # from __future__ import print_function
 from getpass import getuser
 from os import path, kill, unlink, getppid
-from sys import exit as sys_exit, stdin, stdout, stderr
+from sys import exit as sysexit
+from sys import stdin, stdout, stderr
 from time import sleep, time
 from signal import SIGHUP, SIGTERM, SIGQUIT, SIGINT, SIGUSR1
 import logging
@@ -349,7 +350,7 @@ def signal_handler(signum, frame):
     global sig_count
     if sig_count > 0:
         logger.warning('Received multiple signals to terminate. Terminating now!')
-        exit(signum)
+        sysexit(signum)
 
     # let the daemon loop know that we should exit gracefully at the
     # very next opportunity
