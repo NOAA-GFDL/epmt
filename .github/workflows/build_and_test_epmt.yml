@@ -201,6 +201,7 @@ jobs:
           name: epmt-coverage
           fail_ci_if_error: false
           verbose: true
+          use_pypi: true
 
       - name: epmt integration (GUARDED) call
         continue-on-error: true
