@@ -1708,22 +1708,22 @@ def epmt_entrypoint(args):
         epmt_shell()
         return 0
 
-    if args.command == 'python':
-        script_file = args.epmt_cmd_args
-        if script_file:
-            if script_file == '-':
-                # special handling for stdin
-                f = stdin
-            else:
-                if not path.exists(script_file):
-                    logger.error('script {} does not exist'.format(script_file))
-                    return -1
-                else:
-                    f = open(script_file)
-            exec( f.read() ) # TODO remove this functionality, it's risky and not really needed
-        else:
-            epmt_shell(ipython=False)
-        return 0
+#    if args.command == 'python':
+#        script_file = args.epmt_cmd_args
+#        if script_file:
+#            if script_file == '-':
+#                # special handling for stdin
+#                f = stdin
+#            else:
+#                if not path.exists(script_file):
+#                    logger.error('script {} does not exist'.format(script_file))
+#                    return -1
+#                else:
+#                    f = open(script_file)
+#            exec( f.read() ) # TODO remove this functionality, it's risky and not really needed
+#        else:
+#            epmt_shell(ipython=False)
+#        return 0
 
     if args.command == 'convert':
         from epmt.epmt_convert_csv import convert_csv_in_tar
