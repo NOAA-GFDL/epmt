@@ -48,8 +48,6 @@ def is_daemon_running(pidf=PID_FILE):
         with open(pidf, 'r', encoding='utf-8') as f:
             pid = f.read().strip()
         current_logger.debug(f'Found daemon lockfile with PID({pid})')
-    #except IOError:
-    #    return -1
     except Exception as e:
         current_logger.debug(str(e))
         return False, -1
