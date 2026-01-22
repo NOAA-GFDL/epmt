@@ -7,11 +7,8 @@ from os import environ
 import epmt.epmt_settings as settings
 from .op import *
 
-
 if settings.orm == 'sqlalchemy':
     from .sqlalchemy import *
-else:
-    from .pony import *
 
 
 def orm_get_or_create(model, **kwargs):
@@ -70,7 +67,7 @@ def orm_db_size(findwhat=['database', 'table', 'index', 'tablespace'], usejson=T
         logger.warning("%s not supported for dbsize", provider)
         return False
 
-    if setup_db(settings) == False:
+    if not setup_db(settings):
         logger.error("Could not connect to db")
         return False
 

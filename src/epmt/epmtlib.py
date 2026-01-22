@@ -449,7 +449,7 @@ def fold_dicts(dicts):
     folded_dict = {}
     for d in dicts:
         for (k, v) in d.items():
-            if not (k in folded_dict):
+            if k not in folded_dict:
                 folded_dict[k] = set()
             folded_dict[k].add(v)
     return {k: list(v) if len(v) > 1 else v.pop() for (k, v) in folded_dict.items()}
@@ -704,7 +704,7 @@ def check_fix_metadata(raw_metadata):
         for n in ['job_pl_id', 'job_pl_submit_ts', 'job_pl_start_ts', 'job_pl_env',
                   'job_el_stop_ts', 'job_el_exitcode', 'job_el_reason', 'job_el_env']:
             s = str(raw_metadata[n])
-            assert (len(s) > 0)
+            assert len(s) > 0
     except KeyError:
         logger.error("Could not find %s in job metadata, job incomplete?", n)
         return False
@@ -717,11 +717,11 @@ def check_fix_metadata(raw_metadata):
 
     # job_pl_username will ALWAYS be present in new data, but
     # we have older data, so we retain the clause below:
-    if not ('job_pl_username' in metadata):
+    if 'job_pl_username' not in metadata:
         username = get_batch_envvar(
             "JOB_USER", raw_metadata['job_pl_env']) or get_batch_envvar(
             "USER", raw_metadata['job_pl_env'])
-        if username is False or len(username) < 1:
+        if not username or len(username) < 1:
             logger.error("No job username found in environment")
             return False
         metadata['job_pl_username'] = username
@@ -819,7 +819,7 @@ def conv_to_datetime(t):
         else:
             # interpret a negative integer as number of days before now()
             # if it's zero interpret it as now
-            retval = datetime.now() - timedelta(days=(-t))
+            retval = datetime.now() - timedelta(days=-t)
     return retval
 
 
@@ -1039,7 +1039,7 @@ def docs_func_summary(func):
     '''
     Returns the docstring summary for a function
     '''
-    summary_string = ((func.__doc__ or '').lstrip().split('\n')[0].strip())
+    summary_string = (func.__doc__ or '').lstrip().split('\n')[0].strip()
     # the summary string may have a section name at the end of it
     # separated by ::
     # So, if we have a :: in the string, then we split and take the first portion

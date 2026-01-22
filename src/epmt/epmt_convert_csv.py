@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
-# This script defines functions to converti collated CSV files from
-# from the earlier comma-separated format to the new tab-separated
-# collated TSV format.
+'''
+This script defines functions to converti collated CSV files from
+from the earlier comma-separated format to the new tab-separated
+collated TSV format.
+'''
 
 import csv
 import json
@@ -132,7 +132,7 @@ def conv_csv_for_dbcopy(infile, outfile='', jobid='', input_fields=INPUT_CSV_FIE
 
     # if infile is a string, then it's a path
     # else it's a file-handle
-    infile_flo = open(infile, newline='') if (isinstance(infile, str)) else infile
+    infile_flo = open(infile, newline='') if isinstance(infile, str) else infile
 
     reader = csv.DictReader(infile_flo, escapechar='\\')
     with open(outfile, 'w', newline='') as csvfile:
@@ -141,7 +141,7 @@ def conv_csv_for_dbcopy(infile, outfile='', jobid='', input_fields=INPUT_CSV_FIE
         for r in reader:
             row_num += 1
             if row_num == 1:
-                if input_fields and not (set(r.keys()) >= input_fields):
+                if input_fields and set(r.keys()) < input_fields:
                     # sanity check to make sure our input file has the correct format
                     logger.error('Input CSV format is not correct. Likely missing  header row. Is it already in v2 format?')
                     return False
@@ -268,16 +268,16 @@ def convert_csv_in_tar(in_tar, out_tar=''):
     format conversion. This method will also add a header file
     in the newly-created tar.
     '''
-    logger = getLogger(__name__)  # you can use other name
-    if not in_tar.endswith('.tgz') or in_tar.endswith('.tar.gz') or in_tar.endswith('.tar'):
+    logger = getLogger(__name__)
+    if not any( [ in_tar.endswith('.tgz'), in_tar.endswith('.tar.gz'), in_tar.endswith('.tar') ] ):
         raise ValueError('input file must have a .tar, .tgz or .tar.gz suffix')
 
     # if out_tar is empty, the input will be *safely* overwritten
-    out_tar = out_tar or in_tar
-    if not out_tar.endswith('.tgz') or out_tar.endswith('.tar.gz') or out_tar.endswith('.tar'):
+    out_tar = in_tar if out_tar == '' else out_tar
+    if not any( [ out_tar.endswith('.tgz'), out_tar.endswith('.tar.gz'), out_tar.endswith('.tar') ] ):
         raise ValueError('output file must have a .tar, .tgz or .tar.gz suffix')
 
-    if (in_tar == out_tar):
+    if in_tar == out_tar:
         # in-place editing, so create a temporary output file,
         # and then replace the input file
         in_place = True
@@ -305,13 +305,17 @@ def convert_csv_in_tar(in_tar, out_tar=''):
     except Exception as e:
         logger.error('Error extracting {} to {}: {}'.format(in_tar, tempdir, e))
         return False
-    tar.close()  # close the input tar
+
+    # close the input tar
+    tar.close()
     in_csv_files = glob('{}/*.csv'.format(tempdir))
     if not in_csv_files:
         logger.error('No CSV files found in {}'.format(in_tar))
         return False
+
     # we should be having exactly 1 CSV file
-    assert (len(in_csv_files) == 1)
+    assert len(in_csv_files) == 1
+
     hostname = basename(in_csv_files[0]).split('-')[0]
     header_filename = "{}-papiex-header.tsv".format(hostname)
     if "./" + header_filename in tar_contents:

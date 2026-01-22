@@ -214,7 +214,7 @@ class EPMTCmds(unittest.TestCase):
         with capture() as (out, err):
             retval = epmt_dbsize(['database', 'table', 'index', 'tablespace'], usejson=True)
         s = out.getvalue()
-        isPG = (orm_db_provider() == 'postgres')
+        isPG = orm_db_provider() == 'postgres'
         self.assertEqual(retval, isPG, 'wrong epmt_dbsize() return value')
 
         # on postgres we actually get a long string output

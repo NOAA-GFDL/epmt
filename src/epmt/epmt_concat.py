@@ -326,13 +326,14 @@ def csvjoiner(indir,
     if isinstance(indir, list):
         logger.info("Collate list")
         fileList = indir
-        if (len(fileList) != len(set(fileList))):
+        if len(fileList) != len(set(fileList)):
             logger.warning("Input has duplicates")
             if not keep_going:
                 return False, None, badfiles
+
         fileList = sorted(list(set(fileList)))
         for test in fileList:
-            if (not path.isfile(test)):
+            if not path.isfile(test):
                 logger.error(test + " does not exist or is not a file")
                 return False, None, badfiles
 
