@@ -13,7 +13,8 @@ function sig_handler() {
 }
 
 setup() {
-  unprocessed_jobs=$(echo "import epmt_query as eq; print(eq.get_unprocessed_jobs())" | epmt python -)
+#  unprocessed_jobs=$(echo "import epmt_query as eq; print(eq.get_unprocessed_jobs())" | epmt python -)
+  unprocessed_jobs=$(echo "from epmt import epmt_query as eq; print(eq.get_unprocessed_jobs())" | python -c -)
 # Assuming this from the settings provided with the tests, this sucks
   logfile=$(epmt -h | grep logfile|cut -f2 -d:)
 }
