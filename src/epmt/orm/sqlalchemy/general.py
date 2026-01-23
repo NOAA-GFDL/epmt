@@ -35,7 +35,7 @@ db_setup_complete = False
 def db_session(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
-        if not hasattr(thr_data, 'session') or (thr_data.session is None):
+        if not hasattr(thr_data, 'session') or thr_data.session is None:
             thr_data.session = Session()  # (this is now a scoped session)
         session = thr_data.session
         if hasattr(thr_data, 'nestlevel'):
@@ -66,9 +66,8 @@ def db_session(func):
             raise
         finally:
             thr_data.nestlevel -= 1
-            if thr_data.nestlevel == 0:
-                if completed:
-                    session.commit()
+            if thr_data.nestlevel == 0 and completed:
+                session.commit()
                 # Session.remove()  # NOTE: *remove* rather than *close* here
         return retval
     return wrapper
