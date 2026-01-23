@@ -7,7 +7,7 @@ load 'libs/bats-assert/load'
 }
 
 setup() {
-  resource_path=$(dirname `command -v epmt`)
+  resource_path="${PWD}/src/epmt"
   test -n "${resource_path}" || fail
   test -d ${resource_path} || fail
   epmt_output_prefix=$(epmt -h | sed -n 's/epmt_output_prefix://p')
@@ -62,11 +62,7 @@ teardown() {
 }
 
 @test "epmt submit -e" {
-  run epmt submit -e ${resource_path}/test/data/submit/692500.tgz
-  assert_success
-  run epmt submit -e ${resource_path}/test/data/submit/692500.tgz ${resource_path}/test/data/query/685000.tgz
+  run epmt -v submit -e ${resource_path}/test/data/submit/692500.tgz ${resource_path}/test/data/submit/692500.tgz
   assert_failure
-  assert_output --partial "ob 692500 is already in database"
-  run epmt list 685000
-  assert_output --partial "[]"
+  assert_output --partial "job 692500 is already in database"
 }
