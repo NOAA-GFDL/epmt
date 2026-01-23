@@ -207,9 +207,9 @@ def verify_epmt_output_prefix():
     return retval
 
 def verify_papiex_options():
-    # This function is under review for potential deprecation due to limited usage and unclear requirements.
-    # If deprecation is confirmed, it will be removed in a future release. Otherwise, it may be implemented to handle papiex options.
-    pass
+    ## This function is under review for potential deprecation due to limited usage and unclear requirements.
+    ## If deprecation is confirmed, it will be removed in a future release. Otherwise, it may be implemented to handle papiex options.
+    #pass
 
     s = get_papiex_options(settings)
     # print("papiex_options =",s, end='')
@@ -384,9 +384,9 @@ def epmt_check():
     if verify_perf() == False:
         retval = False
 
-    #logger.warning('CHECKING verify_papiex_options()...')
-    #if verify_papiex_options() == False:
-    #    retval = False
+    logger.warning('CHECKING verify_papiex_options()...')
+    if verify_papiex_options() == False:
+        retval = False
 
     logger.warning('CHECKING verify_stage_command()...')
     if verify_stage_command() == False:
