@@ -203,11 +203,6 @@ jobs:
           verbose: true
           use_pypi: true
 
-      - name: epmt integration (GUARDED) call
-        continue-on-error: true
-        run: |
-          epmt integration
-
       - name: install pylint
         run: |
           pip install pylint
@@ -229,3 +224,58 @@ jobs:
         with:
           name: epmt-pip-install-TEST
           path: src/dist/epmt-4.11.0.tar.gz
+
+      - name: epmt integration, basic (GUARDED) call
+        continue-on-error: true
+        run: |
+          epmt -v integration 001-basic.bats
+
+      - name: epmt integration, escape (GUARDED) call
+        continue-on-error: true
+        run: |
+          epmt -v integration 002-escape.bats
+
+      - name: epmt integration, concat (GUARDED) call
+        continue-on-error: true
+        run: |
+          epmt -v integration 005-concat.bats
+
+      - name: epmt integration, daemon (GUARDED) call
+        continue-on-error: true
+        run: |
+          epmt -v integration 010-daemon.bats
+
+      - name: epmt integration, shell (GUARDED) call
+        continue-on-error: true
+        run: |
+          epmt -v integration 011-shell.bats
+
+      - name: epmt integration, python (GUARDED) call
+        continue-on-error: true
+        run: |
+          epmt -v integration 012-python.bats
+
+      - name: epmt integration, annotate (GUARDED) call
+        continue-on-error: true
+        run: |
+          epmt -v integration 015-annotate.bats
+
+      - name: epmt integration, explore (GUARDED) call
+        continue-on-error: true
+        run: |
+          epmt -v integration 020-explore.bats
+
+      - name: epmt integration, slurm (GUARDED) call
+        continue-on-error: true
+        run: |
+          epmt -v integration 025-slurm.bats
+
+      - name: epmt integration, collate-tsv (GUARDED) call
+        continue-on-error: true
+        run: |
+          epmt -v integration 030-collate-tsv.bats
+
+      - name: epmt integration, kernel-compile (GUARDED) call
+        continue-on-error: true
+        run: |
+          epmt -v integration 050-kernel-compile.bats
