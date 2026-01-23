@@ -389,8 +389,7 @@ def epmt_check():
     if not verify_papiex_options():
         logger.error('verify_papiex_options() failed, but passing on harmlessly (GUARDED)')
     else:
-        logger.error('verify_papiex_options() passed but we do not know why. bad! or good? we will see...')
-        assert False
+        logger.error('verify_papiex_options() passed, you are probably on PPAN')
 
     logger.warning('CHECKING verify_stage_command()...')
     retval = verify_stage_command()
