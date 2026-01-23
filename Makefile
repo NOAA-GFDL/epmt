@@ -2,12 +2,9 @@
 
 # OS / python / SQLITE_VERSION
 OS_TARGET=rocky-8
-
 PYTHON_VERSION=3.9.22
-
 SQLITE_YEAR=2025
 SQLITE_VERSION=3490100
-
 
 # conda
 CONDA_ACTIVATE = source $$(conda info --base)/etc/profile.d/conda.sh ; conda activate ; conda activate ;
@@ -40,6 +37,7 @@ PAPIEX_SRC_BRANCH=main
 PAPIEX_SRC_TARBALL=$(PAPIEX_SRC_BRANCH).tar.gz
 PAPIEX_SRC_URL=$(NOAAGFDL_SRC_URL_BASE)/papiex/archive/$(PAPIEX_SRC_TARBALL)
 PAPIEX_RELEASE=papiex-epmt-$(PAPIEX_VERSION)-$(OS_TARGET).tgz
+CONFIG_HAVE_PAPI?=y
 
 # epmt details
 EPMT_VERSION=$(shell sed -n '/_version = /p' src/epmt/epmtlib.py | sed 's/ //g; s/,/./g; s/.*(\(.*\))/\1/')
@@ -284,12 +282,12 @@ $(PAPIEX_SRC)/$(PAPIEX_RELEASE): $(PAPIEX_SRC)
 	@echo "################### BEGIN MAKE PAPIEX TARBALL : papiex-dist ########################################"
 	if [ -n "${OUTSIDE_DOCKER}" ]; then \
 	echo "within docker. make and make check within PAPIEX_SRC/PAPIEX_RELEASE target" ; \
-	make -C $(PAPIEX_SRC) OS_TARGET=$(OS_TARGET) distclean install dist ; \
-	make -C $(PAPIEX_SRC) OS_TARGET=$(OS_TARGET) dist-test ; \
-	make -C $(PAPIEX_SRC) OS_TARGET=$(OS_TARGET) check ; \
+	make -C $(PAPIEX_SRC) CONFIG_HAVE_PAPI=$(CONFIG_HAVE_PAPI) OS_TARGET=$(OS_TARGET) distclean install dist ; \
+	make -C $(PAPIEX_SRC) CONFIG_HAVE_PAPI=$(CONFIG_HAVE_PAPI) OS_TARGET=$(OS_TARGET) dist-test ; \
+	make -C $(PAPIEX_SRC) CONFIG_HAVE_PAPI=$(CONFIG_HAVE_PAPI) OS_TARGET=$(OS_TARGET) check ; \
 	else \
 	echo "outside docker. making docker-dist within PAPIEX_SRC/PAPIEX_RELEASE target" ; \
-	make -C $(PAPIEX_SRC) OS_TARGET=$(OS_TARGET) docker-dist ; \
+	make -C $(PAPIEX_SRC) CONFIG_HAVE_PAPI=$(CONFIG_HAVE_PAPI) OS_TARGET=$(OS_TARGET) docker-dist ; \
 	fi
 
 $(PAPIEX_SRC): $(PAPIEX_SRC_TARBALL)
