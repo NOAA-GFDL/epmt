@@ -10,7 +10,8 @@ setup() {
   resource_path="${PWD}/src/epmt"
   test -n "${resource_path}" || fail
   test -d ${resource_path} || fail
-  epmt_output_prefix=$(epmt -h | sed -n 's/epmt_output_prefix://p')
+#  epmt_output_prefix=$(epmt -h | sed -n 's/epmt_output_prefix://p')
+  epmt_output_prefix=$(python3 -c 'import epmt.epmt_settings as settings; print(settings.epmt_output_prefix);')
   test -n "${epmt_output_prefix}" || fail
   epmt_output_prefix=${epmt_output_prefix}/`whoami`
   test -n "${epmt_output_prefix}" || fail
