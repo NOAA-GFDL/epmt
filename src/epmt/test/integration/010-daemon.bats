@@ -18,7 +18,7 @@ setup() {
   EPMT_DIRNAME=$(dirname $WHICH_EPMT)
   echo "epmt dir is ${EPMT_DIRNAME}"
   PYTHON=$EPMT_DIRNAME/python
-  ls $PYTHON || echo "python not there" && echo "python is there"
+  ls $PYTHON && echo "python is there" || echo "python not there"
   echo "python is ${PYTHON}"
   $PYTHON --version
   unprocessed_jobs=$($PYTHON -c "from epmt import epmt_query as eq; print(eq.get_unprocessed_jobs())")
