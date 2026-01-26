@@ -13,30 +13,30 @@ function sig_handler() {
 }
 
 setup() {
-  WHICH_EPMT=$(command -v epmt)
-  echo "epmt is ${WHICH_EPMT}"
-  EPMT_DIRNAME=$(dirname $WHICH_EPMT)
-  echo "epmt dir is ${EPMT_DIRNAME}"
-  PYTHON=$EPMT_DIRNAME/python
-  ls $PYTHON && echo "python is there" || echo "python not there"
-  echo "python is ${PYTHON}"
-  $PYTHON --version
-  unprocessed_jobs=$($PYTHON -c "from epmt import epmt_query as eq; print(eq.get_unprocessed_jobs())")
+#  WHICH_EPMT=$(command -v epmt)
+#  echo "epmt is ${WHICH_EPMT}"
+#  EPMT_DIRNAME=$(dirname $WHICH_EPMT)
+#  echo "epmt dir is ${EPMT_DIRNAME}"
+#  PYTHON=$EPMT_DIRNAME/python
+#  ls $PYTHON && echo "python is there" || echo "python not there"
+#  echo "python is ${PYTHON}"
+#  $PYTHON --version
+  unprocessed_jobs=$(python3 -c "from epmt import epmt_query as eq; print(eq.get_unprocessed_jobs())")
 # Assuming this from the settings provided with the tests, this sucks
   logfile=$(epmt -h | grep logfile|cut -f2 -d:)
 }
 
 
 @test "no daemon running" {
-  # skip test if we have any unprocessed jobs
-  [[ "$unprocessed_jobs" == "[]" ]] || skip "unprocessed jobs in database"
+  ## inl: why is this skip here?
+  [[ "$unprocessed_jobs" == "[]" ]] || skip "there are unprocessed jobs in database"
   run epmt daemon
   assert_output --partial "EPMT daemon not running"
 }
 
 @test "start epmt daemon" {
-  # skip test if we have any unprocessed jobs
-  [[ "$unprocessed_jobs" == "[]" ]] || skip "unprocessed jobs in database"
+  ## inl: why is this skip here?
+  [[ "$unprocessed_jobs" == "[]" ]] || skip "there are unprocessed jobs in database"
   trap sig_handler SIGINT SIGTERM SIGQUIT SIGHUP
   run epmt -v daemon --start
   run epmt daemon
@@ -52,8 +52,8 @@ setup() {
 
 
 @test "stop epmt daemon" {
-  # skip test if we have any unprocessed jobs
-  [[ "$unprocessed_jobs" == "[]" ]] || skip "unprocessed jobs in database"
+  ## inl: why is this skip here?
+  [[ "$unprocessed_jobs" == "[]" ]] || skip "there are unprocessed jobs in database"
   run epmt daemon
   assert_output --partial "EPMT daemon running PID"
   run epmt daemon --stop
