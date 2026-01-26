@@ -26,23 +26,23 @@ teardown() {
 }
 
 @test "epmt start" {
- SLURM_JOB_ID=1 run epmt start -e
- assert_success
- SLURM_JOB_ID=1 run epmt start -e
- assert_failure
- SLURM_JOB_ID=1 run epmt start
- assert_success
+  SLURM_JOB_ID=1 run epmt start -e
+  assert_success
+  SLURM_JOB_ID=1 run epmt start -e
+  assert_failure
+  SLURM_JOB_ID=1 run epmt start
+  assert_success
 }
 
 @test "epmt stop" {
- SLURM_JOB_ID=2 run epmt start -e
- assert_success
- SLURM_JOB_ID=2 run epmt stop -e
- assert_success
- SLURM_JOB_ID=2 run epmt stop -e
- assert_failure
- SLURM_JOB_ID=2 run epmt stop
- assert_success
+  SLURM_JOB_ID=2 run epmt start -e
+  assert_success
+  SLURM_JOB_ID=2 run epmt stop -e
+  assert_success
+  SLURM_JOB_ID=2 run epmt stop -e
+  assert_failure
+  SLURM_JOB_ID=2 run epmt stop
+  assert_success
 }
 
 @test "epmt submit" {
