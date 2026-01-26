@@ -229,8 +229,7 @@ jobs:
         run: |
           epmt -v integration 001-basic.bats
 
-      - name: epmt integration, escape (GUARDED)
-        continue-on-error: true
+      - name: epmt integration, escape
         run: |
           epmt -v integration 002-escape.bats
 
@@ -238,20 +237,13 @@ jobs:
         run: |
           epmt -v integration 005-concat.bats
 
-      - name: epmt integration, daemon (GUARDED)
-        continue-on-error: true
+      - name: epmt integration, daemon
         run: |
           epmt -v integration 010-daemon.bats
 
       - name: epmt integration, shell
         run: |
           epmt -v integration 011-shell.bats
-
-#deprecating
-#      - name: epmt integration, python (GUARDED)
-#        continue-on-error: true
-#        run: |
-#          epmt -v integration 012-python.bats
 
       - name: epmt integration, annotate (GUARDED)
         continue-on-error: true
