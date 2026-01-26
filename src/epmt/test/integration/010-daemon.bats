@@ -13,10 +13,15 @@ function sig_handler() {
 }
 
 setup() {
-#  unprocessed_jobs=$(echo "import epmt_query as eq; print(eq.get_unprocessed_jobs())" | epmt python -)
-  PYTHON=$(dirname $(command -v epmt))/python
-  $(PYTHON) --version
-  unprocessed_jobs=$($(PYTHON) -c "from epmt import epmt_query as eq; print(eq.get_unprocessed_jobs())")
+  WHICH_EPMT=$(command -v epmt)
+  echo "epmt is ${WHICH_EPMT}"
+  EPMT_DIRNAME=$(dirname $WHICH_EPMT)
+  echo "epmt dir is ${EPMT_DIRNAME}"
+  PYTHON=$EPMT_DIRNAME/python
+  ls $PYTHON || echo "python not there" && echo "python is there"
+  echo "python is ${PYTHON}"
+  $PYTHON --version
+  unprocessed_jobs=$($PYTHON -c "from epmt import epmt_query as eq; print(eq.get_unprocessed_jobs())")
 # Assuming this from the settings provided with the tests, this sucks
   logfile=$(epmt -h | grep logfile|cut -f2 -d:)
 }
@@ -53,6 +58,8 @@ setup() {
   assert_output --partial "EPMT daemon running PID"
   run epmt daemon --stop
   assert_output --partial "Sending signal to EPMT daemon pid"
-  # cleanup up as we did verbose logging to log file
+  # check on logfile and cleanup up as we did verbose logging to log file
+  ls $logfile
+  assert_success
   rm -f $logfile
 }
