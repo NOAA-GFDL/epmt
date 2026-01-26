@@ -25,4 +25,3 @@ teardown() {
   assert_output --partial "18540101      10425623185"
   assert_output --partial "18840101      26897098077   ****"
 }
-

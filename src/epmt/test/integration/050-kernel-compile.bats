@@ -1,7 +1,7 @@
 load 'libs/bats-support/load'
 load 'libs/bats-assert/load'
 
-# Run once to 
+# Run once to
 setup_file(){
   stage_dest=$(epmt -h | sed -n 's/stage_command_dest://p')
   test -n "${stage_dest}" || fail
@@ -22,16 +22,16 @@ function _compile() {
   build_dir=$(tempfile -p epmt_ -s _kernel)
   echo "creating build directory: $build_dir"
   rm -rf $build_dir; mkdir -p $build_dir && cd $build_dir
-  
+
   # download
   PAPIEX_TAGS="op:download;op_instance:1;op_sequence:1" wget https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-5.1.7.tar.xz
   PAPIEX_TAGS="op:untar;op_instance:1;op_sequence:1" tar -xf linux-5.1.7.tar.xz
   cd linux-5.1.7
-  
+
   # configure
   # cp -v /boot/config-$(uname -r) .config
   PAPIEX_TAGS="op:configure;op_instance:1;op_sequence:1" make tinyconfig
-  
+
   # build
   PAPIEX_TAGS="op:compile;op_instance:1;op_sequence:1" make -j $(nproc)
 
@@ -47,9 +47,9 @@ function kernel_build() {
   epmt start           # Generate prolog
   # set up environment while forcing PAPIEX_OPTIONS to include the opt argument
   if [ "$opt" == "CSV_v1" ]; then
-      eval `epmt source| sed '/^PAPIEX_OPTIONS/ s/COLLATED_TSV//'`
+	  eval `epmt source| sed '/^PAPIEX_OPTIONS/ s/COLLATED_TSV//'`
   else
-      eval `epmt source| sed '/^PAPIEX_OPTIONS/ s/PAPIEX_OPTIONS=/PAPIEX_OPTIONS='$opt',/'`
+	  eval `epmt source| sed '/^PAPIEX_OPTIONS/ s/PAPIEX_OPTIONS=/PAPIEX_OPTIONS='$opt',/'`
   fi
 
   # workload

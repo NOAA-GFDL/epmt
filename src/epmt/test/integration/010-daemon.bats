@@ -8,8 +8,8 @@ function sig_handler() {
   # epmt daemon --start takes a couple of seconds before
   # it has the lockfile in place
   for i in 1 2 3 4 5; do
-    epmt daemon --stop > /dev/null 2>&1 && return
-    sleep 1
+	epmt daemon --stop > /dev/null 2>&1 && return
+	sleep 1
   done
 }
 

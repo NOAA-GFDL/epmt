@@ -21,7 +21,7 @@ setup() {
 
 teardown() {
   # Remove any jobs before starting a test & ignore error code
-  epmt dump ${jobs_in_module} > /dev/null || true # force post processing so delete happens 
+  epmt dump ${jobs_in_module} > /dev/null || true # force post processing so delete happens
   epmt delete ${jobs_in_module} || true
   rm -rf ${epmt_output_prefix}/[12]
 }

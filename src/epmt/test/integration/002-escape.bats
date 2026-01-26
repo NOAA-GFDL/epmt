@@ -3,7 +3,7 @@ load 'libs/bats-assert/load'
 
 setup() {
   db_params=$(epmt -h | grep db_params: | cut -f2- -d:)
-  resource_path="${PWD}/src/epmt"  
+  resource_path="${PWD}/src/epmt"
   test -n "${resource_path}" || fail
   test -d ${resource_path} || fail
   papiex_path=$(epmt -h | grep install_prefix | cut -f2 -d:)
@@ -54,15 +54,15 @@ exp_output=('-d" -f2' '\\\' ' b' '\' ',' "'" '-e \tHello' '-e \tThereU\nR' '-e \
   workload
   epmt_uninstrument    # End Workload, disable instrumentation
   epmt stop            # Wrap up job stats
-  
+
   run epmt submit --remove
 #  run epmt submit
-  unset SLURM_JOB_ID SLURM_JOB_NAME
-  if [ $(uname -s) == "Linux" ] && $(test -f "${papiex_path}/lib/libpapiex.so") ; then 
-    assert_output --partial "Imported successfully - job: 12340 processes: 18"
+  if [ $(uname -s) == "Linux" ] && $(test -f "${papiex_path}/lib/libpapiex.so"); then
+	assert_output --partial "Imported successfully - job: 12340 processes: 18"
   else # papiex not there or not supported
-    assert_output --partial "Imported successfully - job: 12340 processes: 0"
+	assert_output --partial "Imported successfully - job: 12340 processes: 0"
   fi
+  unset SLURM_JOB_ID SLURM_JOB_NAME
 }
 
 @test "check for job with escape char if persistent DB" {
@@ -73,20 +73,20 @@ exp_output=('-d" -f2' '\\\' ' b' '\' ',' "'" '-e \tHello' '-e \tThereU\nR' '-e \
   assert_success
 
   # Below we have the expected output in sequence, don't use run as it doesn't play with a pipe
-  if [ $(uname -s) == "Linux" ] && $(test -f "${papiex_path}/lib/libpapiex.so") ; then 
-    #echo > /dev/tty; echo > /dev/tty 
-    for i in ${!exp_output[*]}; do
-      out=$(python3 -c 'from epmt import epmt_query as eq; procs=eq.get_procs(fmt="orm", jobs=["12340"])[:]; p = procs["${i}"]; print(p.args);')
-      a=${out}
-      b=${exp_output[$i]}
-      #echo x${a}x > /dev/tty
-      #echo y${b}y > /dev/tty
-      if [ ! "$a" = "$b" ]; then
-        #echo "Nope" > /dev/tty
-        fail
-      fi
+  if [ $(uname -s) == "Linux" ] && $(test -f "${papiex_path}/lib/libpapiex.so") ; then
+	#echo > /dev/tty; echo > /dev/tty
+	for i in ${!exp_output[*]}; do
+	  out=$(python3 -c 'from epmt import epmt_query as eq; procs=eq.get_procs(fmt="orm", jobs=["12340"])[:]; p = procs["${i}"]; print(p.args);')
+	  a=${out}
+	  b=${exp_output[$i]}
+	  #echo x${a}x > /dev/tty
+	  #echo y${b}y > /dev/tty
+	  if [ ! "$a" = "$b" ]; then
+		#echo "Nope" > /dev/tty
+		fail
+	  fi
 #      [[ "$out" == "${exp_output[$i]}" ]]
-    done
+	done
   fi
 }
 
