@@ -21,7 +21,8 @@ jobid_env_list = [
 ]
 papiex_options_bycpu = {}
 papiex_options_byhost = {}
-papiex_options = "PERF_COUNT_SW_CPU_CLOCK,COLLATED_TSV"
+#papiex_options = "PERF_COUNT_SW_CPU_CLOCK,COLLATED_TSV"
+papiex_options = "COLLATED_TSV"
 epmt_output_prefix = "/tmp/epmt/"
 stage_command = "mv"
 stage_command_dest = "./"

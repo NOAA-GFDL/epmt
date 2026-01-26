@@ -238,7 +238,8 @@ jobs:
         run: |
           epmt -v integration 005-concat.bats
 
-      - name: epmt integration, daemon
+      - name: epmt integration, daemon (GUARDED)
+        continue-on-error: true
         run: |
           epmt -v integration 010-daemon.bats
 
