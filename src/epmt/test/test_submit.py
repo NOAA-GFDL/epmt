@@ -7,17 +7,17 @@ import unittest
 # from sys import stderr
 from glob import glob
 # from os import environ
-# from datetime import datetime
+from datetime import datetime
 # import pandas as pd
 
 import epmt.epmt_settings as settings
 import epmt.epmt_query as eq
 from epmt.epmt_cmds import epmt_submit
-
+from epmt.orm.sqlalchemy.models import Job#, UnprocessedJob, Process
 from epmt.epmtlib import timing, get_install_root, capture, epmt_logging_init
 from epmt.orm import db_session, setup_db, orm_db_provider
 
-# from epmt.orm.sqlalchemy.general import orm_get
+from epmt.orm.sqlalchemy.general import orm_get
 
 install_root = get_install_root()
 
