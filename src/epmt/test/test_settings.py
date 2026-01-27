@@ -1,8 +1,5 @@
 #!/usr/bin/env python
 
-# don't do this for this one, i think....
-# from . import *
-
 import unittest
 from epmt.epmtlib import get_install_root
 from os import path

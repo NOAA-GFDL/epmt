@@ -1,20 +1,21 @@
 #!/usr/bin/env python
 
 # the import below is crucial to get a sane test environment
-from . import *
+# inl: gotta move away from this, cyclic import errors everywhere
+#from . import *
 
-# import sqlite3
-# import pandas as pd
-# import numpy as np
-# import logging
+import unittest
+import logging
+from io import StringIO
 
-from epmt.epmtlib import dict_filter
-from epmt.epmtlib import merge_intervals
-from epmt.epmtlib import encode2ints, decode2strings
-from epmt.epmtlib import dframe_encode_features, dframe_decode_features
-from epmt.epmtlib import hash_strings
-from epmt.epmtlib import get_install_root
+import sqlite3
+import pandas as pd
+import numpy as np
 
+from epmt.epmtlib import ( dict_filter, merge_intervals,
+                           encode2ints, decode2strings,
+                           dframe_encode_features, dframe_decode_features,
+                           hash_strings, get_install_root )
 
 # The class below tests library functions
 class EPMTLib(unittest.TestCase):

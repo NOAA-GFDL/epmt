@@ -1,8 +1,16 @@
 #!/usr/bin/env python
 
-from . import *
-# import os
+# the import below is crucial to get a sane test environment
+# inl: gotta move away from this, cyclic import errors everywhere
+#from . import *
+import os
+from os import environ
+import shutil
+import unittest
 
+from epmt.epmtlib import timing, capture, get_username, epmt_logging_init
+import epmt.epmt_settings as settings
+from epmt.orm import setup_db
 
 def remove_stale_files():
     for f in ['1', '1.tgz']:
@@ -10,7 +18,7 @@ def remove_stale_files():
             os.remove(f)
         except OSError:
             pass
-    import shutil
+
     for d in ['/tmp/epmt']:
         try:
             shutil.rmtree('/tmp/epmt')
@@ -39,7 +47,7 @@ def setUpModule():
     setup_db(settings)
 #    print('\n' + str(settings.db_params))
     remove_stale_files()
-    from os import environ
+
     environ['SLURM_JOB_USER'] = tuser
     # environ['SLURM_JOB_ID'] = jobid
 
