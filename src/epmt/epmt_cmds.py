@@ -1,9 +1,6 @@
 """
 EPMT commands module - main command interface for EPMT functionality.
 """
-#!/usr/bin/env python
-
-from __future__ import print_function
 
 from datetime import datetime
 from os import environ, makedirs, mkdir, path, getpid, remove, uname, kill

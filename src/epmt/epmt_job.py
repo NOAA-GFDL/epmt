@@ -1,8 +1,6 @@
-;"""
+"""
 EPMT job module - handles job-related data structures and operations.
 """
-
-# from __future__ import print_function
 
 from os.path import basename, dirname
 from os import environ
