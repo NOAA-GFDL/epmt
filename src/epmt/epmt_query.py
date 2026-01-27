@@ -1540,7 +1540,7 @@ def refmodel_set_active_metrics(ref_id, metrics):
     if unavailable_metrics:
         logger.warning(
             'Ignoring metrics that are not available in the trained model: {0}'.format(
-                unavailable__metrics ))
+                unavailable_metrics ))
     active_metrics = list(metrics_set & all_metrics)
     logger.info('Active metrics for model set to: %s', str(active_metrics))
     info_dict = dict.copy(r.info_dict or {})
