@@ -1,9 +1,3 @@
-#!/usr/bin/env python
-
-# the import below is crucial to get a sane test environment
-# inl: gotta move away from this, cyclic import errors everywhere
-#from . import *
-
 from glob import glob
 import unittest
 
@@ -23,7 +17,6 @@ def do_cleanup():
 
 @timing
 def setUpModule():
-    print('\n' + str(settings.db_params))
     setup_db(settings)
     do_cleanup()
     datafiles = '{}/test/data/query/68500[03].tgz'.format(install_root)

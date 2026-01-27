@@ -1,7 +1,3 @@
-#!/usr/bin/env python3
-
-# the import below is crucial to get a sane test environment
-# from . import *
 import unittest
 import numpy as np
 import pandas as pd

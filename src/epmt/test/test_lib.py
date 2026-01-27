@@ -1,9 +1,3 @@
-#!/usr/bin/env python
-
-# the import below is crucial to get a sane test environment
-# inl: gotta move away from this, cyclic import errors everywhere
-#from . import *
-
 import unittest
 import logging
 from io import StringIO
@@ -85,7 +79,7 @@ class EPMTLib(unittest.TestCase):
 
     # BROKEN FIX TODO
     def test_logfn(self):
-        from epmt.epmtlib import logfn, epmt_logging_init, capture
+        from epmt.epmtlib import logfn, epmt_logging_init
 
         # enable debug logging and,
         # remove all handlers and add our StringIO handler

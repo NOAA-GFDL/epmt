@@ -1,15 +1,10 @@
-#!/usr/bin/env python
-
-# the import below is crucial to get a sane test environment
-# inl: gotta move away from this, cyclic import errors everywhere
-#from . import *
 import unittest
 
 from epmt import epmt_settings as settings
 from epmt.orm import setup_db, orm_in_memory
+from epmt.epmtlib import capture
 
 def setUpModule():
-    #    print('\n' + str(settings.db_params))
     setup_db(settings)
 
 
