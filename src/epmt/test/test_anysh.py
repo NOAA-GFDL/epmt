@@ -1,7 +1,16 @@
 #!/usr/bin/env python
 
-from . import *
-# import os
+#from . import *
+# inl: gotta move away from this, cyclic import errors everywhere
+import os
+from os import environ
+import shutil
+import unittest
+
+from epmt import epmt_settings as settings
+from epmt import epmt_query as eq
+from epmt.orm import setup_db
+from epmt.epmtlib import timing, capture
 
 # These will be used in both tests
 # One can embed them in the class, but referring to them with
@@ -16,7 +25,7 @@ def do_cleanup():
             os.remove(f)
         except OSError:
             pass
-    import shutil
+
     for d in ['/tmp/epmt']:
         try:
             shutil.rmtree('/tmp/epmt')
@@ -30,7 +39,7 @@ def setUpModule():
     setup_db(settings)
 #    print('\n' + str(settings.db_params))
     do_cleanup()
-    from os import environ
+
     environ['SLURM_JOB_ID'] = jobid
     environ['SLURM_JOB_USER'] = tuser
     settings.post_process_job_on_ingest = True

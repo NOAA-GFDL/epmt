@@ -1,12 +1,23 @@
 #!/usr/bin/env python
 
 # the import below is crucial to get a sane test environment
-from . import *
-# from json import loads
-import epmt.epmt_outliers as eod
-from epmt.epmtlib import frozen_dict
-from json import dumps
+# inl: gotta move away from this, cyclic import errors everywhere
+#from . import *
 
+from json import loads, dumps
+from glob import glob
+import unittest
+from os import environ
+
+import epmt.epmt_settings as settings
+from epmt.orm import setup_db, db_session
+import epmt.epmt_query as eq
+import epmt.epmt_outliers as eod
+from epmt.epmtlib import frozen_dict, timing, capture, get_install_root
+from epmt.epmt_cmds import epmt_submit
+from epmt.orm.sqlalchemy.models import Job
+
+install_root=get_install_root()
 
 def do_cleanup():
     eq.delete_jobs(['kern-6656-20190614-190245', 'kern-6656-20190614-191138',

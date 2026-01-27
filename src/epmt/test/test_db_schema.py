@@ -1,8 +1,15 @@
 #!/usr/bin/env python
 
 # the import below is crucial to get a sane test environment
-from . import *
+# inl: gotta move away from this, cyclic import errors everywhere
+#from . import *
 
+import unittest
+
+from epmt import epmt_settings as settings
+from epmt.orm import setup_db, orm_in_memory, orm_db_provider, db_session
+from epmt.epmtlib import timing, capture
+from epmt.orm.sqlalchemy.general import orm_dump_schema
 
 @timing
 def setUpModule():

@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
 # the import below is crucial to get a sane test environment
-from . import *
+#from . import *
+import unittest
 
 
 class SHELLCmds(unittest.TestCase):
