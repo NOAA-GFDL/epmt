@@ -2744,9 +2744,10 @@ def _warn_incomparable_jobs(jobs):
 
 
 def _empty_collection_check(col):
-    if all( [ not orm_is_query(col) ,
-              not isinstance(col, pd.DataFrame) ,
-              col in [ [], '', None ] ] ):
+    # if all( [ not orm_is_query(col) ,
+    #           not isinstance(col, pd.DataFrame) ,
+    #           col in [ [], '', None ] ] ):
+    if (not (orm_is_query(col))) and (not isinstance(col, pd.DataFrame)) and (col in [[], '', None]):
         msg = 'You need to specify a non-empty collection as a parameter'
         logger.warning(msg)
         raise ValueError(msg)
