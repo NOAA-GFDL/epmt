@@ -1,8 +1,3 @@
-#!/usr/bin/env python
-
-# the import below is crucial to get a sane test environment
-# inl: gotta move away from this, cyclic import errors everywhere
-#from . import *
 from os import path
 from contextlib import nullcontext
 import unittest
@@ -10,18 +5,16 @@ from glob import glob
 
 from epmt import epmt_query as eq, epmt_settings as settings
 from epmt.orm import db_session, orm_in_memory, setup_db, orm_db_provider
-from epmt.orm.sqlalchemy.models import UnprocessedJob # , Job, Process
+from epmt.orm.sqlalchemy.models import UnprocessedJob
 from epmt.epmtlib import timing, capture, get_install_root, epmt_logging_init
 from epmt.epmt_cmds import epmt_dbsize, epmt_submit
-from epmt.epmt_cmd_delete import epmt_delete_jobs
+
 from epmt.epmt_cmd_list import ( epmt_list_jobs, epmt_list_procs, epmt_list_job_proc_tags,
                                  epmt_list_refmodels, epmt_list_op_metrics, epmt_list_thread_metrics )
 from epmt.epmt_daemon import is_daemon_running, daemon_loop
 
-# from epmt.orm.sqlalchemy.models import UnprocessedJob
-# from os import path
-
 install_root=get_install_root()
+
 
 def do_cleanup():
     eq.delete_jobs(['685000', '627919', '691201', '692544'], force=True, remove_models=True)
@@ -134,7 +127,6 @@ class EPMTCmds(unittest.TestCase):
         # and unprocessed jobs. Then we run the daemon loop once.
         # That should clear the backlog of unprocessed and
         # unanalyzed jobs
-        from epmt.epmt_job import post_process_pending_jobs
         self.assertTrue(is_daemon_running() == (False, -1))
 
         settings.post_process_job_on_ingest = False
@@ -277,7 +269,7 @@ class EPMTCmds(unittest.TestCase):
         epmt_logging_init(-1)
 
     def test_yyy_retire(self):
-        from datetime import datetime, timedelta
+        from datetime import datetime
         # with capture() as (out,err):
         #    epmt_submit(glob('{}/test/data/daemon/627919.tgz'.format(install_root)), dry_run=False)
         org_jobs = eq.get_jobs(["685000"], fmt='dict')

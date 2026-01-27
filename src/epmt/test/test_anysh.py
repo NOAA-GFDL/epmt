@@ -1,7 +1,3 @@
-#!/usr/bin/env python
-
-#from . import *
-# inl: gotta move away from this, cyclic import errors everywhere
 import os
 from os import environ
 import shutil
@@ -12,9 +8,6 @@ from epmt import epmt_query as eq
 from epmt.orm import setup_db
 from epmt.epmtlib import timing, capture
 
-# These will be used in both tests
-# One can embed them in the class, but referring to them with
-# a class prefix is ugly
 jobid = '1011'
 tuser = 'testuser'
 
@@ -37,7 +30,6 @@ def do_cleanup():
 @timing
 def setUpModule():
     setup_db(settings)
-#    print('\n' + str(settings.db_params))
     do_cleanup()
 
     environ['SLURM_JOB_ID'] = jobid
@@ -60,13 +52,9 @@ class EPMTShell(unittest.TestCase):
             self.assertEqual(0, results)
 
     def test_monolithic(self):
-        from epmt.epmt_cmds import epmt_check, epmt_source, epmt_start_job, epmt_dump_metadata, epmt_run, epmt_stop_job, epmt_stage, epmt_submit
+        from epmt.epmt_cmds import epmt_source, epmt_start_job, epmt_dump_metadata, epmt_run, epmt_stop_job, epmt_stage, epmt_submit
         with capture() as (out, err):
-            # Check will fail because of kernel paranoid, but we can't be
-            # sure it will always fail.
-            # TODO: Fix this so we can count on it to either always fail or always
-            # pass. Since we can't count on the kernel paranoid setting to be right,
-            # it might be better to set this up to always fail. But how?
+            # TODO see if this works 
             # results = epmt_check()
             # self.assertEqual(results, False)
 
