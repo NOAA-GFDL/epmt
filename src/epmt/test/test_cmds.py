@@ -5,8 +5,8 @@ from . import *
 
 from epmt.epmt_cmds import epmt_dbsize
 from epmt.epmt_cmd_delete import epmt_delete_jobs
-from epmt.epmt_cmd_list import (epmt_list_jobs, epmt_list_procs, epmt_list_job_proc_tags,
-                                epmt_list_refmodels, epmt_list_op_metrics, epmt_list_thread_metrics)
+from epmt.epmt_cmd_list import ( epmt_list_jobs, epmt_list_procs, epmt_list_job_proc_tags,
+                                 epmt_list_refmodels, epmt_list_op_metrics, epmt_list_thread_metrics )
 from epmt.epmt_daemon import is_daemon_running, daemon_loop
 
 # from epmt.orm.sqlalchemy.models import UnprocessedJob
@@ -106,7 +106,7 @@ class EPMTCmds(unittest.TestCase):
         settings.post_process_job_on_ingest = False
         with capture() as (out, err):
             self.assertFalse(daemon_loop(
-                nullcontext(), niters=1, ingest='{}/test/data/daemon/ingest'.format(install_root),
+                nullcontext(), maxiters=1, ingest='{}/test/data/daemon/ingest'.format(install_root),
                 post_process=False, analyze=False, retire=False, keep=True, recursive=False))
 
         # by now the files should be in the DB
@@ -141,7 +141,7 @@ class EPMTCmds(unittest.TestCase):
         #       with capture() as (out,err):
         with capture() as (out, err):
             self.assertFalse(daemon_loop(
-                nullcontext(), niters=1, ingest=False,
+                nullcontext(), maxiters=1, ingest=False,
                 post_process=True, analyze=False, retire=False, keep=True, recursive=False))
         self.assertFalse(eq.get_unprocessed_jobs())
         self.assertFalse(eq.get_unanalyzed_jobs() == [])
@@ -214,7 +214,7 @@ class EPMTCmds(unittest.TestCase):
         with capture() as (out, err):
             retval = epmt_dbsize(['database', 'table', 'index', 'tablespace'], usejson=True)
         s = out.getvalue()
-        isPG = (orm_db_provider() == 'postgres')
+        isPG = orm_db_provider() == 'postgres'
         self.assertEqual(retval, isPG, 'wrong epmt_dbsize() return value')
 
         # on postgres we actually get a long string output

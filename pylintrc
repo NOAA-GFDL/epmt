@@ -451,7 +451,14 @@ enable=
 
 # List of qualified names (i.e., library.method) which require a timeout
 # parameter e.g. 'requests.api.get,requests.api.post'
-timeout-methods=requests.api.delete,requests.api.get,requests.api.head,requests.api.options,requests.api.patch,requests.api.post,requests.api.put,requests.api.request
+timeout-methods=requests.api.delete,
+                requests.api.get,
+                requests.api.head,
+                requests.api.options,
+                requests.api.patch,
+                requests.api.post,
+                requests.api.put,
+                requests.api.request
 
 
 [MISCELLANEOUS]
@@ -593,7 +600,12 @@ ignored-checks-for-mixins=no-member,
 # List of class names for which member attributes should not be checked (useful
 # for classes with dynamically set attributes). This supports the use of
 # qualified names.
-ignored-classes=optparse.Values,thread._local,_thread._local,argparse.Namespace
+ignored-classes=optparse.Values,
+                thread._local,
+                _thread._local,
+                argparse.Namespace,
+                sqlalchemy.orm.scoping.scoped_session
+
 
 # Show a hint with possible names when a member name was not found. The aspect
 # of finding the hint is based on edit distance.
@@ -643,4 +655,8 @@ init-import=no
 
 # List of qualified module names which can have objects that can redefine
 # builtins.
-redefining-builtins-modules=six.moves,past.builtins,future.builtins,builtins,io
+redefining-builtins-modules=six.moves,
+                            past.builtins,
+                            future.builtins,
+                            builtins,
+                            io

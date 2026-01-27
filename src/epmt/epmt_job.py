@@ -2,8 +2,6 @@
 EPMT job module - handles job-related data structures and operations.
 """
 
-# from __future__ import print_function
-
 from os.path import basename, dirname
 from os import environ
 from logging import getLogger
@@ -241,7 +239,7 @@ def get_proc_rows(csvfile, skiprows=0, fmt='1', metric_names=[]):
 def load_process_from_dictlist(proc, host, j, u, settings, profile):
     '''
     proc is a list of dicts, where each list item is a dictionary containing data for a single thread
-    The first list item (thread 0) is special in that it has values for fields pertaining to the 
+    The first list item (thread 0) is special in that it has values for fields pertaining to the
     process such as 'exename', 'args', etc. The other threads may not have process fields set.
     '''
     from pandas import Timestamp
@@ -464,7 +462,7 @@ def _proc_ancestors(pid_map, proc, ancestor_pid, relations=None, descendant_map=
 
 def _mk_pid_map(all_procs):
     '''
-    Makes a pid map (a dictionary referenced by PIDs). Each dict entry is a list containing 
+    Makes a pid map (a dictionary referenced by PIDs). Each dict entry is a list containing
     one or more Process (or dotdict if using bulk inserts) objects.
     '''
     pid_map = {}
@@ -616,7 +614,7 @@ def post_process_job( j,
                       update_unprocessed_jobs_table=True,
                       force=False):
     '''
-    This method will compute sums across processes/threads of a job, and do post-processing on tags. It will also call 
+    This method will compute sums across processes/threads of a job, and do post-processing on tags. It will also call
     _create_process_tree to create process tree. The function is tolerant to missing datastructures for all_tags,
     all_procs and pid_map. If any of them are missing, it will Build them by using the data in the database/ORM.
     '''
@@ -667,7 +665,7 @@ def post_process_job( j,
             'Job {} contains no processes, perhaps an error in collation or populating the staging data?'.format(jobid))
 
     if all_tags is None:
-        logger.info("  recreating all_tags..")
+        logger.debug("  recreating all_tags..")
         all_tags = set()
         # we need to read the tags from the processes
         for p in j.processes:
@@ -676,7 +674,7 @@ def post_process_job( j,
 
     # Add sum of tags to job
     if all_tags:
-        logger.info("  found %d distinct sets of process tags", len(all_tags))
+        logger.debug("  found %d distinct sets of process tags", len(all_tags))
         # convert each of the pickled tags back into a dict
         proc_sums['all_proc_tags'] = [loads(t) for t in sorted(all_tags)]
     else:
@@ -700,7 +698,7 @@ def post_process_job( j,
     papiex_err = ''          # set iff rdtsc_duration <= 0
     num_errs = 0             # total error count
     if all_procs:
-        logger.info("  computing thread sums across job processes..")
+        logger.debug("  computing thread sums across job processes..")
         _t2 = time.time()
 
         # We no longer do bulk inserts of hosts into the host_associations table
@@ -835,7 +833,7 @@ def post_process_job( j,
             u = orm_get(UnprocessedJob, pk=j.jobid)
             if u:
                 orm_delete(u)
-                logger.info('  marking job %s as processed in database', jobid)
+                logger.debug('  marking job %s as processed in database', jobid)
                 orm_commit()
             logger.debug(
                 '  checking/updating unprocessed jobs table (includes implicit commit) took: %2.5f sec',
@@ -938,7 +936,7 @@ def populate_process_table_from_staging(j):
         # logger.debug('args is \n %s', str(args) )
         args = args.replace('%', '%%')
         args = args.replace(':', '\\:')
-        
+
         # logger.debug('after arg.replace % with %%, args is now \n %s', str(args) )
         args = psycopg2.extensions.adapt(args)
         # logger.debug('after psycopg2.extensions.adapt(args) % with %% and : with \\:, args is now \n %s, str(args) )
@@ -1124,16 +1122,17 @@ def ETL_job_dict(raw_metadata, filedict, settings, tarfile=None):
         logger.debug('timezone auto-detected: {0}'.format(tz_default))
     logger.info('Job start: {0}'.format(start_ts))
     logger.info('Job finish: {0}'.format(stop_ts))
+
     jobname = metadata['job_jobname']
     exitcode = metadata['job_el_exitcode']
     env_changes_dict = metadata['job_env_changes']
     job_tags = metadata['job_tags']
-    
+
     annotations = metadata.get('annotations', {})
     if annotations:
         logger.info('Job annotations: {0}'.format(annotations))
 
-        if settings.job_tags_env in annotations:            
+        if settings.job_tags_env in annotations:
             job_tag_from_ann = tag_from_string(annotations[settings.job_tags_env])
 
             if all( [ job_tags, job_tag_from_ann, job_tags != job_tag_from_ann ] ):
@@ -1141,7 +1140,7 @@ def ETL_job_dict(raw_metadata, filedict, settings, tarfile=None):
                     job_tags, job_tag_from_ann)
                 return ( False, err_msg, () )
 
-            logger.warning('Both metadata and annotations have the same job tags')                
+            logger.warning('Both metadata and annotations have the same job tags')
             job_tags = job_tag_from_ann or job_tags
 
     if job_tags and not settings.job_tags_env in annotations:
@@ -1158,7 +1157,6 @@ def ETL_job_dict(raw_metadata, filedict, settings, tarfile=None):
         job_status['script_name'] = job_tags.get('script_name')
 
     # info_dict = metadata['job_pl_from_batch'] # end batch also
-
     logger.info("Processing job id %s", jobid)
 
     # Initialize elements used in compute
@@ -1169,13 +1167,10 @@ def ETL_job_dict(raw_metadata, filedict, settings, tarfile=None):
 
     # stdout.write('-')
     ## Hostname, job, metricname objects
-    ## Iterate over hosts
-
+    # Iterate over hosts
     logger.debug("Iterating over %d hosts for job ID %s, user %s...", len(filedict.keys()), jobid, username)
 
-    #
     # Create user and job object
-    #
     from sqlalchemy import exc
     try:
         u = lookup_or_create_user(username)
@@ -1194,7 +1189,8 @@ def ETL_job_dict(raw_metadata, filedict, settings, tarfile=None):
     j.jobname = jobname
     j.exitcode = exitcode
     j.annotations = annotations
-# fix below
+
+    # fix below
     j.env_dict = env_dict
     j.env_changes_dict = env_changes_dict
     if job_tags:
@@ -1202,6 +1198,7 @@ def ETL_job_dict(raw_metadata, filedict, settings, tarfile=None):
     j.tags = job_tags if job_tags else {}
     job_init_fini_time = time.time()
     logger.debug('job init took: %2.5f sec', job_init_fini_time - job_init_start_time)
+
     # save naive datetime objects in the database
     j.start = start_ts.replace(tzinfo=None)
     j.end = stop_ts.replace(tzinfo=None)
@@ -1238,10 +1235,12 @@ def ETL_job_dict(raw_metadata, filedict, settings, tarfile=None):
             hostname = metadata.get('job_pl_hostname', '')
             if not hostname:
                 logger.warning('could not determine hostname from metadata either')
+
         logger.debug("Processing host %s", hostname)
         h = None
         if hostname:
             h = lookup_or_create_host_safe(hostname)
+
         cntmax = len(files)
         cnt = 0
         nrecs = 0
@@ -1315,18 +1314,19 @@ def ETL_job_dict(raw_metadata, filedict, settings, tarfile=None):
             #            stdout.write('\b')            # erase the last written char
             #            stdout.write(spinner.next())  # write the next character
             #            stdout.flush()                # flush stdout buffer (actual character display)
-            #
             # We need rows to skip
             # oldproctag (after comment char) is outdated as a process tag but kept for posterities sake
             skiprows, oldproctag = extract_tags_from_comment_line(f, tarfile=tarfile)
             logger.debug("%s had %d comment rows, oldproctags %s", f, skiprows, oldproctag)
+
             if tarfile:
                 logger.debug('extracting {} from tar'.format(f))
                 info = tarfile.getmember(f)
                 flo = tarfile.extractfile(info)
             else:
                 flo = open(f, 'rb')
-            if (fmt == '2' and (orm_db_provider() == 'postgres') and (settings.orm == 'sqlalchemy')):
+
+            if all( [ fmt == '2', orm_db_provider() == 'postgres', settings.orm == 'sqlalchemy' ] ):
                 import psycopg2
                 logger.info('Doing a fast ingest of {}'.format(flo.name))
                 _conn_start_ts = time.time()
@@ -1370,7 +1370,7 @@ def ETL_job_dict(raw_metadata, filedict, settings, tarfile=None):
                 flo.close()
                 logger.info('direct CSV copy of %d processes took: %2.5f sec, at %2.5f procs/sec',
                             num_procs_copied, copy_processes_time, num_procs_copied / copy_processes_time)
-                didsomething = (num_procs_copied > 0)
+                didsomething = num_procs_copied > 0
                 copy_csv_direct = True
                 total_procs += num_procs_copied
                 # save the staging table row id range for the job
@@ -1387,9 +1387,9 @@ def ETL_job_dict(raw_metadata, filedict, settings, tarfile=None):
             #                        #dtype=dtype_dic,
             #                        converters=conv_dic,
             #                        skiprows=rows, escapechar='\\')
-            
+
             file_io_time += time.time() - _file_io_start_ts
-            
+
             # if collated_df.empty:
             #     logger.error("Something wrong with file %s, readcsv returned empty, skipping...",f)
             #     continue
@@ -1435,7 +1435,7 @@ def ETL_job_dict(raw_metadata, filedict, settings, tarfile=None):
                 total_procs += 1
 
                 # Compute duration of job
-                if (p.start < earliest_process):
+                if p.start < earliest_process:
                     earliest_process = p.start
                     root_proc = p
                 #if (p.end > latest_process):
@@ -1446,7 +1446,7 @@ def ETL_job_dict(raw_metadata, filedict, settings, tarfile=None):
                 # start_ts and end_ts are timezone-aware datetime objects
                 p.start = p.start.replace(tzinfo=pytz.utc).astimezone(tz=tz_default)
                 p.end = p.end.replace(tzinfo=pytz.utc).astimezone(tz=tz_default)
-                if ((p.start < start_ts) or (p.end > stop_ts)):
+                if p.start < start_ts or p.end > stop_ts:
                     msg = 'Corrupted CSV detected: Process ({0}, pid {1}) start/finish times ({2}, {3}) do not fall within job interval ({4}, {5}). Bailing on job ingest..'.format(
                         p.exename, p.pid, p.start, p.end, start_ts, stop_ts)
                     logger.error(msg)
@@ -1460,9 +1460,10 @@ def ETL_job_dict(raw_metadata, filedict, settings, tarfile=None):
                 cnt += 1
                 nrecs += p.numtids
                 csvt = datetime.now() - csv
-                if (((nrecs % 1000) == 0) or
-                    ((cntmax == 1) and (nrecs == nrows)) or
-                        ((cntmax > 1) and (fileno == cntmax))):
+
+                if any( [ nrecs % 1000 == 0,
+                          cntmax == 1 and nrecs == nrows,
+                          cntmax > 1 and fileno == cntmax, ] ):
                     if cntmax > 1:
                         # many small files each with a single process
                         logger.info("Did %d (%d/%d files)...%.2f/sec", nrecs,
@@ -1571,7 +1572,7 @@ def ETL_job_dict(raw_metadata, filedict, settings, tarfile=None):
 
 def post_process_pending_jobs():
     '''
-    This function will post-process all pending jobs that have not been post-processed. It returns the list 
+    This function will post-process all pending jobs that have not been post-processed. It returns the list
     of jobids that were post-processed.
     '''
     # we only support post-processing for SQLA at the moment

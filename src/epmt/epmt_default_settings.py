@@ -21,7 +21,8 @@ jobid_env_list = [
 ]
 papiex_options_bycpu = {}
 papiex_options_byhost = {}
-papiex_options = "PERF_COUNT_SW_CPU_CLOCK,COLLATED_TSV"
+#papiex_options = "PERF_COUNT_SW_CPU_CLOCK,COLLATED_TSV"
+papiex_options = "COLLATED_TSV"
 epmt_output_prefix = "/tmp/epmt/"
 stage_command = "mv"
 stage_command_dest = "./"
@@ -117,7 +118,7 @@ outlier_features_blacklist = [
 # You will need to run `epmt retire` in a cron job for this to happen
 # Remember, jobs that have dependent trained models will not be retired
 # retire_jobs_ndays = 40   # specify in number of days; set to 0 to not retire jobs
-retire_jobs_ndays = 13   # specify in number of days; set to 0 to not retire jobs
+retire_jobs_ndays = 14   # specify in number of days; set to 0 to not retire jobs
 retire_models_ndays = 0  # specify in number of days; set to 0 to not retire models
 retire_jobs_per_delete_max = 20  # specify the chunk-size to delete jobs in
 

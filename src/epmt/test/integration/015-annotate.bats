@@ -15,13 +15,13 @@ setup() {
   run epmt delete 3456
   run ${resource_path}/test/integration/epmt-annotate.sh || fail
   run test -f ${stage_dest}/3456.tgz || fail
-} 
+}
 
 teardown() {
   rm -rf ${epmt_output_prefix}/${USER}/3456
   rm -f ${stage_dest}/3456.tgz
   epmt delete 3456 || true
-} 
+}
 
 @test "epmt annotate read tgz" {
   run epmt dump -k annotations ${stage_dest}/3456.tgz
@@ -95,7 +95,7 @@ teardown() {
   assert_success
   assert_output --partial "'a': 100"
   assert_output --partial "'EPMT_JOB_TAGS': 'jobid:3456'"
-  
+
   # Incomplete annotation
   run epmt annotate --replace 3456 'test'=
   assert_failure

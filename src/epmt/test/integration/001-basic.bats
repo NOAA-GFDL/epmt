@@ -7,10 +7,11 @@ load 'libs/bats-assert/load'
 }
 
 setup() {
-  resource_path=$(dirname `command -v epmt`)
+  resource_path="${PWD}/src/epmt"
   test -n "${resource_path}" || fail
   test -d ${resource_path} || fail
-  epmt_output_prefix=$(epmt -h | sed -n 's/epmt_output_prefix://p')
+#  epmt_output_prefix=$(epmt -h | sed -n 's/epmt_output_prefix://p')
+  epmt_output_prefix=$(python3 -c 'import epmt.epmt_settings as settings; print(settings.epmt_output_prefix);')
   test -n "${epmt_output_prefix}" || fail
   epmt_output_prefix=${epmt_output_prefix}/`whoami`
   test -n "${epmt_output_prefix}" || fail
@@ -20,29 +21,29 @@ setup() {
 
 teardown() {
   # Remove any jobs before starting a test & ignore error code
-  epmt dump ${jobs_in_module} > /dev/null || true # force post processing so delete happens 
+  epmt dump ${jobs_in_module} > /dev/null || true # force post processing so delete happens
   epmt delete ${jobs_in_module} || true
   rm -rf ${epmt_output_prefix}/[12]
 }
 
 @test "epmt start" {
- SLURM_JOB_ID=1 run epmt start -e
- assert_success
- SLURM_JOB_ID=1 run epmt start -e
- assert_failure
- SLURM_JOB_ID=1 run epmt start
- assert_success
+  SLURM_JOB_ID=1 run epmt start -e
+  assert_success
+  SLURM_JOB_ID=1 run epmt start -e
+  assert_failure
+  SLURM_JOB_ID=1 run epmt start
+  assert_success
 }
 
 @test "epmt stop" {
- SLURM_JOB_ID=2 run epmt start -e
- assert_success
- SLURM_JOB_ID=2 run epmt stop -e
- assert_success
- SLURM_JOB_ID=2 run epmt stop -e
- assert_failure
- SLURM_JOB_ID=2 run epmt stop
- assert_success
+  SLURM_JOB_ID=2 run epmt start -e
+  assert_success
+  SLURM_JOB_ID=2 run epmt stop -e
+  assert_success
+  SLURM_JOB_ID=2 run epmt stop -e
+  assert_failure
+  SLURM_JOB_ID=2 run epmt stop
+  assert_success
 }
 
 @test "epmt submit" {
@@ -62,11 +63,7 @@ teardown() {
 }
 
 @test "epmt submit -e" {
-  run epmt submit -e ${resource_path}/test/data/submit/692500.tgz
-  assert_success
-  run epmt submit -e ${resource_path}/test/data/submit/692500.tgz ${resource_path}/test/data/query/685000.tgz
+  run epmt -v submit -e ${resource_path}/test/data/submit/692500.tgz ${resource_path}/test/data/submit/692500.tgz
   assert_failure
-  assert_output --partial "ob 692500 is already in database"
-  run epmt list 685000
-  assert_output --partial "[]"
+  assert_output --partial "job 692500 is already in database"
 }

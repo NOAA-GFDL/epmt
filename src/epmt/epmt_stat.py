@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 EPMT Statistics Module
 ======================
@@ -11,13 +10,14 @@ in the functions of this module. The idea is to use them as pure
 stateless mathematical functions. No database connectivity is assumed
 for the functions in this module.
 """
-# from __future__ import print_function
-import epmt.epmt_settings as settings
+
 import pandas as pd
 import numpy as np
 import operator
 from logging import getLogger
 from numbers import Number
+
+import epmt.epmt_settings as settings
 from epmt.epmtlib import logfn
 
 logger = getLogger(__name__)  # you can use other name
@@ -197,18 +197,17 @@ def iqr(ys, params=()):
     fitted_Q3 = 5 * ys.max() / 8 + 3 * ys.min() / 8
     return (outliers, 0, round(fitted_Q1, 4), round(fitted_Q3, 4))
 
-# this function returns a tuple consisting of:
-#  (scores, worst_score, median, median_absolute_deviation)
-#
-# All values after the first two are relevant only to this method
-# and will only be used to compare an input against a reference run
-# params if passed in, is of the form (max, median, median_abs_dev)
-# We will ignore params(0) as that's the max z_score in the ref_model
-
 
 def modified_z_score(ys, params=()):
     '''
     Returns the modified-adjusted Z-score (MADZ) for an input vector::Statistics
+    this function returns a tuple consisting of:
+        (scores, worst_score, median, median_absolute_deviation)
+
+    All values after the first two are relevant only to this method
+    and will only be used to compare an input against a reference run
+    params if passed in, is of the form (max, median, median_abs_dev)
+    We will ignore params(0) as that's the max z_score in the ref_model
     '''
     logger = getLogger(__name__)  # you can use other name
     logger.debug('scoring using {}'.format('modified_z_score'))
@@ -230,10 +229,6 @@ def modified_z_score(ys, params=()):
         logger.debug('model params: {}'.format(params))
     logger.debug('madz scores: {}'.format(madz))
     return (madz, round(max(madz), 4), round(median_y, 4), round(median_absolute_deviation_y, 4))
-
-# All outliers_* methods return a vector mask that indicates
-# whether an element is an outlier or not. They are wrappers
-# around scoring methods -- z_score, modified_z_score, iqr
 
 
 def outliers_iqr(ys):
@@ -347,10 +342,6 @@ def mvod_classifiers(contamination=0.1, warnopts='ignore'):
     return classifiers
 
 
-# use like:
-# x = mvod_scores(...)
-# to get outliers for a particular threshold:
-# (x['K Nearest Neighbors (KNN)'] > 0.5104869395352308) * 1
 def mvod_scores(X=None, classifiers=[], warnopts='ignore'):
     '''
     Perform outlier scoring using multivariate classifiers::Statistics
@@ -717,7 +708,7 @@ def pca_stat(inp_features, desired=2):
         logger.debug('desired variance ratio: {}'.format(desired))
 
     n_samples, n_dim = inp_features.shape
-    assert (n_dim > 1)
+    assert n_dim > 1
 
     x = StandardScaler().fit_transform(inp_features)
     logger.debug('input after standard scaling:\n{}'.format(x))
@@ -821,10 +812,15 @@ def check_dist(data=[], dist='norm', alpha=0.05):
     passed = 0
     failed = 0
 
-    def kstest_norm(d): return kstest(d, 'norm', (_mean, _std))
-    def kstest_uniform(d): return kstest(d, 'uniform', (_min, _max - _min))
+    def kstest_norm(d):
+        return kstest(d, 'norm', (_mean, _std))
+
+    def kstest_uniform(d):
+        return kstest(d, 'uniform', (_min, _max - _min))
+
     tests = {'norm': [('Shapiro-Wilk', shapiro), ('Kolmogorov-Smirnov (norm)', kstest_norm)],
              'uniform': [('Kolmogorov-Smirnov (uniform)', kstest_uniform)]}
+
     if data.size > 20:
         # The test below requires at least 20 elements
         tests['norm'].append(('D\'Agostino', normaltest))
@@ -893,7 +889,7 @@ def get_modes(X, max_modes=10):
         logger.debug("Score for number of cluster(s) {}: {}".format(i, km.score(X_scaled)))
         km_scores.append(-km.score(X_scaled))
 
-        if (i > 1):
+        if i > 1:
             # silhouette method only works for n_clusters >= 2
             silhouette = silhouette_score(X_scaled, preds)
             km_silhouette.append(silhouette)
@@ -910,7 +906,7 @@ def get_modes(X, max_modes=10):
     if modes_by_elbow_method != 1:
         # the index of the peak value fo km_silhouette + 2 (since we start
         # from 2 to max_modes represents the number of modes
-        modes_by_silhouette_method = (np.argmax(km_silhouette) + 2)
+        modes_by_silhouette_method = np.argmax(km_silhouette) + 2
         logger.debug('optimal clustering according to silhouette method: {}'.format(modes_by_silhouette_method))
         if modes_by_elbow_method != modes_by_silhouette_method:
             logger.warning(
@@ -993,7 +989,7 @@ def dframe_append_weighted_row(df, weights, ignore_index=True, use_abs=False):
     2  1  2  2
 
     '''
-    assert (df.shape[0] == len(weights))
+    assert df.shape[0] == len(weights)
     weights_array = np.asarray(weights)
     new_row = []
 

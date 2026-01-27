@@ -7,4 +7,3 @@ load 'libs/bats-assert/load'
   assert_output --partial "IPython"
   assert_output --partial "In [1]:"
 }
-

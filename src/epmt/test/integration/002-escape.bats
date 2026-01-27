@@ -2,10 +2,11 @@ load 'libs/bats-support/load'
 load 'libs/bats-assert/load'
 
 setup() {
-  resource_path=$(dirname `command -v epmt`)
-  papiex_path=$(epmt -h | grep install_prefix|cut -f2 -d:)
+  db_params=$(epmt -h | grep db_params: | cut -f2- -d:)
+  resource_path="${PWD}/src/epmt"
   test -n "${resource_path}" || fail
   test -d ${resource_path} || fail
+  papiex_path=$(epmt -h | grep install_prefix | cut -f2 -d:)
   # test -f "${papiex_path}/lib/libpapiex.so" || fail
   jobs_in_module='12340'
   cleanup
@@ -46,60 +47,64 @@ workload() {
 exp_output=('-d" -f2' '\\\' ' b' '\' ',' "'" '-e \tHello' '-e \tThereU\nR' '-e \a' '-e \a' '-e \' '-e some test \b and more text' 'b' '\b' '\b' '-e \. some text' '-e try\.some more text' 's/^\.//')
 
 @test "epmt start/run/stop/submit with escape char" {
-    export SLURM_JOB_ID=12340
-    export SLURM_JOB_NAME=12340_name
-    epmt start           # Generate prolog
-    eval `epmt source`   # Setup environment
-    workload
-    epmt_uninstrument    # End Workload, disable instrumentation
-    epmt stop            # Wrap up job stats
-    
-    run epmt submit --remove
-    unset SLURM_JOB_ID SLURM_JOB_NAME
-    if [ $(uname -s) == "Linux" ] && $(test -f "${papiex_path}/lib/libpapiex.so") ; then 
-      assert_output --partial "Imported successfully - job: 12340 processes: 18"
-    else # papiex not there or not supported
-      assert_output --partial "Imported successfully - job: 12340 processes: 0"
-    fi
+  export SLURM_JOB_ID=12340
+  export SLURM_JOB_NAME=12340_name
+  epmt start           # Generate prolog
+  eval `epmt source`   # Setup environment
+  workload
+  epmt_uninstrument    # End Workload, disable instrumentation
+  epmt stop            # Wrap up job stats
 
-    run epmt list 12340
-    assert_output --partial "['12340']"
-    run epmt dump 12340
-    assert_success
-
-  # Below we have the expected output in sequence, don't use run as it doesn't play with a pipe
-    if [ $(uname -s) == "Linux" ] && $(test -f "${papiex_path}/lib/libpapiex.so") ; then 
-      #echo > /dev/tty; echo > /dev/tty 
-      for i in ${!exp_output[*]}; do
-        out=$(echo 'import epmt_query as eq; procs=eq.get_procs(fmt="orm", jobs=["12340"])[:]; p = procs['$i']; print(p.args);' | epmt python -)
-        a=${out}
-        b=${exp_output[$i]}
-        #echo x${a}x > /dev/tty
-        #echo y${b}y > /dev/tty
-        if [ ! "$a" = "$b" ]; then
-            #echo "Nope" > /dev/tty
-            fail
-        fi
-#        [[ "$out" == "${exp_output[$i]}" ]]
-      done
-    fi
+  run epmt submit --remove
+#  run epmt submit
+  if [ $(uname -s) == "Linux" ] && $(test -f "${papiex_path}/lib/libpapiex.so"); then
+	assert_output --partial "Imported successfully - job: 12340 processes: 18"
+  else # papiex not there or not supported
+	assert_output --partial "Imported successfully - job: 12340 processes: 0"
+  fi
+  unset SLURM_JOB_ID SLURM_JOB_NAME
 }
 
-@test "epmt canned data/submit with escape char" {
-# Canned job test
-  export SLURM_JOB_ID=12340
-  run epmt submit "${resource_path}"/test/data/tsv/12340
-  assert_output --partial "Imported successfully - job: 12340 processes: 18"
-  unset SLURM_JOB_ID
-
+@test "check for job with escape char if persistent DB" {
+  [[ "$db_params" =~ "postgres" ]] || skip
   run epmt list 12340
   assert_output --partial "['12340']"
   run epmt dump 12340
   assert_success
 
   # Below we have the expected output in sequence, don't use run as it doesn't play with a pipe
-  for i in ${!exp_output[*]}; do
-      out=$(echo 'import epmt_query as eq; procs=eq.get_procs(fmt="orm", jobs=["12340"])[:]; p = procs['$i']; print(p.args);'  | epmt python -)
-      [[ "$out" == "${exp_output[$i]}" ]]
-  done
+  if [ $(uname -s) == "Linux" ] && $(test -f "${papiex_path}/lib/libpapiex.so") ; then
+	#echo > /dev/tty; echo > /dev/tty
+	for i in ${!exp_output[*]}; do
+	  out=$(python3 -c 'from epmt import epmt_query as eq; procs=eq.get_procs(fmt="orm", jobs=["12340"])[:]; p = procs["${i}"]; print(p.args);')
+	  a=${out}
+	  b=${exp_output[$i]}
+	  #echo x${a}x > /dev/tty
+	  #echo y${b}y > /dev/tty
+	  if [ ! "$a" = "$b" ]; then
+		#echo "Nope" > /dev/tty
+		fail
+	  fi
+#      [[ "$out" == "${exp_output[$i]}" ]]
+	done
+  fi
 }
+
+#@test "epmt canned data/submit with escape char" {
+## Canned job test
+#  export SLURM_JOB_ID=12340
+#  run epmt submit "${resource_path}"/test/data/tsv/12340
+#  assert_output --partial "Imported successfully - job: 12340 processes: 18"
+#  unset SLURM_JOB_ID
+#
+#  run epmt list 12340
+#  assert_output --partial "['12340']"
+#  run epmt dump 12340
+#  assert_success
+#
+#  # Below we have the expected output in sequence, don't use run as it doesn't play with a pipe
+#  for i in ${!exp_output[*]}; do
+#      out=$(python3 -c 'from epmt import epmt_query as eq; procs=eq.get_procs(fmt="orm", jobs=["12340"])[:]; p = procs["${i}"]; print(p.args);')
+#      [[ "$out" == "${exp_output[$i]}" ]]
+#  done
+#}

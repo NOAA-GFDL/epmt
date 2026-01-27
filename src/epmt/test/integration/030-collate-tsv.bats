@@ -8,7 +8,7 @@ setup(){
   jobs_in_module='989'
   rm -f ${stage_dest}/989.tgz
   epmt delete ${jobs_in_module} || true
-  
+
 }
 teardown() {
   epmt delete ${jobs_in_module} || true
@@ -45,7 +45,7 @@ teardown() {
   # run epmt list procs jobs=$jobid limit=1
   # assert_success
 
-  run epmt dump -k tags $jobid 
+  run epmt dump -k tags $jobid
   assert_output --partial "{'op': 'check-tsv'}"
   run test -f ${stage_dest}/989.tgz || fail
   assert_success

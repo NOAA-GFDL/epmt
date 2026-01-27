@@ -3,16 +3,18 @@ init file for epmt.orm
 houses API calls below that have the same implementation on all ORMs considered. 
 """
 
+from logging import getLogger
+
 from os import environ
 import epmt.epmt_settings as settings
 from .op import *
 
-
 if settings.orm == 'sqlalchemy':
+    #from .sqlalchemy.general import orm_create, orm_get, setup_db, db_session, orm_raw_sql, orm_dump_schema
+    #from .sqlalchemy.models import *
     from .sqlalchemy import *
-else:
-    from .pony import *
 
+logger = getLogger(__name__)
 
 def orm_get_or_create(model, **kwargs):
     # Note, this function is not ATOMIC- There is a potential for a race condition here. TODO
@@ -70,7 +72,7 @@ def orm_db_size(findwhat=['database', 'table', 'index', 'tablespace'], usejson=T
         logger.warning("%s not supported for dbsize", provider)
         return False
 
-    if setup_db(settings) == False:
+    if not setup_db(settings):
         logger.error("Could not connect to db")
         return False
 
@@ -147,4 +149,3 @@ def orm_db_size(findwhat=['database', 'table', 'index', 'tablespace'], usejson=T
         print(dumps(struct, indent=4))
 
     return True
-

@@ -172,7 +172,7 @@ def conv_procs(procs, fmt='pandas', order=None):
     _empty_collection_check(procs)
 
     procs = orm_procs_col(procs)
-    if not (order is None):
+    if order is not None:
         procs = procs.order_by(order)
     return __conv_procs_orm(procs, fmt=fmt)
 
@@ -1277,14 +1277,14 @@ enabled: boolean, optional
     jobs_df = conv_jobs(jobs_orm, fmt='pandas')
     jobs = jobs_orm[:]
     from epmt.epmt_outliers import sanitize_features
-    if (len(jobs) < 3):
+    if len(jobs) < 3:
         logger.error('You cannot create a model with less than 3 jobs. Your chosen jobs: {}'.format(jobs))
         return False
 
     if sanity_check:
         _warn_incomparable_jobs(jobs)
 
-    if pca and features and (features != '*'):
+    if all( [ pca , features , features != '*' ] ):
         logger.warning('It is strongly recommended to set features=[] when doing PCA')
     features = sanitize_features(features, jobs_df)
     orig_features = features  # keep a copy as features might be reassigned below
@@ -1536,10 +1536,11 @@ def refmodel_set_active_metrics(ref_id, metrics):
     r = ReferenceModel[ref_id]
     all_metrics = refmodel_get_metrics(ref_id, False)
     metrics_set = set(metrics)
-    if (metrics_set - all_metrics):
+    unavailable_metrics = metrics_set - all_metrics
+    if unavailable_metrics:
         logger.warning(
             'Ignoring metrics that are not available in the trained model: {0}'.format(
-                metrics_set - all_metrics))
+                unavailable__metrics ))
     active_metrics = list(metrics_set & all_metrics)
     logger.info('Active metrics for model set to: %s', str(active_metrics))
     info_dict = dict.copy(r.info_dict or {})
@@ -2046,59 +2047,62 @@ def retire_jobs(ndays=settings.retire_jobs_ndays, skip_unprocessed=False, dry_ru
     """
     if ndays <= 0:
         return 0
+
     JOBS_PER_DELETE_MAX = (settings.retire_jobs_per_delete_max if settings.retire_jobs_per_delete_max > 0 else 2000)
     db_num_jobs = get_jobs(fmt='orm', trigger_post_process=False).count()
     logger.info('(retire_jobs) number of jobs in DB is {0}'.format(db_num_jobs))
+
     num_jobs = get_jobs(before=-ndays, fmt='orm', trigger_post_process=False).count()
+    logger.info('(retire_jobs) number of jobs older than {0} days is {1}'.format(ndays, num_jobs))
 
     # uncomment me for training wheels/debug/tests
     # JOBS_PER_DELETE_MAX=100
     # num_jobs=get_jobs(before=-ndays, limit=400, fmt='orm', trigger_post_process = False).count()
-    if num_jobs > JOBS_PER_DELETE_MAX:
-        logger.warning('(retire_jobs) number of jobs older than {0} days is {1}'.format(ndays, num_jobs))
-        logger.warning('(retire_jobs) will be deleting jobs in chunks of %d', JOBS_PER_DELETE_MAX)
-
-        tot_num_deleted = 0
-        num_delete_attempts = 0  # keep track of num we attempt to delete
-        offset = 0  # if jobs spared via ref-model-assoc, stop targeting those jobs.
-
-        while num_delete_attempts < num_jobs:
-            logger.info('%d jobs to go', (num_jobs - num_delete_attempts))
-
-            _attempt_to_delete_max = ((num_delete_attempts + JOBS_PER_DELETE_MAX) <= num_jobs)
-            limit = 0
-            if _attempt_to_delete_max:
-                limit = JOBS_PER_DELETE_MAX
-            else:
-                limit = num_jobs - num_delete_attempts
-
-            logger.info('attempting to delete %d jobs now...', limit)
-            num_deleted = delete_jobs(jobs=[], force=True, before=-ndays, warn=False,
-                                      limit=limit, offset=offset, skip_unprocessed=skip_unprocessed,
-                                      dry_run=dry_run)
-
-            tot_num_deleted += num_deleted
-            num_delete_attempts += limit
-            num_not_deleted = limit - num_deleted
-
-            if dry_run:
-                offset += limit  # dry-run delete_jobs just returns the target # of jobs
-            else:
-                if (num_not_deleted > 0):
-                    logger.debug(f'offset was: {offset}')
-                offset += (limit - num_deleted)
-                if (num_not_deleted > 0):
-                    logger.debug(f'offset is now: {offset}')
-
-            logger.info('%d jobs out of %d deleted so far', tot_num_deleted, num_delete_attempts)
-
-        logger.info('done deleting jobs in chunks!')
-
-        return tot_num_deleted
-
-    else:  # can delete in one swoop, when less than max.
+    if num_jobs <= JOBS_PER_DELETE_MAX:
+        # can delete in one swoop, when less than max.
         return delete_jobs([], force=True, before=-ndays, warn=False,
                            skip_unprocessed=skip_unprocessed, dry_run=dry_run)
+
+    #if num_jobs > JOBS_PER_DELETE_MAX:
+    logger.warning('(retire_jobs) will be deleting jobs in chunks of %d', JOBS_PER_DELETE_MAX)
+
+    tot_num_deleted = 0
+    num_delete_attempts = 0  # keep track of num we attempt to delete
+    offset = 0  # if jobs spared via ref-model-assoc, stop targeting those jobs.
+
+    while num_delete_attempts < num_jobs:
+        logger.info('%d jobs to go', num_jobs - num_delete_attempts)
+
+        _attempt_to_delete_max = (num_delete_attempts + JOBS_PER_DELETE_MAX) <= num_jobs
+        limit = 0
+        if _attempt_to_delete_max:
+            limit = JOBS_PER_DELETE_MAX
+        else:
+            limit = num_jobs - num_delete_attempts
+
+        logger.info('attempting to delete %d jobs now...', limit)
+        num_deleted = delete_jobs(jobs=[], force=True, before=-ndays, warn=False,
+                                  limit=limit, offset=offset, skip_unprocessed=skip_unprocessed,
+                                  dry_run=dry_run)
+
+        tot_num_deleted += num_deleted
+        num_delete_attempts += limit
+        num_not_deleted = limit - num_deleted
+
+        if dry_run:
+            offset += limit  # dry-run delete_jobs just returns the target # of jobs
+        else:
+            if num_not_deleted > 0:
+                logger.debug('offset was: %s', offset)
+            offset += limit - num_deleted
+            if num_not_deleted > 0:
+                logger.debug('offset is now: %s', offset)
+
+        logger.info('%d jobs out of %d deleted so far', tot_num_deleted, num_delete_attempts)
+
+    logger.info('done deleting jobs in chunks!')
+
+    return tot_num_deleted
 
 # @db_session
 # def dm_calc(jobs = [], tags = ['op:hsmput', 'op:dmget', 'op:untar', 'op:mv', 'op:dmput', 'op:hsmget', 'op:rm', 'op:cp']):
@@ -2145,7 +2149,7 @@ def ops_costs(jobs=[], tags=['op:hsmput', 'op:dmget', 'op:untar', 'op:mv',
       tags : list of strings or list of dicts, optional
              The `tags` specify the cumumlative set of operations
              for which we want to determine the time taken.
-     metric: string
+      metric: string
              'cpu_time' or 'duration'
               Defaults to 'cpu_time'
 
@@ -2157,9 +2161,9 @@ def ops_costs(jobs=[], tags=['op:hsmput', 'op:dmget', 'op:untar', 'op:mv',
                   Operations cost as a percent of total metric for all the jobs
       dm_ops_df : dataframe
                   Dataframe of operations showing cost of each operation
-     jobs_metric: float
+      jobs_metric: float
                   Aggregated time for specified metric across the jobs in question
-dm_agg_df_by_job: dataframe
+      dm_agg_df_by_job: dataframe
                   Aggregate rows by job across operations
 
     Notes
@@ -2213,7 +2217,7 @@ dm_agg_df_by_job: dataframe
         if job_total != 0:
             agg_dict['dm_' + metric + '%'] = round(100 * agg_dict['dm_' + metric] / job_total)
         agg_ops_by_job.append(agg_dict)
-        if (n % 10 == 0):
+        if n % 10 == 0:
             elapsed_time = datetime.now() - start_time
             logger.info('processed %d of %d jobs at %.2f jobs/sec', n, jobs.count(), n / elapsed_time.total_seconds())
     dm_ops_df = pd.concat(df_list).reset_index(drop=True)
@@ -2388,7 +2392,7 @@ def analyze_jobs(jobs=[], analyses_filter={}, max_comparable=50, check=True):
     """
     if check:
         ua_jobs = get_unanalyzed_jobs(jobs=jobs, analyses_filter=analyses_filter)
-        if (len(ua_jobs) != len(jobs)):
+        if len(ua_jobs) != len(jobs):
             logger.warning("Analyzed jobs passed in, they will be ignored")
     else:
         ua_jobs = jobs
@@ -2467,7 +2471,7 @@ def analyze_comparable_jobs(jobids, check_comparable=True, keys=('exp_name', 'ex
                 v = jobids[j].tags.get(k, '')
                 if k not in jobids[j].tags:
                     logger.warning('job {0} tags has no key -- {1}'.format(j, k))
-                assert (jobids[j].tags.get(k, '') == model_tag[k])
+                assert jobids[j].tags.get(k, '') == model_tag[k]
     logger.debug('Searching for trained models with tag: {0}'.format(model_tag))
     trained_models = get_refmodels(tag=model_tag)
     outlier_results = []
@@ -2713,7 +2717,7 @@ matching_keys : list of strings, optional
     INFO:epmt_query:doing a comparable_job_partitions on 5 jobs
     True
     '''
-    return (len(comparable_job_partitions(jobs, matching_keys)) == 1)
+    return len(comparable_job_partitions(jobs, matching_keys)) == 1
 
 
 def _warn_incomparable_jobs(jobs):
@@ -2740,6 +2744,9 @@ def _warn_incomparable_jobs(jobs):
 
 
 def _empty_collection_check(col):
+    # if all( [ not orm_is_query(col) ,
+    #           not isinstance(col, pd.DataFrame) ,
+    #           col in [ [], '', None ] ] ):
     if (not (orm_is_query(col))) and (not isinstance(col, pd.DataFrame)) and (col in [[], '', None]):
         msg = 'You need to specify a non-empty collection as a parameter'
         logger.warning(msg)
@@ -3040,7 +3047,7 @@ def is_job_post_processed(job):
     # only processed jobs have this set
     info_dict = job.info_dict or {}
     retval = info_dict.get('post_processed', 0) > 0
-    logger.info("is_job_post_processed(%s): %s",job.jobid, retval)
+    logger.debug("is_job_post_processed(%s): %s",job.jobid, retval)
     return retval
 
 
@@ -3128,7 +3135,7 @@ def is_job_in_staging(j):
     '''
     if isinstance(j, str):
         j = Job[j]
-    return (j.info_dict.get('procs_in_process_table', 1) == 0)
+    return j.info_dict.get('procs_in_process_table', 1) == 0
 
 
 @db_session
@@ -3171,7 +3178,6 @@ def verify_jobs(jobs):
     >>>  'Process[191898] >> threads_sums >> rdtsc_duration is negative']
     '''
     from math import isnan, isinf
-    # from pony.orm.ormtypes import TrackedList, TrackedDict
     # import datetime
 
     def verify_num(n):
@@ -3179,7 +3185,7 @@ def verify_jobs(jobs):
             return 'is Nan'
         elif isinf(n):
             return 'is inf.'
-        elif (n < 0):
+        elif n < 0:
             return 'is negative'
         return ''
 
@@ -3215,9 +3221,9 @@ def verify_jobs(jobs):
                 if ret:
                     err.append('{}{} {}'.format(prefix, k, ret))
             elif isinstance(val, datetime):
-                if (val < datetime(2019, 1, 1)):
+                if val < datetime(2019, 1, 1):
                     err.append('{}{} {}'.format(prefix, k, 'contains an invalid timestamp (too old)'))
-                elif (val > now):
+                elif val > now:
                     err.append('{}{} {}'.format(prefix, k, 'contains an invalid timestamp (in the future)'))
 #            elif type(val) in (dict, list, TrackedList, TrackedDict):
             elif type(val) in (dict, list):

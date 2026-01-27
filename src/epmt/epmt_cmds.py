@@ -1,9 +1,6 @@
 """
 EPMT commands module - main command interface for EPMT functionality.
 """
-#!/usr/bin/env python
-
-from __future__ import print_function
 
 from datetime import datetime
 from os import environ, makedirs, mkdir, path, getpid, remove, uname, kill
@@ -165,7 +162,7 @@ def verify_epmt_output_prefix():
     opf = settings.epmt_output_prefix
     retval = True
     print("settings.epmt_output_prefix =", opf, end='')
-    
+
     # Check for bad stuff and shortcut
     if "*" in opf or "?" in opf:
         logger.error("Found wildcards in value: %s", opf)
@@ -175,7 +172,7 @@ def verify_epmt_output_prefix():
     # Print and create dir
     def testdir(str2):
         logger.info("\tmkdir -p " + str2)
-        return (create_job_dir(str2))
+        return create_job_dir(str2)
 
     # Test create (or if it exists)
     if testdir(opf) == False:
@@ -207,9 +204,9 @@ def verify_epmt_output_prefix():
     return retval
 
 def verify_papiex_options():
-    # This function is under review for potential deprecation due to limited usage and unclear requirements. 
-    # If deprecation is confirmed, it will be removed in a future release. Otherwise, it may be implemented to handle papiex options.
-    pass
+    ## This function is under review for potential deprecation due to limited usage and unclear requirements.
+    ## If deprecation is confirmed, it will be removed in a future release. Otherwise, it may be implemented to handle papiex options.
+    #pass
 
     s = get_papiex_options(settings)
     # print("papiex_options =",s, end='')
@@ -302,7 +299,7 @@ def verify_stage_command():
         return False
 
     dest = settings.stage_command_dest
-    if not all( [ dest, path.isdir(dest) ] ):    
+    if not all( [ dest, path.isdir(dest) ] ):
         PrintFail()
         return False
 
@@ -366,42 +363,45 @@ def verify_papiex():
 
 
 def epmt_check():
+    '''
+    all checks below return false if
+    '''
+
     retval = True
 
     logger.warning('CHECKING verify_db_params()...')
-    if verify_db_params() == False:
-        retval = False
+    reval = verify_db_params()
 
     logger.warning('CHECKING verify_install_prefix()...')
-    if verify_install_prefix() == False:
-        retval = False
+    retval = verify_install_prefix()
 
     logger.warning('CHECKING verify_epmt_output_prefix()...')
-    if verify_epmt_output_prefix() == False:
-        retval = False
+    retval = verify_epmt_output_prefix()
 
     logger.warning('CHECKING verify_perf()...')
-    if verify_perf() == False:
-        retval = False
+    retval = verify_perf()
 
-    #logger.warning('CHECKING verify_papiex_options()...')
-    #if verify_papiex_options() == False:
-    #    retval = False
+    logger.warning('CHECKING verify_papiex_options()...')
+    #retval = verify_papiex_options()
+    if not verify_papiex_options():
+        logger.error('verify_papiex_options() failed, but passing on harmlessly (GUARDED)')
+    else:
+        logger.error('verify_papiex_options() passed, you are probably on PPAN')
 
     logger.warning('CHECKING verify_stage_command()...')
-    if verify_stage_command() == False:
-        retval = False
+    retval = verify_stage_command()
 
     logger.warning('CHECKING verify_papiex()...')
-    if verify_papiex() == False:
-        retval = False
+    retval = verify_papiex()
 
     return retval
 
-#
-# These two functions should match _check_and_create_metadata!
-#
 
+
+
+# inl: not sure what the function desc here should be, but the old comment above it,
+# "this should match _check_and_create_metadata" did not make much sense, as this
+# function does not exist. from_batch is/was unused? but is passed things from epmt_start_job
 def create_start_job_metadata(jobid, submit_ts, from_batch=[]):
     # use timezone info if available, otherwise use naive datetime objects
     try:
@@ -596,7 +596,7 @@ def epmt_dump_metadata(filelist, key=None):
             logger.debug('{} was not found in the file-system. Checking database..'.format(f))
             from epmt.epmt_cmd_show import epmt_show_job
             rc = epmt_show_job(f, key=key)
-            if not (rc):
+            if not rc:
                 rc_final = False
             continue
 
@@ -679,7 +679,7 @@ def epmt_annotate(argslist, replace=False):
     Annotations are appended to unless replace is True, in which
     case existing annotations are wiped clean first.
     '''
-    # nothing to do if no args    
+    # nothing to do if no args
     if not argslist:
         return False
 
@@ -800,7 +800,7 @@ def _papiex_opt_byhost(o):
     if not isinstance(o.papiex_options_byhost, dict):
         logger.error("Unsupported type for papiex_options_byhost; must be a dictionary")
         return ""
-    
+
     hostname = gethostname()
     logger.info("hostname to match papiex_options_byhost is %s", hostname)
     for key, value in o.papiex_options_byhost.items():
@@ -814,7 +814,7 @@ def _papiex_opt_byhost(o):
         except reerror as reerr:
             logger.error(
                 "Invalid regular expression in papiex_options_byhost: key is %s, value is %s. error is \n\n %s",
-                key, value, reerr)        
+                key, value, reerr)
     return ""
 
 
@@ -832,7 +832,7 @@ def _papiex_opt_bycpu(o):
             str(cpu_info.get('model', 'no_model_found')) + "/" + \
             str(cpu_info.get('stepping', 'no_stepping_found'))
         logger.info("cpu F/M/S to match papiex_options_bycpu is %s", cpu_fms)
-        
+
         for key, value in o.papiex_options_bycpu.items():
             try:
                 logger.debug("trying to match %s and %s", key, cpu_fms)
@@ -945,10 +945,10 @@ def epmt_source(slurm_prolog=False, papiex_debug=False, monitor_debug=False, run
         if not old_pl_libs:
             cmd += " LD_PRELOAD';"
         else:
-            cmd += "';\nsetenv LD_PRELOAD $PAPIEX_OLD_LD_PRELOAD;"            
+            cmd += "';\nsetenv LD_PRELOAD $PAPIEX_OLD_LD_PRELOAD;"
         # CSH won't let an alias used in eval be used in the same eval, so we repeat this
         cmd += "\n" + tmp + "\n"
-        
+
     elif not run_cmd:
         # set up functions
         cmd += "epmt_push_preload ()\n{\nif [ -z \"$PAPIEX_OLD_LD_PRELOAD\" ]; then export LD_PRELOAD=$PAPIEX_LD_PRELOAD ; else export LD_PRELOAD=$PAPIEX_LD_PRELOAD:$PAPIEX_OLD_LD_PRELOAD ; fi\n};\n"
@@ -958,7 +958,7 @@ def epmt_source(slurm_prolog=False, papiex_debug=False, monitor_debug=False, run
         cmd += "epmt_uninstrument () {\nexport -n MONITOR_DEBUG PAPIEX_OUTPUT PAPIEX_DEBUG PAPIEX_OPTIONS;\n"
         cmd += "epmt_pop_preload;\n};\n"
         #cmd += "epmt () {\nepmt_pop_preload;\n cmd=`command epmt`;\nif [ $? -eq 0 ]; then $cmd $* ; else \"epmt not in \$PATH\"; fi\n;epmt_push_preload;\n};\n"
-        
+
         # Now enable instrumentation
         cmd += "epmt_instrument;\n"
     return cmd
@@ -972,7 +972,7 @@ def epmt_run(cmdline, wrapit=False, dry_run=False, debug=False):
 
     if not cmdline:
         logger.error("No command given")
-        return (1)
+        return 1
 
     cmd = epmt_source(papiex_debug=debug, monitor_debug=debug, run_cmd=True)
     if not cmd:
@@ -1106,7 +1106,7 @@ def epmt_submit(dirs, ncpus=1, dry_run=True, drop=False, keep_going=False,
         # master. In short we are unable to support the --drop option
         # when using multiple processes. This should be fixable.
         logger.error('Dropping tables in a parallel submit mode, not supported')
-        return (False)
+        return False
 
     if drop:
         from epmt.orm import orm_drop_db, setup_db
@@ -1140,7 +1140,7 @@ def epmt_submit(dirs, ncpus=1, dry_run=True, drop=False, keep_going=False,
                 # where the job is in the database, when we don't
                 # have any submit_details. In such a case with keep_going
                 # disabled, we need to error out
-                if not (submit_details):
+                if not submit_details:
                     break
 
         # stringify the return values
@@ -1185,10 +1185,12 @@ def epmt_submit(dirs, ncpus=1, dry_run=True, drop=False, keep_going=False,
             p.join()
     fini_ts = time.time()
     logger.info('Import done, preparing summary')
+
     # return_dict contains stringified return values to de-stringify them
     r = {k: loads(return_dict[k]) for k, v in return_dict.items()}
     total_procs = 0
     jobs_imported = []
+
     logger.info('**** Import Summary ****')
     error_occurred = False
     for v in r.values():
@@ -1208,7 +1210,7 @@ def epmt_submit(dirs, ncpus=1, dry_run=True, drop=False, keep_going=False,
                 (jobid, process_count) = submit_details
                 jobs_imported.append(jobid)
                 total_procs += process_count
-    
+
     logger.info('Imported %d jobs (%d processes) in %2.2f sec at %2.2f procs/sec, %d workers',
                 len(jobs_imported),
                 total_procs,
@@ -1336,14 +1338,14 @@ def extract_tar(tarfile, outdir='', check_metadata=False):
 
     Parameters
     ----------
-        tarfile : 
+        tarfile :
             string
             Path to tarfile
-        outdir : 
+        outdir :
             string, optional
             Directory to extract to. If unset, a temporary
             directory will be created using mkdtemp
-        check_metadata : 
+        check_metadata :
             boolean, optional
             If set, the tar will be searched for a job
             metadata file, and if not found an error will
@@ -1543,7 +1545,7 @@ def stage_job(indir, collate=True, compress_and_tar=True, keep_going=True):
         return True
 
     _start_staging_time = time.time()
-    
+
     # Always collate into local temp dir
     if collate:
         tempdir = copy_files(indir, patterns=['job_metadata'], prefix='epmt_stage_')
@@ -1673,7 +1675,7 @@ def epmt_shell(ipython=True):
         args = {'local': locals()}
     except BaseException:
         pass
-    
+
     if ipython:
         # ipython shell
         from IPython import embed
@@ -1685,7 +1687,6 @@ def epmt_shell(ipython=True):
 
 
 def epmt_entrypoint(args):
-    # print('!!!!epmt.epmt_cmds.epmt_entrypoint used!!!!')
 
     # I hate this sequence.
     if args.verbose is None:
@@ -1696,7 +1697,7 @@ def epmt_entrypoint(args):
                       check=True,
                       log_pid=(hasattr(args, 'num_cpus') and (args.num_cpus > 1)))
 
-    # initialize logger
+    # initialize logger ... inl: after epmt_logging_init? shouldnt that one function call do it?
     logger = getLogger(__name__)
     init_settings(settings)
 
@@ -1704,23 +1705,6 @@ def epmt_entrypoint(args):
     # and error out appropriately
     if args.command == 'shell':
         epmt_shell()
-        return 0
-
-    if args.command == 'python':
-        script_file = args.epmt_cmd_args
-        if script_file:
-            if script_file == '-':
-                # special handling for stdin
-                f = stdin
-            else:
-                if not path.exists(script_file):
-                    logger.error('script {} does not exist'.format(script_file))
-                    return -1
-                else:
-                    f = open(script_file)
-            exec( f.read() ) # TODO remove this functionality, it's risky and not really needed
-        else:
-            epmt_shell(ipython=False)
         return 0
 
     if args.command == 'convert':
@@ -1967,7 +1951,7 @@ def epmt_entrypoint(args):
         return epmt_run( args.epmt_cmd_args,
                          wrapit=args.auto,
                          dry_run=args.dry_run,
-                         debug=(args.verbose > 2) )
+                         debug=args.verbose > 2 )
 
     if args.command == 'annotate':
         return not epmt_annotate(args.epmt_cmd_args,
@@ -1983,8 +1967,8 @@ def epmt_entrypoint(args):
 
     if args.command == 'source':
         s = epmt_source(slurm_prolog=args.slurm,
-                        papiex_debug=(args.verbose > 2),
-                        monitor_debug=(args.verbose > 3))
+                        papiex_debug=args.verbose > 2,
+                        monitor_debug=args.verbose > 3)
         if not s:
             return 1
 

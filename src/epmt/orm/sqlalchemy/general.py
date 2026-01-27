@@ -1,23 +1,22 @@
 """
 a set of functions for managing/working with an ORM defined for SQLAlchemy
 """
-from __future__ import print_function
+
+from functools import wraps
+from os import chdir, getcwd
+from logging import getLogger
+import threading
 
 import epmt.epmt_settings as settings
 
 from sqlalchemy import engine_from_config, text, inspect, MetaData, desc
-# from sqlalchemy.event import listens_for
-# from sqlalchemy.pool import Pool
 from sqlalchemy import sql as sqla_sql
 from sqlalchemy.orm import sessionmaker, scoped_session, mapperlib
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm.query import Query
+from sqlalchemy.ext.declarative import declarative_base
+# from sqlalchemy.event import listens_for
+# from sqlalchemy.pool import Pool
 
-import threading
-from functools import wraps
-from os import chdir, getcwd
-
-from logging import getLogger
 logger = getLogger(__name__)
 
 logger.info('sqlalchemy orm selected')
@@ -36,16 +35,15 @@ db_setup_complete = False
 def db_session(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
-        if not hasattr(thr_data, 'session') or (thr_data.session is None):
+        if not hasattr(thr_data, 'session') or thr_data.session is None:
             thr_data.session = Session()  # (this is now a scoped session)
         session = thr_data.session
         if hasattr(thr_data, 'nestlevel'):
             thr_data.nestlevel += 1
             # warning for deep nesting
             if thr_data.nestlevel > 3:
-                logger.warning(
-                    f"Deep session nesting detected (level={thr_data. nestlevel}) "
-                    f"in {func.__module__}.{func.__name__}" )
+                logger.warning( "Deep session nesting detected, level= %s", thr_data.nestlevel)
+                logger.warning( "Deep session nesting detected, in function %s.%s", func.__module__, func.__name__ )
         else:
             thr_data.nestlevel = 1
         completed = False
@@ -68,9 +66,8 @@ def db_session(func):
             raise
         finally:
             thr_data.nestlevel -= 1
-            if thr_data.nestlevel == 0:
-                if completed:
-                    session.commit()
+            if thr_data.nestlevel == 0 and completed:
+                session.commit()
                 # Session.remove()  # NOTE: *remove* rather than *close* here
         return retval
     return wrapper
@@ -134,13 +131,17 @@ def setup_db(settings, drop=False, create=True):
     from epmt.epmtlib import capture
     with capture() as (out, err):
         Session.configure(bind=engine, expire_on_commit=False, autoflush=True)
+        logger.debug('output: %s', out)
+        logger.debug('error: %s', err)
     db_setup_complete = True
     return True
 
 
-# This function is only-used for in-memory databases where
-# migrations won't work
 def generate_schema_from_models():
+    '''
+    This function is only-used for in-memory databases where
+    migrations won't work
+    '''
     ins = inspect(engine)
     if len(ins.get_table_names()) >= 8:
         logger.info("Reflecting existing schema..")
@@ -167,15 +168,19 @@ def generate_schema_from_models():
     return True
 
 
-# orm_get(Job, '6355501')
-# or
-# orm_get(User, name='John.Doe')
 def orm_get(model, pk=None, **kwargs):
+    '''
+    example:
+        orm_get(Job, '6355501')
+    or:
+        orm_get(User, name='John.Doe')
+    '''
+    #return Session.query(model).get(pk) if (pk is not None) else Session.query(model).filter_by(**kwargs).one_or_none()
     if pk is not None:
         return Session.query(model).get(pk)
     else:
         return Session.query(model).filter_by(**kwargs).one_or_none()
-    #return Session.query(model).get(pk) if (pk is not None) else Session.query(model).filter_by(**kwargs).one_or_none()
+
 
 # def orm_get_or_create(model, **kwargs):
 #     o = Session.query(model).with_for_update(of=model).filter_by(**kwargs).one()
@@ -188,6 +193,7 @@ def orm_get(model, pk=None, **kwargs):
 
 def orm_findall(model, **kwargs):
     return Session.query(model).filter_by(**kwargs)
+
 
 # def orm_set(o, **kwargs):
 #     for k in kwargs.keys():
@@ -254,7 +260,7 @@ def orm_delete_jobs(jobs, use_orm=False):
         # postgres permission denied for R/O accounts TODO
         if 'permission denied' in str(e):
             logger.error('You do not have sufficient privileges to delete jobs')
-        logger.error("Could not execute delete SQL: {0}".format(str(e)))
+        logger.error("Could not execute delete SQL: %s", str(e) )
         return False
 
 
@@ -690,7 +696,7 @@ def orm_dump_schema(show_attributes=True):
 
 def get_mapper(tbl):
     '''
-     utility function to get Mapper from table
+    utility function to get Mapper from table
     '''
     mappers = [
         mapper for mapper in mapperlib._mapper_registry
@@ -707,10 +713,12 @@ def get_mapper(tbl):
     return mappers[0]
 
 
-# This function is vulnerable to injection attacks. It's expected that
-# the orm API will define a higher-level function to use this
-# function after guarding against injection and dangerous sql commands
 def orm_raw_sql(sql, commit=False):
+    '''
+    This function is vulnerable to injection attacks. It's expected that
+    the orm API will define a higher-level function to use this
+    function after guarding against injection and dangerous sql commands
+    '''
     # As we may get really long queries when moving processes from staging,
     # only log the first 100 or so of long queries
     if len(sql) > settings.max_log_statement_length:
@@ -748,6 +756,7 @@ def set_sql_debug(discard):
     return False
 
 
+# TODO there's now stdlib context management for this to replace all this, if we upgrade the python version
 def chdir_for_alembic_and_restore_cwd(function):
     '''
     This decorator will change the directory to the directory containing alembic.ini (install dir)

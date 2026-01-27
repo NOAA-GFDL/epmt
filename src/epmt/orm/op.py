@@ -31,7 +31,7 @@ class Operation(dict):
             raise ValueError("jobs count should be greater than zero")
 
         self.jobs = jobs
-        self.tags = tags_list(tags) if (isinstance(tags, list)) else tag_from_string(tags)
+        self.tags = tags_list(tags) if isinstance(tags, list) else tag_from_string(tags)
         self.exact_tag_only = exact_tag_only
         self.op_duration_method = op_duration_method
 
@@ -43,8 +43,9 @@ class Operation(dict):
         self._start = None
         self._finish = None
 
+
     def contiguous(self):
-        return (len(self.intervals) == 1)
+        return len(self.intervals) == 1
 
     def num_runs(self):
         return len(self.intervals)
@@ -127,9 +128,9 @@ class Operation(dict):
                 group_by_tag=True,
                 fmt='dict')
             if isinstance(self.tags, list):
-                assert (len(op_metrics) == len(self.tags))
+                assert len(op_metrics) == len(self.tags)
             else:
-                assert (len(op_metrics) == 1)
+                assert len(op_metrics) == 1
             self._proc_sums = sum_dicts_list(op_metrics, exclude=['tags'])
             # use duration as calculated by us
             self._proc_sums['duration'] = self.duration
@@ -145,7 +146,7 @@ class Operation(dict):
         d['finish'] = self.finish
         if full:
             d['intervals'] = self.intervals
-            d['contiguous'] = (len(self.intervals) == 1)
+            d['contiguous'] = len(self.intervals) == 1
             d['num_runs'] = len(self.intervals)
             from epmt.epmt_query import conv_procs
             d['processes'] = conv_procs(self.processes, fmt='dict')

@@ -702,7 +702,7 @@ class EPMTSubmit(unittest.TestCase):
         orig_lazy_eval = settings.lazy_compute_process_tree
         self.check_lazy_compute(Job['685000'], orig_lazy_eval)
         datafiles = '{}/test/data/submit/804268.tgz'.format(install_root)
-        settings.lazy_compute_process_tree = not (orig_lazy_eval)  # toggle setting
+        settings.lazy_compute_process_tree = not orig_lazy_eval  # toggle setting
         with capture() as (out, err):
             epmt_submit(glob(datafiles), dry_run=False, remove_on_success=False, move_on_failure=False)
         self.check_lazy_compute(Job['804268'], settings.lazy_compute_process_tree)
