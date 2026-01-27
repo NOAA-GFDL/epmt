@@ -1,4 +1,4 @@
-"""
+;"""
 EPMT job module - handles job-related data structures and operations.
 """
 
@@ -667,7 +667,7 @@ def post_process_job( j,
             'Job {} contains no processes, perhaps an error in collation or populating the staging data?'.format(jobid))
 
     if all_tags is None:
-        logger.info("  recreating all_tags..")
+        logger.debug("  recreating all_tags..")
         all_tags = set()
         # we need to read the tags from the processes
         for p in j.processes:
@@ -676,7 +676,7 @@ def post_process_job( j,
 
     # Add sum of tags to job
     if all_tags:
-        logger.info("  found %d distinct sets of process tags", len(all_tags))
+        logger.debug("  found %d distinct sets of process tags", len(all_tags))
         # convert each of the pickled tags back into a dict
         proc_sums['all_proc_tags'] = [loads(t) for t in sorted(all_tags)]
     else:
@@ -700,7 +700,7 @@ def post_process_job( j,
     papiex_err = ''          # set iff rdtsc_duration <= 0
     num_errs = 0             # total error count
     if all_procs:
-        logger.info("  computing thread sums across job processes..")
+        logger.debug("  computing thread sums across job processes..")
         _t2 = time.time()
 
         # We no longer do bulk inserts of hosts into the host_associations table
@@ -835,7 +835,7 @@ def post_process_job( j,
             u = orm_get(UnprocessedJob, pk=j.jobid)
             if u:
                 orm_delete(u)
-                logger.info('  marking job %s as processed in database', jobid)
+                logger.debug('  marking job %s as processed in database', jobid)
                 orm_commit()
             logger.debug(
                 '  checking/updating unprocessed jobs table (includes implicit commit) took: %2.5f sec',
