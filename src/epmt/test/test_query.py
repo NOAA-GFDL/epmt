@@ -1,10 +1,27 @@
 #!/usr/bin/env python
 
 # the import below is crucial to get a sane test environment
-from . import *
-epmt_logging_init(0)
-JOBS_LIST = ['685016', '685003', '685000']
+# inl: gotta move away from this, cyclic import errors everywhere
+#from . import *
 
+import unittest
+from glob import glob
+from datetime import datetime
+
+import pandas as pd
+
+from epmt.orm.sqlalchemy.models import Job, Process
+from epmt.orm.sqlalchemy.general import orm_get, orm_commit, orm_is_query
+import epmt.epmt_settings as settings
+from epmt.epmt_cmds import epmt_submit
+from epmt.orm import db_session, setup_db, Operation
+from epmt.epmtlib import timing, capture, epmt_logging_init, get_install_root, str_dict
+import epmt.epmt_query as eq
+
+install_root=get_install_root()
+epmt_logging_init(0)
+
+JOBS_LIST = ['685016', '685003', '685000']
 
 def do_cleanup():
     eq.delete_jobs(JOBS_LIST, force=True, remove_models=True)

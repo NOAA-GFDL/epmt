@@ -1,9 +1,21 @@
 #!/usr/bin/env python
 
 # the import below is crucial to get a sane test environment
-from . import *
+# inl: gotta move away from this, cyclic import errors everywhere
+#from . import *
+
+from glob import glob
+import unittest
+
+from epmt import epmt_settings as settings
+from epmt import epmt_query as eq
+from epmt.orm import setup_db
+from epmt.epmt_cmds import epmt_submit
+from epmt.epmtlib import capture, timing, get_install_root
+
 import epmt.epmt_exp_explore as exp
 
+install_root = get_install_root()
 
 def do_cleanup():
     eq.delete_jobs(['685000', '685003'], force=True, remove_models=True)
