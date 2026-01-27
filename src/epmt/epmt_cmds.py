@@ -172,7 +172,7 @@ def verify_epmt_output_prefix():
     # Print and create dir
     def testdir(str2):
         logger.info("\tmkdir -p " + str2)
-        return (create_job_dir(str2))
+        return create_job_dir(str2)
 
     # Test create (or if it exists)
     if testdir(opf) == False:
@@ -364,9 +364,9 @@ def verify_papiex():
 
 def epmt_check():
     '''
-    all checks below return false if 
+    all checks below return false if
     '''
-    
+
     retval = True
 
     logger.warning('CHECKING verify_db_params()...')
@@ -396,10 +396,12 @@ def epmt_check():
 
     return retval
 
-#
-# These two functions should match _check_and_create_metadata!
-#
 
+
+
+# inl: not sure what the function desc here should be, but the old comment above it,
+# "this should match _check_and_create_metadata" did not make much sense, as this
+# function does not exist. from_batch is/was unused? but is passed things from epmt_start_job
 def create_start_job_metadata(jobid, submit_ts, from_batch=[]):
     # use timezone info if available, otherwise use naive datetime objects
     try:
@@ -594,7 +596,7 @@ def epmt_dump_metadata(filelist, key=None):
             logger.debug('{} was not found in the file-system. Checking database..'.format(f))
             from epmt.epmt_cmd_show import epmt_show_job
             rc = epmt_show_job(f, key=key)
-            if not (rc):
+            if not rc:
                 rc_final = False
             continue
 
@@ -970,7 +972,7 @@ def epmt_run(cmdline, wrapit=False, dry_run=False, debug=False):
 
     if not cmdline:
         logger.error("No command given")
-        return (1)
+        return 1
 
     cmd = epmt_source(papiex_debug=debug, monitor_debug=debug, run_cmd=True)
     if not cmd:
@@ -1685,7 +1687,6 @@ def epmt_shell(ipython=True):
 
 
 def epmt_entrypoint(args):
-    # print('!!!!epmt.epmt_cmds.epmt_entrypoint used!!!!')
 
     # I hate this sequence.
     if args.verbose is None:
@@ -1696,7 +1697,7 @@ def epmt_entrypoint(args):
                       check=True,
                       log_pid=(hasattr(args, 'num_cpus') and (args.num_cpus > 1)))
 
-    # initialize logger
+    # initialize logger ... inl: after epmt_logging_init? shouldnt that one function call do it?
     logger = getLogger(__name__)
     init_settings(settings)
 
@@ -1705,23 +1706,6 @@ def epmt_entrypoint(args):
     if args.command == 'shell':
         epmt_shell()
         return 0
-
-#    if args.command == 'python':
-#        script_file = args.epmt_cmd_args
-#        if script_file:
-#            if script_file == '-':
-#                # special handling for stdin
-#                f = stdin
-#            else:
-#                if not path.exists(script_file):
-#                    logger.error('script {} does not exist'.format(script_file))
-#                    return -1
-#                else:
-#                    f = open(script_file)
-#            exec( f.read() ) # TODO remove this functionality, it's risky and not really needed
-#        else:
-#            epmt_shell(ipython=False)
-#        return 0
 
     if args.command == 'convert':
         from epmt.epmt_convert_csv import convert_csv_in_tar
@@ -1967,7 +1951,7 @@ def epmt_entrypoint(args):
         return epmt_run( args.epmt_cmd_args,
                          wrapit=args.auto,
                          dry_run=args.dry_run,
-                         debug=(args.verbose > 2) )
+                         debug=args.verbose > 2 )
 
     if args.command == 'annotate':
         return not epmt_annotate(args.epmt_cmd_args,
@@ -1983,8 +1967,8 @@ def epmt_entrypoint(args):
 
     if args.command == 'source':
         s = epmt_source(slurm_prolog=args.slurm,
-                        papiex_debug=(args.verbose > 2),
-                        monitor_debug=(args.verbose > 3))
+                        papiex_debug=args.verbose > 2,
+                        monitor_debug=args.verbose > 3)
         if not s:
             return 1
 

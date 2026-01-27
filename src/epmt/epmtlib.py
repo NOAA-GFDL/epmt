@@ -1129,7 +1129,7 @@ def get_install_root():
     ['/abc/def', 'ghi.py']
     '''
     # logger = getLogger(__name__)
-    install_root = (__file__.rsplit('/', 2)[0])
+    install_root = __file__.rsplit('/', 2)[0]
     # handle pip packaging here -- even when "manually" installed ala 4.9.6, our install_dir should always end in /epmt.
     # XXX THIS IS STILL HOKEY and i'm not sure how to make it work for all possible installations.
     if not install_root.endswith('/epmt'):

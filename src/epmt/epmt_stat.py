@@ -906,7 +906,7 @@ def get_modes(X, max_modes=10):
     if modes_by_elbow_method != 1:
         # the index of the peak value fo km_silhouette + 2 (since we start
         # from 2 to max_modes represents the number of modes
-        modes_by_silhouette_method = (np.argmax(km_silhouette) + 2)
+        modes_by_silhouette_method = np.argmax(km_silhouette) + 2
         logger.debug('optimal clustering according to silhouette method: {}'.format(modes_by_silhouette_method))
         if modes_by_elbow_method != modes_by_silhouette_method:
             logger.warning(
@@ -989,7 +989,7 @@ def dframe_append_weighted_row(df, weights, ignore_index=True, use_abs=False):
     2  1  2  2
 
     '''
-    assert (df.shape[0] == len(weights))
+    assert df.shape[0] == len(weights)
     weights_array = np.asarray(weights)
     new_row = []
 
