@@ -1,23 +1,16 @@
-#!/usr/bin/env python
-
-# the import below is crucial to get a sane test environment
-# from . import *
-
 import unittest
-# from sys import stderr
 from glob import glob
-# from os import environ
 from datetime import datetime
-# import pandas as pd
+
 
 import epmt.epmt_settings as settings
 import epmt.epmt_query as eq
 from epmt.epmt_cmds import epmt_submit
-from epmt.orm.sqlalchemy.models import Job#, UnprocessedJob, Process
+from epmt.orm.sqlalchemy.models import Job
 from epmt.epmtlib import timing, get_install_root, capture, epmt_logging_init
 from epmt.orm import db_session, setup_db, orm_db_provider
 
-from epmt.orm.sqlalchemy.general import orm_get
+from epmt.orm.sqlalchemy.general import orm_get, orm_to_dict
 
 install_root = get_install_root()
 
@@ -32,8 +25,6 @@ def setUpModule():
     settings.post_process_job_on_ingest = True
     settings.verbose = 2
     setup_db(settings)
-#    print('\n' + str(settings.db_params))
-#    print('setUpModule: importing {0}'.format(datafiles))
     do_cleanup()
     with capture() as (out, err):
         epmt_submit(glob(datafiles), dry_run=False, remove_on_success=False, move_on_failure=False)
@@ -556,7 +547,7 @@ class EPMTSubmit(unittest.TestCase):
 
     @db_session
     def test_unprocessed_jobs(self):
-        from epmt.orm import UnprocessedJob, orm_commit
+        from epmt.orm import UnprocessedJob
         from epmt.epmt_job import post_process_pending_jobs, post_process_job
         with self.assertRaises(Exception):
             u = UnprocessedJob['685003']
@@ -591,7 +582,6 @@ class EPMTSubmit(unittest.TestCase):
 
     @db_session
     def test_unprocessed_jobs_auto_post_process(self):
-        from epmt.orm import UnprocessedJob
         saved_val = settings.post_process_job_on_ingest
         if settings.orm == 'sqlalchemy':
             # only sqla supports this setting

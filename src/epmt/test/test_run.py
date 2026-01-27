@@ -1,8 +1,3 @@
-#!/usr/bin/env python
-
-# the import below is crucial to get a sane test environment
-# inl: gotta move away from this, cyclic import errors everywhere
-#from . import *
 import os
 from os import environ
 import shutil
@@ -34,9 +29,6 @@ def remove_jobid_envs():
             del environ[e]
 
 
-# These will be used in both tests
-# One can embed them in the class, but referring to them with
-# a class prefix is ugly
 jobid = '1011'
 tuser = 'testuser'
 odir = settings.epmt_output_prefix + get_username() + "/"
@@ -143,21 +135,13 @@ class EPMTShell(unittest.TestCase):
             self.assertEqual(0, results)
 
     def test_monolithic(self):
-        from epmt.epmt_cmds import epmt_check, epmt_source, epmt_start_job, epmt_dump_metadata, epmt_run
+        from epmt.epmt_cmds import epmt_source, epmt_run
         remove_jobid_envs()
         from os import environ
         environ['SLURM_JOB_ID'] = jobid
         environ['SLURM_JOB_USER'] = tuser
         with capture() as (out, err):
-            # Check will fail because of kernel paranoid, but we can't be
-            # sure it will always fail.
-            # TODO: Fix this so we can count on it to either always fail or always
-            # pass. Since we can't count on the kernel paranoid setting to be right,
-            # it might be better to set this up to always fail. But how?
-            # results = epmt_check()
-            # self.assertEqual(results, False)
 
-            # Source
             results = epmt_source()
             self.assertIn("PAPIEX_OPTIONS", results, 'epmt_source options are missing')
             self.assertIn("PAPIEX_OUTPUT", results, 'epmt_source output is missing')

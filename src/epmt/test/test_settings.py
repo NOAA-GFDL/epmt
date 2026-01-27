@@ -1,12 +1,8 @@
-#!/usr/bin/env python
-
 import unittest
-from epmt.epmtlib import get_install_root
 from os import path
 
+from epmt.epmtlib import get_install_root
 
-#def setUpModule():
-#    global install_root
 install_root = get_install_root()
 
 
@@ -34,6 +30,7 @@ class EPMTSettings(unittest.TestCase):
                         (path.getsize(install_root + '/settings.py') > 0))
         try:
             import epmt.epmt_settings as settings
+            assert settings is not None
         except BaseException:
             self.assertTrue(False, "could not load epmt_settings as settings")
 
