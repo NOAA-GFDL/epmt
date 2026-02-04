@@ -18,23 +18,32 @@ permissions:
 jobs:
   docker-build-rocky8:
     runs-on: ubuntu-latest
+    # Use Docker-in-Docker (DinD) approach with privileged container
+    services:
+      dind:
+        image: docker:dind
+        options: --privileged
+        ports:
+          - 2375:2375
+        env:
+          DOCKER_TLS_CERTDIR: ""
     env:
+      # Connect to the DinD service
+      DOCKER_HOST: tcp://localhost:2375
       # Override docker run options to be non-interactive for CI (remove -it flag)
       DOCKER_RUN_OPTS: "--rm"
-      # Use OUTSIDE_DOCKER to skip papiex docker build (papiex Makefile has hardcoded -it flags)
-      OUTSIDE_DOCKER: "YUP"
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Configure kernel for perf events
-        # Set perf_event_paranoid to 2 to allow non-root users to access performance counters
-        # This is required for papiex tests when OUTSIDE_DOCKER=YUP
+      - name: Wait for Docker daemon
         run: |
-          echo 2 | sudo tee /proc/sys/kernel/perf_event_paranoid
+          # Wait for Docker daemon to be ready
+          if ! timeout 60 sh -c 'until docker info; do sleep 1; done'; then
+            echo "Error: Docker daemon did not become ready within 60 seconds"
+            exit 1
+          fi
+          echo "Docker daemon is ready"
 
       - name: Clean all
         run: make OS_TARGET=rocky-8 clean-all
@@ -43,10 +52,10 @@ jobs:
         run: make OS_TARGET=rocky-8 epmt-dash
 
       - name: Build papiex-dist
-        run: make OS_TARGET=rocky-8 papiex-dist
+        run: make OS_TARGET=rocky-8 DOCKER_RUN_OPTS="${DOCKER_RUN_OPTS}" papiex-dist
 
       - name: Build docker-dist
-        run: make OS_TARGET=rocky-8 docker-dist
+        run: make OS_TARGET=rocky-8 DOCKER_RUN_OPTS="${DOCKER_RUN_OPTS}" docker-dist
 
       - name: Build epmt-full-release
         run: make OS_TARGET=rocky-8 epmt-full-release
@@ -55,4 +64,4 @@ jobs:
         run: make OS_TARGET=rocky-8 build-check-release
 
       - name: Run check-release tests
-        run: make OS_TARGET=rocky-8 check-release
+        run: make OS_TARGET=rocky-8 DOCKER_RUN_OPTS="${DOCKER_RUN_OPTS}" check-release
