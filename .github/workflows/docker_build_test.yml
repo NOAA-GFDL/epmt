@@ -30,6 +30,12 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Configure kernel for perf events
+        # Set perf_event_paranoid to 2 to allow non-root users to access performance counters
+        # This is required for papiex tests when OUTSIDE_DOCKER=YUP
+        run: |
+          echo 2 | sudo tee /proc/sys/kernel/perf_event_paranoid
+
       - name: Clean all
         run: make OS_TARGET=rocky-8 clean-all
 
