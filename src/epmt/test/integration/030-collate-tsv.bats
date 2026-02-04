@@ -18,10 +18,9 @@ teardown() {
 }
 
 @test "epmt with COLLATED_TSV" {
-  # orm=$(epmt -h | grep orm:| cut -f2 -d:)
-  # [[ $orm == "sqlalchemy" ]] || skip
-  # db_params=$(epmt -h | grep db_params:| cut -f2- -d:)
-  # [[ "$db_params" =~ "postgres" ]] || skip
+  # Skip if using in-memory SQLite as it doesn't persist between epmt process invocations
+  db_params=$(epmt -h | grep db_params: | cut -f2- -d:)
+  [[ ! "$db_params" =~ ":memory:" ]] || skip "Test requires persistent database (not in-memory SQLite)"
 
   jobid=989
   export SLURM_JOB_ID=$jobid
