@@ -1,11 +1,10 @@
 name: docker_build_test
 
 on:
+  pull_request:
   push:
     branches:
       - main
-  pull_request:
-  workflow_dispatch:
 
 # cancel running jobs if there's a newer push
 concurrency:
