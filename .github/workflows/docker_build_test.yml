@@ -1,0 +1,35 @@
+name: docker_build_test
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+# cancel running jobs if there's a newer push
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Minimal permissions for security
+permissions:
+  contents: read
+
+jobs:
+  docker-build-rocky8:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and test epmt release using Docker
+        run: |
+          # Run the full release build which uses Docker internally
+          # This tests the make release approach for building + testing epmt
+          # Target OS: rocky-8
+          # Override DOCKER_RUN_OPTS to be non-interactive for CI (remove -it flag)
+          make OS_TARGET=rocky-8 DOCKER_RUN_OPTS="--rm" release
