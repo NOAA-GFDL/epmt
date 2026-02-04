@@ -18,6 +18,9 @@ permissions:
 jobs:
   docker-build-rocky8:
     runs-on: ubuntu-latest
+    env:
+      # Override docker run options to be non-interactive for CI (remove -it flag)
+      DOCKER_RUN_OPTS: "--rm"
 
     steps:
       - uses: actions/checkout@v4
@@ -25,10 +28,23 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build and test epmt release using Docker
-        run: |
-          # Run the full release build which uses Docker internally
-          # This tests the make release approach for building + testing epmt
-          # Target OS: rocky-8
-          # Override DOCKER_RUN_OPTS to be non-interactive for CI (remove -it flag)
-          make OS_TARGET=rocky-8 DOCKER_RUN_OPTS="--rm" release
+      - name: Clean all
+        run: make OS_TARGET=rocky-8 clean-all
+
+      - name: Build epmt-dash
+        run: make OS_TARGET=rocky-8 epmt-dash
+
+      - name: Build papiex-dist
+        run: make OS_TARGET=rocky-8 DOCKER_RUN_OPTS="${DOCKER_RUN_OPTS}" papiex-dist
+
+      - name: Build docker-dist
+        run: make OS_TARGET=rocky-8 DOCKER_RUN_OPTS="${DOCKER_RUN_OPTS}" docker-dist
+
+      - name: Build epmt-full-release
+        run: make OS_TARGET=rocky-8 epmt-full-release
+
+      - name: Build check-release image
+        run: make OS_TARGET=rocky-8 build-check-release
+
+      - name: Run check-release tests
+        run: make OS_TARGET=rocky-8 DOCKER_RUN_OPTS="${DOCKER_RUN_OPTS}" check-release
