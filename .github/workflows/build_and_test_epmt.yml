@@ -229,8 +229,7 @@ jobs:
         run: |
           epmt -v integration 011-shell.bats
 
-      - name: epmt integration, annotate (GUARDED)
-        continue-on-error: true
+      - name: epmt integration, annotate
         run: |
           epmt -v integration 015-annotate.bats
 

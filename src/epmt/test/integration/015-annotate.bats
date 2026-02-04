@@ -1,6 +1,9 @@
 load 'libs/bats-support/load'
 load 'libs/bats-assert/load'
 
+# Use a file-based SQLite database for persistence across epmt commands
+export EPMT_DB_URL="sqlite:////tmp/epmt_test_annotate.sqlite"
+
 setup() {
   resource_path="${PWD}/src/epmt"
   test -n "${resource_path}" || fail
@@ -10,6 +13,8 @@ setup() {
   test -d ${stage_dest} || fail
   epmt_output_prefix=$(python3 -c 'import epmt.epmt_settings as settings; print(settings.epmt_output_prefix);')
   test -n "${epmt_output_prefix}" || fail
+  # Clean up any previous test state
+  rm -f /tmp/epmt_test_annotate.sqlite
   rm -rf ${epmt_output_prefix}/${USER}/3456
   rm -f ${stage_dest}/3456.tgz
   run epmt delete 3456
@@ -20,6 +25,7 @@ setup() {
 teardown() {
   rm -rf ${epmt_output_prefix}/${USER}/3456
   rm -f ${stage_dest}/3456.tgz
+  rm -f /tmp/epmt_test_annotate.sqlite
   epmt delete 3456 || true
 }
 
