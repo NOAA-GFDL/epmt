@@ -1,10 +1,18 @@
 load 'libs/bats-support/load'
 load 'libs/bats-assert/load'
 
+# This test requires a persistent (file-based) sqlite DB since data must persist
+# across multiple epmt command invocations (submit, dump, explore).
+# The default in-memory sqlite DB creates a new DB per process invocation.
+export EPMT_DB_URL="sqlite:////tmp/epmt_explore_test.db"
+
 setup() {
   resource_path="${PWD}/src/epmt"
   test -n "${resource_path}" || fail
   test -d ${resource_path} || fail
+
+  # Clean up any existing test DB
+  rm -f /tmp/epmt_explore_test.db
 
   jobs_in_module='625151 627907 629322 633114 675992 680163 685000 685001 685003 685016 691209 692500 693129'
   epmt delete ${jobs_in_module} || true
@@ -13,6 +21,7 @@ setup() {
 }
 teardown() {
   epmt delete ${jobs_in_module} || true
+  rm -f /tmp/epmt_explore_test.db
 }
 
 @test "epmt explore (can take a couple of minutes)" {
