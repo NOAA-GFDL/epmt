@@ -11,6 +11,8 @@ setup(){
 
 }
 teardown() {
+  stage_dest=$(epmt -h | sed -n 's/stage_command_dest://p')
+  jobs_in_module='989'
   epmt delete ${jobs_in_module} || true
   rm -f ${stage_dest}/989.tgz
 }
@@ -47,7 +49,7 @@ teardown() {
 
   run epmt dump -k tags $jobid
   assert_output --partial "{'op': 'check-tsv'}"
-  run test -f ${stage_dest}/989.tgz || fail
+  run test -f ${stage_dest}/989.tgz
   assert_success
   rm -f ${stage_dest}/989.tgz
 }
