@@ -21,6 +21,8 @@ jobs:
     env:
       # Override docker run options to be non-interactive for CI (remove -it flag)
       DOCKER_RUN_OPTS: "--rm"
+      # Use OUTSIDE_DOCKER to skip papiex docker build (papiex Makefile has hardcoded -it flags)
+      OUTSIDE_DOCKER: "YUP"
 
     steps:
       - uses: actions/checkout@v4
@@ -35,10 +37,10 @@ jobs:
         run: make OS_TARGET=rocky-8 epmt-dash
 
       - name: Build papiex-dist
-        run: make OS_TARGET=rocky-8 DOCKER_RUN_OPTS="${DOCKER_RUN_OPTS}" papiex-dist
+        run: make OS_TARGET=rocky-8 papiex-dist
 
       - name: Build docker-dist
-        run: make OS_TARGET=rocky-8 DOCKER_RUN_OPTS="${DOCKER_RUN_OPTS}" docker-dist
+        run: make OS_TARGET=rocky-8 docker-dist
 
       - name: Build epmt-full-release
         run: make OS_TARGET=rocky-8 epmt-full-release
@@ -47,4 +49,4 @@ jobs:
         run: make OS_TARGET=rocky-8 build-check-release
 
       - name: Run check-release tests
-        run: make OS_TARGET=rocky-8 DOCKER_RUN_OPTS="${DOCKER_RUN_OPTS}" check-release
+        run: make OS_TARGET=rocky-8 check-release
