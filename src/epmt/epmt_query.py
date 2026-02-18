@@ -1100,6 +1100,7 @@ def get_refmodels(name=None, tag={}, fltr=None, limit=0, order=None, before=None
     return out_list
 
 
+
 # This function computes a dict such as:
 # for univariate classifiers:
 #
@@ -1149,7 +1150,6 @@ def _refmodel_scores(col, methods, features):
     # print(ret)
     return ret
 #
-
 
 @db_session
 def create_refmodel(jobs, name=None, tag={}, op_tags=[],
@@ -1349,7 +1349,7 @@ enabled: boolean, optional
         info_dict['pca'] = {'inp_features': orig_features, 'out_features': pca_features}
 
     # now save the ref model
-    r = orm_create(ReferenceModel, jobs=jobs, name=name, tags=tag, op_tags=op_tags, computed=computed, info_dict = info_dict, enabled=enabled)
+    r = orm_create(ReferenceModel,  fmt='dict', jobs=jobs, name=name, tags=tag, op_tags=op_tags, computed=computed, info_dict = info_dict, enabled=enabled)
     orm_commit()
     if fmt == 'orm':
         return r
@@ -1359,7 +1359,15 @@ enabled: boolean, optional
     return pd.Series(r_dict) if fmt == 'pandas' else r_dict
 
 # returns the number of models deleted.
-
+def save_refmodel(ReferenceModel, jobs=jobs, name=name, tags=tag, op_tags=op_tags, computed=computed, info_dict = info_dict, enabled=enabled):
+    r = orm_create(ReferenceModel, jobs=jobs, name=name, tags=tag, op_tags=op_tags, computed=computed, info_dict = info_dict, enabled=enabled)
+    orm_commit()
+    if fmt == 'orm':
+        return r
+    elif fmt == 'terse':
+        return r.id
+    r_dict = orm_to_dict(r, with_collections=True)
+    return pd.Series(r_dict) if fmt == 'pandas' else r_dict
 
 @db_session
 def delete_refmodels(*ref_ids):
