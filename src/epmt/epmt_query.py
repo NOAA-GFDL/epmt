@@ -1357,9 +1357,9 @@ enabled: boolean, optional
         return r.id
     r_dict = orm_to_dict(r, with_collections=True)
     return pd.Series(r_dict) if fmt == 'pandas' else r_dict
-
+```
 # returns the number of models deleted.
-def save_refmodel(ReferenceModel, jobs=jobs, name=name, tags=tag, op_tags=op_tags, computed=computed, info_dict = info_dict, enabled=enabled):
+def save_refmodel(ReferenceModel, jobs, name=None, tag={}, op_tags=[], computed=computed, info_dict = info_dict, enabled=enabled):
     r = orm_create(ReferenceModel, jobs=jobs, name=name, tags=tag, op_tags=op_tags, computed=computed, info_dict = info_dict, enabled=enabled)
     orm_commit()
     if fmt == 'orm':
@@ -1368,7 +1368,7 @@ def save_refmodel(ReferenceModel, jobs=jobs, name=name, tags=tag, op_tags=op_tag
         return r.id
     r_dict = orm_to_dict(r, with_collections=True)
     return pd.Series(r_dict) if fmt == 'pandas' else r_dict
-
+```
 @db_session
 def delete_refmodels(*ref_ids):
     """
