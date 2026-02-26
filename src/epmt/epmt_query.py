@@ -1360,8 +1360,8 @@ enabled: boolean, optional
 
 # returns the number of models deleted.
 #jobs, computed, infodict, and emabled can all be retrieved from the ReferenceModel object
-def save_refmodel(ReferenceModel, jobs, name=None, tag={}, op_tags=[], computed, info_dict, enabled):
-    r = orm_create(ReferenceModel, jobs=jobs, name=name, tags=tag, op_tags=op_tags, computed=computed, info_dict = info_dict, enabled=enabled)
+def save_refmodel(ReferenceModel, jobs, computed, info_dict, enabled, name=None, tag={}, op_tags=[]):
+    r = orm_create(ReferenceModel, jobs=jobs, computed=computed, info_dict = info_dict, enabled=enabled, name=name, tags=tag, op_tags=op_tags)
     orm_commit()
     if fmt == 'orm':
         return r
