@@ -1359,7 +1359,8 @@ enabled: boolean, optional
     return pd.Series(r_dict) if fmt == 'pandas' else r_dict
 
 # returns the number of models deleted.
-def save_refmodel(ReferenceModel, jobs, name=None, tag={}, op_tags=[], computed=computed, info_dict = info_dict, enabled=enabled):
+#jobs, computed, infodict, and emabled can all be retrieved from the ReferenceModel object
+def save_refmodel(ReferenceModel, jobs, name=None, tag={}, op_tags=[], computed, info_dict, enabled):
     r = orm_create(ReferenceModel, jobs=jobs, name=name, tags=tag, op_tags=op_tags, computed=computed, info_dict = info_dict, enabled=enabled)
     orm_commit()
     if fmt == 'orm':
