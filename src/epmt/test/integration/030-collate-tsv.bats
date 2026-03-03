@@ -1,26 +1,29 @@
 load 'libs/bats-support/load'
 load 'libs/bats-assert/load'
 
+# Use a file-based SQLite database for persistence across epmt commands
+export EPMT_DB_URL="sqlite:////tmp/epmt_test_collate_tsv.sqlite"
+
 setup(){
   stage_dest=$(epmt -h | sed -n 's/stage_command_dest://p')
   test -n "${stage_dest}" || fail
   test -d ${stage_dest} || fail
   jobs_in_module='989'
+  # Clean up any previous test state
+  rm -f /tmp/epmt_test_collate_tsv.sqlite
   rm -f ${stage_dest}/989.tgz
-  epmt delete ${jobs_in_module} || true
+  epmt delete ${jobs_in_module} 2>/dev/null || true
 
 }
 teardown() {
   stage_dest=$(epmt -h | sed -n 's/stage_command_dest://p')
   jobs_in_module='989'
-  epmt delete ${jobs_in_module} || true
+  epmt delete ${jobs_in_module} 2>/dev/null || true
   rm -f ${stage_dest}/989.tgz
+  rm -f /tmp/epmt_test_collate_tsv.sqlite
 }
 
 @test "epmt with COLLATED_TSV" {
-  # Skip if using in-memory SQLite as it doesn't persist between epmt process invocations
-  db_params=$(epmt -h | grep db_params: | cut -f2- -d:)
-  [[ ! "$db_params" =~ ":memory:" ]] || skip "Test requires persistent database (not in-memory SQLite)"
 
   jobid=989
   export SLURM_JOB_ID=$jobid
