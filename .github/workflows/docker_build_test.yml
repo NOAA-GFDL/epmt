@@ -50,6 +50,23 @@ jobs:
       - name: Build epmt-full-release
         run: make --debug OS_TARGET=${OS_TARGET} DOCKER_RUN_OPTS="${DOCKER_RUN_OPTS}" epmt-full-release
 
+      - name: Build slurm-cluster base image
+        run: |
+          # The rocky-8-epmt-test-release Dockerfile expects slurm-cluster:21.08.6
+          # which is not available on Docker Hub. Build it from giovtorres/slurm-docker-cluster tag 0.9.0
+          # (Rocky Linux 8 based, builds Slurm 21.08.6 from source)
+          set -e
+          git clone --branch 0.9.0 --depth 1 https://github.com/giovtorres/slurm-docker-cluster.git /tmp/slurm-docker-cluster
+          docker build --progress=plain -t slurm-cluster:21.08.6 /tmp/slurm-docker-cluster
+
+      - name: Verify slurm-cluster image exists
+        run: |
+          if ! docker image inspect slurm-cluster:21.08.6 > /dev/null 2>&1; then
+            echo "::error::Docker image 'slurm-cluster:21.08.6' was not built."
+            exit 1
+          fi
+          echo "Image 'slurm-cluster:21.08.6' exists."
+
       - name: Build check-release image
         run: make --debug OS_TARGET=${OS_TARGET} DOCKER_RUN_OPTS="${DOCKER_RUN_OPTS}" build-check-release
 
