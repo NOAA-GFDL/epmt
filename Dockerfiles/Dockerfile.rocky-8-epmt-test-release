@@ -1,9 +1,9 @@
 ## this works for podman, but not for docker
-#FROM localhost/slurm-cluster:21.08.6
+#FROM localhost/slurm-cluster:25.05.3
 
 # this works for docker but not for podman
-# link to gitlab.gfdl.noaa.gov here? thank you Josh E.!
-FROM docker.io/library/slurm-cluster:21.08.6
+# built locally from giovtorres/slurm-docker-cluster tag 0.9.0 (Rocky Linux 8)
+FROM docker.io/library/slurm-cluster:25.05.3
 
 # the image on dockerhub in actually centOS7 based, despite what the
 # dockerfile for the image says
