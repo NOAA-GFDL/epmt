@@ -43,10 +43,10 @@ jobs:
         run: make --debug OS_TARGET=rocky-8 DOCKER_RUN_OPTS="${DOCKER_RUN_OPTS}" docker-dist
 
       - name: Build epmt-full-release
-        run: make --debug OS_TARGET=rocky-8 epmt-full-release
+        run: make --debug OS_TARGET=rocky-8 DOCKER_RUN_OPTS="${DOCKER_RUN_OPTS}" epmt-full-release
 
       - name: Build check-release image
-        run: make --debug OS_TARGET=rocky-8 build-check-release
+        run: make --debug OS_TARGET=rocky-8 DOCKER_RUN_OPTS="${DOCKER_RUN_OPTS}" build-check-release
 
       - name: Run check-release tests
         run: make --debug OS_TARGET=rocky-8 DOCKER_RUN_OPTS="${DOCKER_RUN_OPTS}" check-release
