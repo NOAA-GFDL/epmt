@@ -1764,7 +1764,7 @@ def epmt_entrypoint(args):
         if args.epmt_cmd_args:
             req_tests = args.epmt_cmd_args
 
-        bats_tester = install_root + '/test/integration/libs/bats/libexec/bats'
+        bats_tester = install_root + '/test/integration/libs/bats/bin/bats'
         logger.debug("Bats: {}".format(bats_tester))
 
         test_folder = install_root + '/test/integration'

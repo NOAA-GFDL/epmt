@@ -1,18 +1,23 @@
 load 'libs/bats-support/load'
 load 'libs/bats-assert/load'
 
-# Run once to
+export EPMT_DB_URL="sqlite:////tmp/epmt_test_kernel_compile.sqlite"
+
+# Run once before all tests in file
 setup_file(){
-  stage_dest=$(epmt -h | sed -n 's/stage_command_dest://p')
+  rm -f /tmp/epmt_test_kernel_compile.sqlite 2>/dev/null
+  export stage_dest=$(epmt -h | sed -n 's/stage_command_dest://p')
   test -n "${stage_dest}" || fail
   test -d ${stage_dest} || fail
   rm -f ${stage_dest}/988.tgz
-  jobs_in_module = "988 kernel_build CSV_v1 COLLATED_TSV"
+  export jobs_in_module="988 kernel_build CSV_v1 COLLATED_TSV"
   epmt delete ${jobs_in_module} || true
 }
-teardown() {
+# Run once after all tests in file
+teardown_file() {
   epmt delete ${jobs_in_module} || true
   rm -f ${stage_dest}/988.tgz
+  rm -f /tmp/epmt_test_kernel_compile.sqlite 2>/dev/null
 }
 
 # the actual compile step

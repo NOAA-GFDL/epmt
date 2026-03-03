@@ -3,8 +3,8 @@ loop_func() {
   local search="none one two tree"
   local d
 
-  for d in $search ; do
-    echo $d
+  for d in $search; do
+    echo "$d"
   done
 }
 
