@@ -24,6 +24,11 @@ jobs:
       # Keep --rm for cleanup, remove -it for non-interactive mode
       DOCKER_RUN_OPTS: "--rm"
       OS_TARGET: "rocky-8"
+      # Values from giovtorres/slurm-docker-cluster tag 0.9.0 .env file
+      # docker build does not read .env files (only docker-compose does),
+      # so we define these here and pass SLURM_TAG as --build-arg
+      SLURM_TAG: "slurm-25-05-3-1"
+      IMAGE_TAG: "25.05.3"
 
     steps:
       - uses: actions/checkout@v4
@@ -34,6 +39,23 @@ jobs:
           # Use docker driver to store images in local daemon
           # (docker-container driver requires --load and may not propagate errors)
           driver: docker
+
+      - name: Build slurm-cluster base image
+        run: |
+          # The rocky-8-epmt-test-release Dockerfile expects a slurm-cluster image.
+          # Build it from giovtorres/slurm-docker-cluster tag 0.9.0 (Rocky Linux 8 based).
+          # Pass SLURM_TAG as --build-arg since docker build does not read .env files.
+          set -e
+          git clone --branch 0.9.0 --depth 1 https://github.com/giovtorres/slurm-docker-cluster.git /tmp/slurm-docker-cluster
+          docker build --progress=plain --build-arg SLURM_TAG=${SLURM_TAG} -t slurm-cluster:${IMAGE_TAG} /tmp/slurm-docker-cluster
+
+      - name: Verify slurm-cluster image exists
+        run: |
+          if ! docker image inspect slurm-cluster:${IMAGE_TAG} > /dev/null 2>&1; then
+            echo "::error::Docker image 'slurm-cluster:${IMAGE_TAG}' was not built."
+            exit 1
+          fi
+          echo "Image 'slurm-cluster:${IMAGE_TAG}' exists."
 
       - name: Clean all
         run: make --debug OS_TARGET=${OS_TARGET} clean-all
@@ -49,23 +71,6 @@ jobs:
 
       - name: Build epmt-full-release
         run: make --debug OS_TARGET=${OS_TARGET} DOCKER_RUN_OPTS="${DOCKER_RUN_OPTS}" epmt-full-release
-
-      - name: Build slurm-cluster base image
-        run: |
-          # The rocky-8-epmt-test-release Dockerfile expects slurm-cluster:21.08.6
-          # which is not available on Docker Hub. Build it from giovtorres/slurm-docker-cluster tag 0.9.0
-          # (Rocky Linux 8 based, builds Slurm 21.08.6 from source)
-          set -e
-          git clone --branch 0.9.0 --depth 1 https://github.com/giovtorres/slurm-docker-cluster.git /tmp/slurm-docker-cluster
-          docker build --progress=plain -t slurm-cluster:21.08.6 /tmp/slurm-docker-cluster
-
-      - name: Verify slurm-cluster image exists
-        run: |
-          if ! docker image inspect slurm-cluster:21.08.6 > /dev/null 2>&1; then
-            echo "::error::Docker image 'slurm-cluster:21.08.6' was not built."
-            exit 1
-          fi
-          echo "Image 'slurm-cluster:21.08.6' exists."
 
       - name: Build check-release image
         run: make --debug OS_TARGET=${OS_TARGET} DOCKER_RUN_OPTS="${DOCKER_RUN_OPTS}" build-check-release
