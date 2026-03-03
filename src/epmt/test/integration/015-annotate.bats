@@ -1,25 +1,31 @@
 load 'libs/bats-support/load'
 load 'libs/bats-assert/load'
 
+# Use a file-based SQLite database for persistence across epmt commands
+export EPMT_DB_URL="sqlite:////tmp/epmt_test_annotate.sqlite"
+
 setup() {
+  resource_path="${PWD}/src/epmt"
+  test -n "${resource_path}" || fail
+  test -d ${resource_path} || fail
   stage_dest=$(epmt -h | sed -n 's/stage_command_dest://p')
   test -n "${stage_dest}" || fail
   test -d ${stage_dest} || fail
-  resource_path=$(dirname `command -v epmt`)
-  test -n "${resource_path}" || fail
-  test -d ${resource_path} || fail
-  epmt_output_prefix=$(epmt -h | sed -n 's/epmt_output_prefix://p')
+  epmt_output_prefix=$(python3 -c 'import epmt.epmt_settings as settings; print(settings.epmt_output_prefix);')
   test -n "${epmt_output_prefix}" || fail
+  # Clean up any previous test state
+  rm -f /tmp/epmt_test_annotate.sqlite
   rm -rf ${epmt_output_prefix}/${USER}/3456
   rm -f ${stage_dest}/3456.tgz
   run epmt delete 3456
-  run ${resource_path}/test/integration/epmt-annotate.sh || fail
-  run test -f ${stage_dest}/3456.tgz || fail
+  run ${resource_path}/test/integration/epmt-annotate.sh
+  run test -f ${stage_dest}/3456.tgz
 }
 
 teardown() {
   rm -rf ${epmt_output_prefix}/${USER}/3456
   rm -f ${stage_dest}/3456.tgz
+  rm -f /tmp/epmt_test_annotate.sqlite
   epmt delete 3456 || true
 }
 
