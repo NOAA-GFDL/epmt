@@ -1349,7 +1349,7 @@ enabled: boolean, optional
         info_dict['pca'] = {'inp_features': orig_features, 'out_features': pca_features}
 
     # now save the ref model
-    r = orm_create(ReferenceModel,  fmt='dict', jobs=jobs, name=name, tags=tag, op_tags=op_tags, computed=computed, info_dict = info_dict, enabled=enabled)
+    r = orm_create(ReferenceModel, jobs=jobs, name=name, tags=tag, op_tags=op_tags, computed=computed, info_dict = info_dict, enabled=enabled)
     orm_commit()
     if fmt == 'orm':
         return r
