@@ -95,5 +95,4 @@ Version 3.3.20
   - `epmt retire` supports period job deletion based on policies
   - `epmt annotate` supports appending metrics to a job archive or in the DB
   - built-ins such as `help` added to `epmt shell`
-  - `epmt python` can run arbitrary python scripts
   - `epmt dump` now shows job archives and details of jobs in the database
