@@ -1605,9 +1605,9 @@ def pca_feature_rank(jobs, inp_features=[]):
       ('rdtsc_duration', 0.2101), ('cancelled_write_bytes', 0.21), ('cpu_time', 0.2097), ('time_oncpu', 0.2097),
       ('PERF_COUNT_SW_CPU_CLOCK', 0.2097), ('duration', 0.2088), ('systemtime', 0.2077), ('time_waiting', 0.2077),
       ('syscw', 0.1985), ('inblock', 0.1906), ('syscr', 0.1741), ('vol_ctxsw', 0.1716), ('write_bytes', 0.1713),
-      ('wchar', 0.1707), ('read_bytes', 0.1675), ('rchar', 0.1534), ('minflt', 0.0968), ('outblock', 0.0),
-      ('num_threads', 0.0), ('num_procs', 0.0), ('majflt', 0.0), ('guest_time', 0.0), ('exitcode', 0.0),
-      ('delayacct_blkio_time', 0.0), ('processor', 0.0) ]
+      ('wchar', 0.1707), ('read_bytes', 0.1675), ('rchar', 0.1534), ('minflt', 0.0968), ('delayacct_blkio_time', 0.0),
+      ('exitcode', 0.0), ('guest_time', 0.0), ('majflt', 0.0), ('num_procs', 0.0), ('num_threads', 0.0),
+      ('outblock', 0.0), ('processor', 0.0) ]
 
     '''
     from epmt.epmt_stat import dframe_append_weighted_row
@@ -1617,10 +1617,13 @@ def pca_feature_rank(jobs, inp_features=[]):
     weights = variances / variances.sum()
     logger.debug('normalized weights: {}'.format(list(weights)))
     # sort dataframe returned by dframe_append_weighted_row based on the values
-    # in the last row
-    sorted_df = dframe_append_weighted_row(
-        features_df, weights, use_abs=True).sort_values(
-        features_df.shape[0], axis=1, ascending=False).round(4)
+    # in the last row, breaking ties by column name for deterministic ordering
+    df_with_weights = dframe_append_weighted_row(
+        features_df, weights, use_abs=True)
+    last_row = df_with_weights.iloc[features_df.shape[0]]
+    sorted_cols = sorted(df_with_weights.columns,
+                         key=lambda c: (-last_row[c], c))
+    sorted_df = df_with_weights[sorted_cols].round(4)
     sorted_features = list(zip(sorted_df.iloc[-1].index, sorted_df.iloc[-1].round(4)))
     return (sorted_df, sorted_features)
 
