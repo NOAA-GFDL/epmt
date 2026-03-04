@@ -295,21 +295,6 @@ unit_test_parser.add_argument(
     default=[], nargs='*',
     help='Specific unittest to run')
 
-# Integration tests PARSER
-integration_test_parser = subparser.add_parser(
-    'integration',
-    help="[DEPRECATED] Run EPMT integration tests (use pytest directly instead)",
-    description="[DEPRECATED] runs integration tests. Use pytest directly: "
-                "pytest -x -vv src/epmt/test/integration/test_integration_*.py")
-integration_test_parser.add_argument(
-    'epmt_cmd_args',
-    default=[], nargs='*',
-    help='Specific unittest to run')
-integration_test_parser.add_argument(
-    '-x', '--exclude',
-    default=[], nargs='*',
-    help='unittest to exclude')
-
 # Drop PARSER
 drop_parser = subparser.add_parser(
     'drop',

@@ -375,8 +375,8 @@ check-release:
 	|| echo "epmt -vv unittest failure guard, keep going" ; \
 	echo "" ; \
 	echo "" ; \
-	echo "" && echo "------ epmt integration ------" && epmt integration \
-	|| echo "epmt integration failure guard, keep going" ; \
+	echo "" && echo "------ pytest integration ------" && TZ=UTC pytest -x -vv src/epmt/test/integration/test_integration_*.py \
+	|| echo "pytest integration failure guard, keep going" ; \
 	echo ""'
 	@echo
 	@echo
@@ -465,7 +465,7 @@ check-epmt-check:
 
 check-integration-tests:
 	@echo "(check-integration-tests) whoami: $(shell whoami)"
-	- @env -i TERM=ansi PATH=${PWD}:${PATH} epmt -v -v integration
+	- @env -i TERM=ansi PATH=${PWD}:${PATH} TZ=UTC pytest -x -vv src/epmt/test/integration/test_integration_*.py
 
 check-unittests:
 	@echo "(check-unittests) whoami: $(shell whoami)"
