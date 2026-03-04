@@ -104,6 +104,12 @@ jobs:
         run: |
           pip install pytest pytest-cov coverage
 
+      - name: enable subprocess coverage for integration tests
+        run: |
+          SITE_PACKAGES=$(python3 -c "import site; print(site.getsitepackages()[0])")
+          echo "import coverage; coverage.process_startup()" > ${SITE_PACKAGES}/coverage_subprocess.pth
+          echo "Installed coverage subprocess hook at ${SITE_PACKAGES}/coverage_subprocess.pth"
+
       - name: test_anysh
         run: |
           TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/test_anysh.py
@@ -190,71 +196,81 @@ jobs:
 
       - name: integration, basic
         run: |
-          TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/integration/test_integration_basic.py
+          TZ=UTC pytest -x -vv src/epmt/test/integration/test_integration_basic.py
         env:
           COVERAGE_FILE: .coverage.integration_basic
+          COVERAGE_PROCESS_START: coveragerc
 
       - name: integration, escape
         run: |
-          TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/integration/test_integration_escape.py
+          TZ=UTC pytest -x -vv src/epmt/test/integration/test_integration_escape.py
         env:
           COVERAGE_FILE: .coverage.integration_escape
+          COVERAGE_PROCESS_START: coveragerc
 
       - name: integration, concat
         run: |
-          TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/integration/test_integration_concat.py
+          TZ=UTC pytest -x -vv src/epmt/test/integration/test_integration_concat.py
         env:
           COVERAGE_FILE: .coverage.integration_concat
+          COVERAGE_PROCESS_START: coveragerc
 
       - name: integration, daemon
         run: |
-          TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/integration/test_integration_daemon.py
+          TZ=UTC pytest -x -vv src/epmt/test/integration/test_integration_daemon.py
         env:
           COVERAGE_FILE: .coverage.integration_daemon
+          COVERAGE_PROCESS_START: coveragerc
 
       - name: integration, shell
         run: |
-          TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/integration/test_integration_shell.py
+          TZ=UTC pytest -x -vv src/epmt/test/integration/test_integration_shell.py
         env:
           COVERAGE_FILE: .coverage.integration_shell
+          COVERAGE_PROCESS_START: coveragerc
 
       - name: integration, annotate
         run: |
-          TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/integration/test_integration_annotate.py
+          TZ=UTC pytest -x -vv src/epmt/test/integration/test_integration_annotate.py
         env:
           COVERAGE_FILE: .coverage.integration_annotate
+          COVERAGE_PROCESS_START: coveragerc
 
       - name: integration, explore
         run: |
-          TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/integration/test_integration_explore.py
+          TZ=UTC pytest -x -vv src/epmt/test/integration/test_integration_explore.py
         env:
           COVERAGE_FILE: .coverage.integration_explore
+          COVERAGE_PROCESS_START: coveragerc
 
       - name: integration, slurm
         run: |
-          TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/integration/test_integration_slurm.py
+          TZ=UTC pytest -x -vv src/epmt/test/integration/test_integration_slurm.py
         env:
           COVERAGE_FILE: .coverage.integration_slurm
+          COVERAGE_PROCESS_START: coveragerc
 
       - name: integration, collate-tsv
         run: |
-          TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/integration/test_integration_collate_tsv.py
+          TZ=UTC pytest -x -vv src/epmt/test/integration/test_integration_collate_tsv.py
         env:
           COVERAGE_FILE: .coverage.integration_collate_tsv
+          COVERAGE_PROCESS_START: coveragerc
 
       - name: integration, kernel-compile
         run: |
-          TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/integration/test_integration_kernel_compile.py
+          TZ=UTC pytest -x -vv src/epmt/test/integration/test_integration_kernel_compile.py
         env:
           COVERAGE_FILE: .coverage.integration_kernel_compile
+          COVERAGE_PROCESS_START: coveragerc
 
       - name:  Combine coverage data and generate report
         continue-on-error:  true
         run: |
           ls -la .coverage.*
-          coverage combine .coverage.*
-          coverage xml -o coverage.xml
-          coverage report --show-missing
+          coverage combine --rcfile=coveragerc
+          coverage xml --rcfile=coveragerc -o coverage.xml
+          coverage report --rcfile=coveragerc --show-missing
           ls -l coverage.xml
 
       - name: Upload coverage to Codecov
