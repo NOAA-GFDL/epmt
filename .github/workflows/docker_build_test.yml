@@ -5,6 +5,9 @@ on:
   push:
     branches:
       - main
+  schedule:
+    # Weekly rebuild on Mondays at 6am UTC to verify SLURM image can still be built
+    - cron: '0 6 * * 1'
 
 # cancel running jobs if there's a newer push
 concurrency:
@@ -24,11 +27,12 @@ jobs:
       # Keep --rm for cleanup, remove -it for non-interactive mode
       DOCKER_RUN_OPTS: "--rm"
       OS_TARGET: "rocky-8"
-      # Values from giovtorres/slurm-docker-cluster tag 0.9.0 .env file
+      # Values from giovtorres/slurm-docker-cluster .env file
       # docker build does not read .env files (only docker-compose does),
       # so we define these here and pass SLURM_TAG as --build-arg
       SLURM_TAG: "slurm-25-05-3-1"
       IMAGE_TAG: "25.05.3"
+      SLURM_CLUSTER_TAG: "0.9.0"
 
     steps:
       - uses: actions/checkout@v4
@@ -40,14 +44,32 @@ jobs:
           # (docker-container driver requires --load and may not propagate errors)
           driver: docker
 
+      - name: Cache slurm-cluster image
+        id: cache-slurm
+        # Scheduled runs skip the cache to verify the image can still be built from source
+        if: github.event_name != 'schedule'
+        uses: actions/cache@v4
+        with:
+          path: /tmp/slurm-cluster-image.tar
+          key: slurm-cluster-${{ env.IMAGE_TAG }}-${{ env.SLURM_TAG }}-v${{ env.SLURM_CLUSTER_TAG }}
+
+      - name: Load cached slurm-cluster image
+        if: steps.cache-slurm.outputs.cache-hit == 'true'
+        run: docker load -i /tmp/slurm-cluster-image.tar
+
       - name: Build slurm-cluster base image
+        if: steps.cache-slurm.outputs.cache-hit != 'true'
         run: |
           # The rocky-8-epmt-test-release Dockerfile expects a slurm-cluster image.
-          # Build it from giovtorres/slurm-docker-cluster tag 0.9.0 (Rocky Linux 8 based).
+          # Build it from giovtorres/slurm-docker-cluster (Rocky Linux 8 based).
           # Pass SLURM_TAG as --build-arg since docker build does not read .env files.
           set -e
-          git clone --branch 0.9.0 --depth 1 https://github.com/giovtorres/slurm-docker-cluster.git /tmp/slurm-docker-cluster
+          git clone --branch ${{ env.SLURM_CLUSTER_TAG }} --depth 1 https://github.com/giovtorres/slurm-docker-cluster.git /tmp/slurm-docker-cluster
           docker build --progress=plain --build-arg SLURM_TAG=${SLURM_TAG} -t slurm-cluster:${IMAGE_TAG} /tmp/slurm-docker-cluster
+
+      - name: Save slurm-cluster image for caching
+        if: steps.cache-slurm.outputs.cache-hit != 'true'
+        run: docker save slurm-cluster:${IMAGE_TAG} -o /tmp/slurm-cluster-image.tar
 
       - name: Verify slurm-cluster image exists
         run: |
