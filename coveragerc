@@ -1,4 +1,17 @@
 [run]
+parallel = True
+include =
+    */epmt/*
+    */bin/epmt
+    */scripts/epmt
 omit =
-    src/epmt/ui/*
-    src/epmt/test/*
+    */epmt/ui/*
+    */epmt/test/*
+
+[paths]
+source =
+    src/epmt/
+    */site-packages/epmt/
+scripts =
+    src/scripts/epmt
+    */bin/epmt
