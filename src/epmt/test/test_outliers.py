@@ -602,8 +602,8 @@ class OutliersAPI(unittest.TestCase):
         self.assertEqual(list(df.columns.values),
                          ['rssmax', 'timeslices', 'invol_ctxsw', 'usertime', 'rdtsc_duration', 'cancelled_write_bytes', 'cpu_time', 'time_oncpu',
                           'PERF_COUNT_SW_CPU_CLOCK', 'duration', 'systemtime', 'time_waiting', 'syscw', 'inblock', 'syscr', 'vol_ctxsw', 'write_bytes',
-                          'wchar', 'read_bytes', 'rchar', 'minflt', 'outblock', 'num_threads', 'num_procs', 'majflt', 'guest_time', 'exitcode',
-                          'delayacct_blkio_time', 'processor'])
+                          'wchar', 'read_bytes', 'rchar', 'minflt', 'delayacct_blkio_time', 'exitcode', 'guest_time', 'majflt', 'num_procs',
+                          'num_threads', 'outblock', 'processor'])
         self.assertEqual(list(df.iloc[0].values),
                          [0.2392, 0.2594, 0.2605, 0.261, 0.2612, -0.261, 0.2612, 0.2612, 0.2612, 0.2618, 0.2621, 0.2619, 0.2166, -0.1209, -0.2351,
                           -0.2265, -0.0822, -0.0813, -0.0758, -0.061, 0.0422, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
@@ -618,8 +618,8 @@ class OutliersAPI(unittest.TestCase):
                           ('cancelled_write_bytes', 0.21), ('cpu_time', 0.2097), ('time_oncpu', 0.2097), ('PERF_COUNT_SW_CPU_CLOCK', 0.2097),
                           ('duration', 0.2088), ('systemtime', 0.2077), ('time_waiting', 0.2077), ('syscw', 0.1985), ('inblock', 0.1906),
                           ('syscr', 0.1741), ('vol_ctxsw', 0.1716), ('write_bytes', 0.1713), ('wchar', 0.1707), ('read_bytes', 0.1675), ('rchar', 0.1534),
-                          ('minflt', 0.0968), ('outblock', 0.0), ('num_threads', 0.0), ('num_procs', 0.0), ('majflt', 0.0), ('guest_time', 0.0), ('exitcode', 0.0),
-                          ('delayacct_blkio_time', 0.0), ('processor', 0.0)])
+                          ('minflt', 0.0968), ('delayacct_blkio_time', 0.0), ('exitcode', 0.0), ('guest_time', 0.0), ('majflt', 0.0), ('num_procs', 0.0),
+                          ('num_threads', 0.0), ('outblock', 0.0), ('processor', 0.0)])
 
     def test_pca_ops(self):
         out_df = eod.detect_outlier_ops(['kern-6656-20190614-190245',
