@@ -95,8 +95,8 @@ RUN rm -f *.tgz epmt-installer
 
 ENV PATH="/usr/bin:${PATH}:/usr/local/bin:/usr/local/libexec"
 
-RUN /usr/lib/python3.9/site-packages/epmt/test/integration/libs/bats/install.sh /usr/local
-#RUN ${install_prefix}/epmt/test/integration/libs/bats/install.sh /usr/local
+RUN cd /tmp && curl -sL https://github.com/bats-core/bats-core/archive/refs/tags/v1.11.1.tar.gz | tar xz \
+    && cd /tmp/bats-core-1.11.1 && ./install.sh /usr/local && rm -rf /tmp/bats-core-1.11.1
 
 
 

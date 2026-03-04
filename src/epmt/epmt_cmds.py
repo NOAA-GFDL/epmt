@@ -1764,7 +1764,11 @@ def epmt_entrypoint(args):
         if args.epmt_cmd_args:
             req_tests = args.epmt_cmd_args
 
-        bats_tester = install_root + '/test/integration/libs/bats/libexec/bats'
+        import shutil
+        bats_tester = shutil.which('bats')
+        if bats_tester is None:
+            print('bats not found in PATH. Please install bats-core (https://github.com/bats-core/bats-core).', file=stderr)
+            return -1
         logger.debug("Bats: {}".format(bats_tester))
 
         test_folder = install_root + '/test/integration'

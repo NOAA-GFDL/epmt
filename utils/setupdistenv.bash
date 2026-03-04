@@ -8,7 +8,7 @@ cp -fv ${install_prefix}preset_settings/settings_test_pg_container.py ${install_
 ls ${install_prefix}preset_settings/settings_test_pg_container.py
 ls ${install_prefix}epmt/settings.py
 
-${install_prefix}epmt/test/integration/libs/bats/install.sh /usr/local
+cd /tmp && curl -sL https://github.com/bats-core/bats-core/archive/refs/tags/v1.11.1.tar.gz | tar xz && cd /tmp/bats-core-1.11.1 && ./install.sh /usr/local && rm -rf /tmp/bats-core-1.11.1
 export PATH=$PATH:/usr/local/bin:/usr/local/libexec
 
 echo "" && echo "------ epmt -v check ------" && epmt -v check

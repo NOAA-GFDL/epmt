@@ -84,13 +84,13 @@ jobs:
           ls src/dist/epmt*gz
           pip3 install src/dist/epmt*gz
 
-      - name: create links to papiex executables, adjust path, install bats for integration tests
+      - name: create links to papiex executables, adjust path, install bats-core for integration tests
         run: |
           mkdir -p /usr/lib/python3.9/site-packages/papiex-epmt-install
           ln -s  /usr/lib/python3.9/site-packages/epmt/lib /usr/lib/python3.9/site-packages/papiex-epmt-install/
           ln -s  /usr/lib/python3.9/site-packages/epmt/bin /usr/lib/python3.9/site-packages/papiex-epmt-install/
-          export PATH='/usr/bin:${PATH}:/usr/local/libexec:/usr/local/bin'
-          /usr/lib/python3.9/site-packages/epmt/test/integration/libs/bats/install.sh /usr/local
+          cd /tmp && curl -sL https://github.com/bats-core/bats-core/archive/refs/tags/v1.11.1.tar.gz | tar xz
+          cd /tmp/bats-core-1.11.1 && ./install.sh /usr/local
 
       - name: epmt version
         run: |

@@ -37,29 +37,6 @@ setup(name="epmt",
 
                              'test/integration/*.bats',
                              'test/integration/epmt-annotate.sh',
-                     
-                             'test/integration/libs/bats/CONDUCT.md',
-                             'test/integration/libs/bats/LICENSE',
-                             'test/integration/libs/bats/README.md',
-                             'test/integration/libs/bats/install.sh',
-                             'test/integration/libs/bats/package.json',
-                     
-                             'test/integration/libs/bats/bin/bats',
-                             'test/integration/libs/bats/libexec/bats',
-                             'test/integration/libs/bats/libexec/bats-exec-suite',
-                             'test/integration/libs/bats/libexec/bats-exec-test',
-                             'test/integration/libs/bats/libexec/bats-format-tap-stream',
-                             'test/integration/libs/bats/libexec/bats-preprocess',
-
-                             'test/integration/libs/bats/man/*',
-                             'test/integration/libs/bats/test/bats.bats',
-                             'test/integration/libs/bats/test/suite.bats',
-                             'test/integration/libs/bats/test/test_helper.bash',
-
-                             'test/integration/libs/bats/test/fixtures/bats/*',
-                             'test/integration/libs/bats/test/fixtures/suite/empty/*',
-                             'test/integration/libs/bats/test/fixtures/suite/multiple/*',
-                             'test/integration/libs/bats/test/fixtures/suite/single/*',
 
                              'test/integration/libs/bats-assert/CHANGELOG.md',
                              'test/integration/libs/bats-assert/LICENSE',
