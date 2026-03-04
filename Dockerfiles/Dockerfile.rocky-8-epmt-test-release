@@ -95,8 +95,7 @@ RUN rm -f *.tgz epmt-installer
 
 ENV PATH="/usr/bin:${PATH}:/usr/local/bin:/usr/local/libexec"
 
-RUN /usr/lib/python3.9/site-packages/epmt/test/integration/libs/bats/install.sh /usr/local
-#RUN ${install_prefix}/epmt/test/integration/libs/bats/install.sh /usr/local
+RUN pip3 install pytest
 
 
 

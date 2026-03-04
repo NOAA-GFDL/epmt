@@ -170,41 +170,44 @@ jobs:
       - name: test_submit
         run: docker exec ${{ env.CONTAINER_NAME }} bash -c 'TZ=UTC python3 -m unittest -v epmt.test.test_submit'
 
-      - name: epmt integration, basic (GUARDED)
+      - name: pip install pytest
+        run: docker exec ${{ env.CONTAINER_NAME }} pip3 install pytest
+
+      - name: integration, basic (GUARDED)
         continue-on-error: true
-        run: docker exec ${{ env.CONTAINER_NAME }} epmt -v integration 001-basic.bats
+        run: docker exec ${{ env.CONTAINER_NAME }} bash -c 'cd /usr/lib/python3.9/site-packages && TZ=UTC pytest -x -vv epmt/test/integration/test_integration_basic.py'
 
-      - name: epmt integration, escape (GUARDED)
+      - name: integration, escape (GUARDED)
         continue-on-error: true
-        run: docker exec ${{ env.CONTAINER_NAME }} epmt -v integration 002-escape.bats
+        run: docker exec ${{ env.CONTAINER_NAME }} bash -c 'cd /usr/lib/python3.9/site-packages && TZ=UTC pytest -x -vv epmt/test/integration/test_integration_escape.py'
 
-      - name: epmt integration, concat
-        run: docker exec ${{ env.CONTAINER_NAME }} epmt -v integration 005-concat.bats
+      - name: integration, concat
+        run: docker exec ${{ env.CONTAINER_NAME }} bash -c 'cd /usr/lib/python3.9/site-packages && TZ=UTC pytest -x -vv epmt/test/integration/test_integration_concat.py'
 
-      - name: epmt integration, daemon
-        run: docker exec ${{ env.CONTAINER_NAME }} epmt -v integration 010-daemon.bats
+      - name: integration, daemon
+        run: docker exec ${{ env.CONTAINER_NAME }} bash -c 'cd /usr/lib/python3.9/site-packages && TZ=UTC pytest -x -vv epmt/test/integration/test_integration_daemon.py'
 
-      - name: epmt integration, shell
-        run: docker exec ${{ env.CONTAINER_NAME }} epmt -v integration 011-shell.bats
+      - name: integration, shell
+        run: docker exec ${{ env.CONTAINER_NAME }} bash -c 'cd /usr/lib/python3.9/site-packages && TZ=UTC pytest -x -vv epmt/test/integration/test_integration_shell.py'
 
-      - name: epmt integration, annotate (GUARDED)
+      - name: integration, annotate (GUARDED)
         continue-on-error: true
-        run: docker exec ${{ env.CONTAINER_NAME }} epmt -v integration 015-annotate.bats
+        run: docker exec ${{ env.CONTAINER_NAME }} bash -c 'cd /usr/lib/python3.9/site-packages && TZ=UTC pytest -x -vv epmt/test/integration/test_integration_annotate.py'
 
-      - name: epmt integration, explore (GUARDED)
+      - name: integration, explore (GUARDED)
         continue-on-error: true
-        run: docker exec ${{ env.CONTAINER_NAME }} epmt -v integration 020-explore.bats
+        run: docker exec ${{ env.CONTAINER_NAME }} bash -c 'cd /usr/lib/python3.9/site-packages && TZ=UTC pytest -x -vv epmt/test/integration/test_integration_explore.py'
 
-      - name: epmt integration, slurm (GUARDED)
+      - name: integration, slurm (GUARDED)
         continue-on-error: true
-        run: docker exec ${{ env.CONTAINER_NAME }} epmt -v integration 025-slurm.bats
+        run: docker exec ${{ env.CONTAINER_NAME }} bash -c 'cd /usr/lib/python3.9/site-packages && TZ=UTC pytest -x -vv epmt/test/integration/test_integration_slurm.py'
 
-      - name: epmt integration, collate-tsv (GUARDED)
+      - name: integration, collate-tsv (GUARDED)
         continue-on-error: true
-        run: docker exec ${{ env.CONTAINER_NAME }} epmt -v integration 030-collate-tsv.bats
+        run: docker exec ${{ env.CONTAINER_NAME }} bash -c 'cd /usr/lib/python3.9/site-packages && TZ=UTC pytest -x -vv epmt/test/integration/test_integration_collate_tsv.py'
 
-      - name: epmt integration, kernel-compile
-        run: docker exec ${{ env.CONTAINER_NAME }} epmt -v integration 050-kernel-compile.bats
+      - name: integration, kernel-compile
+        run: docker exec ${{ env.CONTAINER_NAME }} bash -c 'cd /usr/lib/python3.9/site-packages && TZ=UTC pytest -x -vv epmt/test/integration/test_integration_kernel_compile.py'
 
       - name: Clean up test infrastructure
         if: always()
