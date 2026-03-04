@@ -147,15 +147,13 @@ jobs:
       - name: epmt version
         run: docker exec ${{ env.CONTAINER_NAME }} epmt -vv -V
 
-      - name: epmt check (GUARDED)
-        continue-on-error: true
+      - name: epmt check
         run: docker exec ${{ env.CONTAINER_NAME }} epmt -vv check
 
       - name: pip install pytest
         run: docker exec ${{ env.CONTAINER_NAME }} pip3 install pytest
 
-      - name: test_anysh (GUARDED)
-        continue-on-error: true
+      - name: test_anysh
         run: docker exec ${{ env.CONTAINER_NAME }} bash -c 'cd /usr/lib/python3.9/site-packages && TZ=UTC pytest -x -vv epmt/test/test_anysh.py'
 
       - name: test_cmds
@@ -179,8 +177,7 @@ jobs:
       - name: test_query
         run: docker exec ${{ env.CONTAINER_NAME }} bash -c 'cd /usr/lib/python3.9/site-packages && TZ=UTC pytest -x -vv epmt/test/test_query.py'
 
-      - name: test_run (GUARDED)
-        continue-on-error: true
+      - name: test_run
         run: docker exec ${{ env.CONTAINER_NAME }} bash -c 'cd /usr/lib/python3.9/site-packages && TZ=UTC pytest -x -vv epmt/test/test_run.py'
 
       - name: test_settings
@@ -195,12 +192,10 @@ jobs:
       - name: test_submit
         run: docker exec ${{ env.CONTAINER_NAME }} bash -c 'cd /usr/lib/python3.9/site-packages && TZ=UTC pytest -x -vv epmt/test/test_submit.py'
 
-      - name: integration, basic (GUARDED)
-        continue-on-error: true
+      - name: integration, basic
         run: docker exec ${{ env.CONTAINER_NAME }} bash -c 'cd /usr/lib/python3.9/site-packages && TZ=UTC pytest -x -vv epmt/test/integration/test_integration_basic.py'
 
-      - name: integration, escape (GUARDED)
-        continue-on-error: true
+      - name: integration, escape
         run: docker exec ${{ env.CONTAINER_NAME }} bash -c 'cd /usr/lib/python3.9/site-packages && TZ=UTC pytest -x -vv epmt/test/integration/test_integration_escape.py'
 
       - name: integration, concat
@@ -212,20 +207,16 @@ jobs:
       - name: integration, shell
         run: docker exec ${{ env.CONTAINER_NAME }} bash -c 'cd /usr/lib/python3.9/site-packages && TZ=UTC pytest -x -vv epmt/test/integration/test_integration_shell.py'
 
-      - name: integration, annotate (GUARDED)
-        continue-on-error: true
+      - name: integration, annotate
         run: docker exec ${{ env.CONTAINER_NAME }} bash -c 'cd /usr/lib/python3.9/site-packages && TZ=UTC pytest -x -vv epmt/test/integration/test_integration_annotate.py'
 
-      - name: integration, explore (GUARDED)
-        continue-on-error: true
+      - name: integration, explore
         run: docker exec ${{ env.CONTAINER_NAME }} bash -c 'cd /usr/lib/python3.9/site-packages && TZ=UTC pytest -x -vv epmt/test/integration/test_integration_explore.py'
 
-      - name: integration, slurm (GUARDED)
-        continue-on-error: true
+      - name: integration, slurm
         run: docker exec ${{ env.CONTAINER_NAME }} bash -c 'cd /usr/lib/python3.9/site-packages && TZ=UTC pytest -x -vv epmt/test/integration/test_integration_slurm.py'
 
-      - name: integration, collate-tsv (GUARDED)
-        continue-on-error: true
+      - name: integration, collate-tsv
         run: docker exec ${{ env.CONTAINER_NAME }} bash -c 'cd /usr/lib/python3.9/site-packages && TZ=UTC pytest -x -vv epmt/test/integration/test_integration_collate_tsv.py'
 
       - name: integration, kernel-compile
