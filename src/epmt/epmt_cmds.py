@@ -1764,53 +1764,66 @@ def epmt_entrypoint(args):
         if args.epmt_cmd_args:
             req_tests = args.epmt_cmd_args
 
-        bats_tester = install_root + '/test/integration/libs/bats/libexec/bats'
-        logger.debug("Bats: {}".format(bats_tester))
-
         test_folder = install_root + '/test/integration'
         logger.debug("test directory: {}".format(test_folder))
 
-        # Get test names in test directory with os.path.basename
-        tests = sorted([basename(x) for x in glob(test_folder + '/*.bats')])
+        # Get pytest test files in the integration test directory
+        tests = sorted([basename(x) for x in glob(test_folder + '/test_integration_*.py')])
 
         # Search the requested test names without path for a match
+        # For backward compatibility, map old .bats names to new pytest files:
+        #   001-basic.bats     -> test_integration_basic.py
+        #   002-escape.bats    -> test_integration_escape.py
+        #   005-concat.bats    -> test_integration_concat.py
+        #   010-daemon.bats    -> test_integration_daemon.py
+        #   011-shell.bats     -> test_integration_shell.py
+        #   015-annotate.bats  -> test_integration_annotate.py
+        #   020-explore.bats   -> test_integration_explore.py
+        #   025-slurm.bats     -> test_integration_slurm.py
+        #   030-collate-tsv.bats -> test_integration_collate_tsv.py
+        #   050-kernel-compile.bats -> test_integration_kernel_compile.py
         if not req_tests:
             tests_to_run = tests
         else:
             for r in req_tests:
                 added = False
+                # Strip .bats suffix if present for backward compatibility
+                r_stripped = r.replace('.bats', '').lstrip('0123456789-')
+                r_stripped = r_stripped.replace('-', '_')
                 for t in tests:
-                    # if test is requested
-                    if r not in t:
-                        continue
-                    tests_to_run.append(t)
-                    added = True
+                    # Match against original bats name or new pytest name
+                    if r in t or r_stripped in t:
+                        tests_to_run.append(t)
+                        added = True
                 if not added:
                     logger.warning("Could not find a test containing '{}' in testdir: {}".format(r, test_folder))
 
-
-        # tests_to_run = ' '.join([test_folder + '/' + t if x not in t else '' for x in args.exclude for t in tests_to_run])
         good_tests = []
         if len(args.exclude) > 0:
             for t in tests_to_run:
+                excluded = False
                 for x in args.exclude:
-                    if x not in t:
-                        good_tests.append(test_folder + '/' + t)
+                    x_stripped = x.replace('.bats', '').lstrip('0123456789-')
+                    x_stripped = x_stripped.replace('-', '_')
+                    if x in t or x_stripped in t:
+                        excluded = True
+                        break
+                if not excluded:
+                    good_tests.append(test_folder + '/' + t)
         else:
             for t in tests_to_run:
                 good_tests.append(test_folder + '/' + t)
 
-        good_tests = ' '.join(good_tests)
         logger.debug("Tests to run {}".format(good_tests))
         if len(good_tests) < 1:
             print('No test found', file=stderr)
             return -1
 
-        cmd = bats_tester + " " + good_tests
+        cmd = 'python3 -m pytest -x -vv ' + ' '.join(good_tests)
         logger.debug(cmd)
 
         # set up a signal handler so we can make sure we trap common
-        # interrupts and also send the SIGTERM to spanwed child processes
+        # interrupts and also send the SIGTERM to spawned child processes
         from epmt.epmtlib import set_signal_handlers
         from signal import SIGTERM
         import psutil

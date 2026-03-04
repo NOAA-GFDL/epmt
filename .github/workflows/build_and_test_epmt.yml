@@ -84,13 +84,12 @@ jobs:
           ls src/dist/epmt*gz
           pip3 install src/dist/epmt*gz
 
-      - name: create links to papiex executables, adjust path, install bats for integration tests
+      - name: create links to papiex executables, adjust path
         run: |
           mkdir -p /usr/lib/python3.9/site-packages/papiex-epmt-install
           ln -s  /usr/lib/python3.9/site-packages/epmt/lib /usr/lib/python3.9/site-packages/papiex-epmt-install/
           ln -s  /usr/lib/python3.9/site-packages/epmt/bin /usr/lib/python3.9/site-packages/papiex-epmt-install/
           export PATH='/usr/bin:${PATH}:/usr/local/libexec:/usr/local/bin'
-          /usr/lib/python3.9/site-packages/epmt/test/integration/libs/bats/install.sh /usr/local
 
       - name: epmt version
         run: |
@@ -211,43 +210,43 @@ jobs:
 
       - name: epmt integration, basic
         run: |
-          epmt -v integration 001-basic.bats
+          epmt -v integration test_integration_basic.py
 
       - name: epmt integration, escape
         run: |
-          epmt -v integration 002-escape.bats
+          epmt -v integration test_integration_escape.py
 
       - name: epmt integration, concat
         run: |
-          epmt -v integration 005-concat.bats
+          epmt -v integration test_integration_concat.py
 
       - name: epmt integration, daemon
         run: |
-          epmt -v integration 010-daemon.bats
+          epmt -v integration test_integration_daemon.py
 
       - name: epmt integration, shell
         run: |
-          epmt -v integration 011-shell.bats
+          epmt -v integration test_integration_shell.py
 
       - name: epmt integration, annotate
         run: |
-          epmt -v integration 015-annotate.bats
+          epmt -v integration test_integration_annotate.py
 
       - name: epmt integration, explore
         run: |
-          epmt -v integration 020-explore.bats
+          epmt -v integration test_integration_explore.py
 
       - name: epmt integration, slurm
         run: |
-          epmt -v integration 025-slurm.bats
+          epmt -v integration test_integration_slurm.py
 
       - name: epmt integration, collate-tsv
         run: |
-          epmt -v integration 030-collate-tsv.bats
+          epmt -v integration test_integration_collate_tsv.py
 
       - name: epmt integration, kernel-compile
         run: |
-          epmt -v integration 050-kernel-compile.bats
+          epmt -v integration test_integration_kernel_compile.py
 
       - name: install pylint
         run: |
