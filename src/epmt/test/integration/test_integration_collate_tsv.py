@@ -59,7 +59,7 @@ f=`epmt stage`
 epmt -v submit $f
 epmt list | grep -w 989 > /dev/null
 """
-        r = run_cmd(f"bash -c {repr(script)}", env=env)
+        r = run_cmd("bash", env=env, input=script)
         # The submit should succeed (we check the list above in the script)
         # Now verify the dump
         r = run_cmd("epmt dump -k tags 989", env=env)
