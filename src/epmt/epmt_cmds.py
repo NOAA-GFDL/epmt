@@ -1755,6 +1755,20 @@ def epmt_entrypoint(args):
         return 0
 
     if args.command == 'integration':
+        import warnings
+        warnings.warn(
+            "'epmt integration' is deprecated and will be removed in a future release. "
+            "Run integration tests directly with pytest instead: "
+            "pytest -x -vv src/epmt/test/integration/test_integration_*.py",
+            DeprecationWarning,
+            stacklevel=2
+        )
+        print(
+            "DEPRECATION WARNING: 'epmt integration' is deprecated and will be removed in a future release.\n"
+            "Run integration tests directly with pytest instead:\n"
+            "  pytest -x -vv src/epmt/test/integration/test_integration_*.py",
+            file=stderr
+        )
         from epmt.epmtlib import get_install_root
         install_root = get_install_root()
 
