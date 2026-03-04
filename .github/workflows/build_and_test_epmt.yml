@@ -208,45 +208,45 @@ jobs:
           name: epmt-pip-install-TEST
           path: src/dist/epmt-4.11.0.tar.gz
 
-      - name: epmt integration, basic
+      - name: integration, basic
         run: |
-          epmt -v integration test_integration_basic.py
+          TZ=UTC pytest -x -vv src/epmt/test/integration/test_integration_basic.py
 
-      - name: epmt integration, escape
+      - name: integration, escape
         run: |
-          epmt -v integration test_integration_escape.py
+          TZ=UTC pytest -x -vv src/epmt/test/integration/test_integration_escape.py
 
-      - name: epmt integration, concat
+      - name: integration, concat
         run: |
-          epmt -v integration test_integration_concat.py
+          TZ=UTC pytest -x -vv src/epmt/test/integration/test_integration_concat.py
 
-      - name: epmt integration, daemon
+      - name: integration, daemon
         run: |
-          epmt -v integration test_integration_daemon.py
+          TZ=UTC pytest -x -vv src/epmt/test/integration/test_integration_daemon.py
 
-      - name: epmt integration, shell
+      - name: integration, shell
         run: |
-          epmt -v integration test_integration_shell.py
+          TZ=UTC pytest -x -vv src/epmt/test/integration/test_integration_shell.py
 
-      - name: epmt integration, annotate
+      - name: integration, annotate
         run: |
-          epmt -v integration test_integration_annotate.py
+          TZ=UTC pytest -x -vv src/epmt/test/integration/test_integration_annotate.py
 
-      - name: epmt integration, explore
+      - name: integration, explore
         run: |
-          epmt -v integration test_integration_explore.py
+          TZ=UTC pytest -x -vv src/epmt/test/integration/test_integration_explore.py
 
-      - name: epmt integration, slurm
+      - name: integration, slurm
         run: |
-          epmt -v integration test_integration_slurm.py
+          TZ=UTC pytest -x -vv src/epmt/test/integration/test_integration_slurm.py
 
-      - name: epmt integration, collate-tsv
+      - name: integration, collate-tsv
         run: |
-          epmt -v integration test_integration_collate_tsv.py
+          TZ=UTC pytest -x -vv src/epmt/test/integration/test_integration_collate_tsv.py
 
-      - name: epmt integration, kernel-compile
+      - name: integration, kernel-compile
         run: |
-          epmt -v integration test_integration_kernel_compile.py
+          TZ=UTC pytest -x -vv src/epmt/test/integration/test_integration_kernel_compile.py
 
       - name: install pylint
         run: |

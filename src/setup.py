@@ -38,6 +38,7 @@ setup(name="epmt",
                              'test/integration/conftest.py',
                              'test/integration/test_integration_*.py',
                              'test/integration/epmt-annotate.sh',
+                             'test/integration/epmt-escape-workload.sh',
 
                              'test/shell/*',
                       ]
