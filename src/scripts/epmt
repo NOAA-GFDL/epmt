@@ -263,21 +263,8 @@ daemon_parser.set_defaults(
 # Shell PARSER
 shell_parser = subparser.add_parser(
     'shell',
-    help="Start an interactive IPython shell, see 'epmt python'",
+    help="Start an interactive IPython shell",
     description="shell runs an interactive IPython shell")
-
-# # Python PARSER
-# py_parser = subparser.add_parser(
-#     'python',
-#     help="Run a Python script under the python interpreter",
-#     description="python runs an executable python script under the python interpreter. "
-#     "If no script is provided as an argument, an interactive python shell is executed. "
-#     "If you want an IPython shell, try 'epmt shell'")
-# py_parser.add_argument(
-#     'epmt_cmd_args',
-#     nargs='?',
-#     help="python script to execute",
-#     metavar="script")
 
 # Gui PARSER
 gui_parser = subparser.add_parser(
