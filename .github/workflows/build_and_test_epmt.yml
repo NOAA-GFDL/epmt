@@ -265,7 +265,6 @@ jobs:
           COVERAGE_PROCESS_START: coveragerc
 
       - name:  Combine coverage data and generate report
-        continue-on-error:  true
         run: |
           ls -la .coverage.*
           coverage combine --rcfile=coveragerc
