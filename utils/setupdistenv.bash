@@ -12,5 +12,4 @@ ${install_prefix}epmt/test/integration/libs/bats/install.sh /usr/local
 export PATH=$PATH:/usr/local/bin:/usr/local/libexec
 
 echo "" && echo "------ epmt -v check ------" && epmt -v check
-echo "" && echo "------ epmt -v unittest ------" && epmt -v unittest
 echo "" && echo "------ epmt -v integration ------" && epmt -v integration

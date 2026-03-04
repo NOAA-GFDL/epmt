@@ -1839,45 +1839,6 @@ def epmt_entrypoint(args):
         set_signal_handlers([])
         return retval.returncode
 
-    if args.command == 'unittest':
-        import unittest
-        from importlib import import_module
-        TEST_MODULES = [
-            'test.test_anysh',
-            'test.test_cmds',
-            'test.test_db_migration',
-            'test.test_db_schema',
-            'test.test_explore',
-            'test.test_lib',
-            'test.test_outliers',
-            'test.test_query',
-            'test.test_run',
-            'test.test_settings',
-            'test.test_shell',
-            'test.test_stat',
-            'test.test_submit'
-        ]
-
-        if args.epmt_cmd_args:
-            TEST_MODULES = args.epmt_cmd_args
-
-        success_list = []
-        for m in TEST_MODULES:
-            m = f'epmt.{m}'
-            mod = import_module(m)
-            suite = unittest.TestLoader().loadTestsFromModule(mod)
-            print('\n\nRunning', m)
-            result = unittest.TextTestRunner(verbosity=2).run(suite)
-            success_list.append(result.wasSuccessful())
-            if not result.wasSuccessful():
-                print('\n\nOne (or more) unit tests FAILED', file=stderr)
-                # return -1
-
-        if not all(success_list):
-            return -1
-
-        return 0
-
     if args.command == 'retire':
         from epmt.epmt_cmd_retire import epmt_retire
         epmt_retire(skip_unprocessed=args.skip_unproc,

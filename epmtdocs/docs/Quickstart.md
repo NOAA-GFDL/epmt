@@ -186,7 +186,7 @@ $ test/integration/run_integration
 ### Run unit tests
 
 ```
-$ epmt unittest
+$ pytest src/epmt/test/
 ```
 
 Tip: Don't forget to restore your `settings.py` file after the tests!
