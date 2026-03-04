@@ -182,6 +182,72 @@ jobs:
         env:
           COVERAGE_FILE: .coverage.submit
 
+      - name: upload pip installable
+        uses: actions/upload-artifact@v4
+        with:
+          name: epmt-pip-install-TEST
+          path: src/dist/epmt-4.11.0.tar.gz
+
+      - name: integration, basic
+        run: |
+          TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/integration/test_integration_basic.py
+        env:
+          COVERAGE_FILE: .coverage.integration_basic
+
+      - name: integration, escape
+        run: |
+          TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/integration/test_integration_escape.py
+        env:
+          COVERAGE_FILE: .coverage.integration_escape
+
+      - name: integration, concat
+        run: |
+          TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/integration/test_integration_concat.py
+        env:
+          COVERAGE_FILE: .coverage.integration_concat
+
+      - name: integration, daemon
+        run: |
+          TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/integration/test_integration_daemon.py
+        env:
+          COVERAGE_FILE: .coverage.integration_daemon
+
+      - name: integration, shell
+        run: |
+          TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/integration/test_integration_shell.py
+        env:
+          COVERAGE_FILE: .coverage.integration_shell
+
+      - name: integration, annotate
+        run: |
+          TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/integration/test_integration_annotate.py
+        env:
+          COVERAGE_FILE: .coverage.integration_annotate
+
+      - name: integration, explore
+        run: |
+          TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/integration/test_integration_explore.py
+        env:
+          COVERAGE_FILE: .coverage.integration_explore
+
+      - name: integration, slurm
+        run: |
+          TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/integration/test_integration_slurm.py
+        env:
+          COVERAGE_FILE: .coverage.integration_slurm
+
+      - name: integration, collate-tsv
+        run: |
+          TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/integration/test_integration_collate_tsv.py
+        env:
+          COVERAGE_FILE: .coverage.integration_collate_tsv
+
+      - name: integration, kernel-compile
+        run: |
+          TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/integration/test_integration_kernel_compile.py
+        env:
+          COVERAGE_FILE: .coverage.integration_kernel_compile
+
       - name:  Combine coverage data and generate report
         continue-on-error:  true
         run: |
@@ -201,52 +267,6 @@ jobs:
           fail_ci_if_error: false
           verbose: true
           use_pypi: true
-
-      - name: upload pip installable
-        uses: actions/upload-artifact@v4
-        with:
-          name: epmt-pip-install-TEST
-          path: src/dist/epmt-4.11.0.tar.gz
-
-      - name: integration, basic
-        run: |
-          TZ=UTC pytest -x -vv src/epmt/test/integration/test_integration_basic.py
-
-      - name: integration, escape
-        run: |
-          TZ=UTC pytest -x -vv src/epmt/test/integration/test_integration_escape.py
-
-      - name: integration, concat
-        run: |
-          TZ=UTC pytest -x -vv src/epmt/test/integration/test_integration_concat.py
-
-      - name: integration, daemon
-        run: |
-          TZ=UTC pytest -x -vv src/epmt/test/integration/test_integration_daemon.py
-
-      - name: integration, shell
-        run: |
-          TZ=UTC pytest -x -vv src/epmt/test/integration/test_integration_shell.py
-
-      - name: integration, annotate
-        run: |
-          TZ=UTC pytest -x -vv src/epmt/test/integration/test_integration_annotate.py
-
-      - name: integration, explore
-        run: |
-          TZ=UTC pytest -x -vv src/epmt/test/integration/test_integration_explore.py
-
-      - name: integration, slurm
-        run: |
-          TZ=UTC pytest -x -vv src/epmt/test/integration/test_integration_slurm.py
-
-      - name: integration, collate-tsv
-        run: |
-          TZ=UTC pytest -x -vv src/epmt/test/integration/test_integration_collate_tsv.py
-
-      - name: integration, kernel-compile
-        run: |
-          TZ=UTC pytest -x -vv src/epmt/test/integration/test_integration_kernel_compile.py
 
       - name: install pylint
         run: |
