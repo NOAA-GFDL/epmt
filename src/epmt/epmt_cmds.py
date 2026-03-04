@@ -1654,9 +1654,9 @@ def epmt_dbsize(findwhat=['database', 'table', 'index', 'tablespace'],
         findwhat = ['database', 'table', 'index', 'tablespace']
     return orm_db_size(findwhat, usejson, usebytes)
 
-def epmt_shell(ipython=True):
+def epmt_shell():
     '''
-    Start a shell. if ipython is True (default) start a powerful ipython shell, otherwise a vanilla python shell
+    Start an interactive IPython shell.
     '''
 
     # we import builtins so pyinstaller will use the full builtins module
@@ -1676,14 +1676,8 @@ def epmt_shell(ipython=True):
     except BaseException:
         pass
 
-    if ipython:
-        # ipython shell
-        from IPython import embed
-        embed(**kwargs)
-    else:
-        # regular python shell
-        from code import interact
-        interact(**kwargs)
+    from IPython import embed
+    embed(**kwargs)
 
 
 def epmt_entrypoint(args):
