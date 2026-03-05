@@ -370,29 +370,30 @@ def epmt_check():
     retval = True
 
     logger.warning('CHECKING verify_db_params()...')
-    reval = verify_db_params()
+    reval = verify_db_params() and retval
 
     logger.warning('CHECKING verify_install_prefix()...')
-    retval = verify_install_prefix()
+    retval = verify_install_prefix() and retval
 
     logger.warning('CHECKING verify_epmt_output_prefix()...')
-    retval = verify_epmt_output_prefix()
+    retval = verify_epmt_output_prefix() and retval
 
     logger.warning('CHECKING verify_perf()...')
-    retval = verify_perf()
+    retval = verify_perf() and retval
 
     logger.warning('CHECKING verify_papiex_options()...')
-    #retval = verify_papiex_options()
-    if not verify_papiex_options():
+    verify_papiex_options_retval = verify_papiex_options()
+    #retval = verify_papiex_options_retval and retval
+    if not verify_papiex_options_retval:
         logger.error('verify_papiex_options() failed, but passing on harmlessly (GUARDED)')
     else:
         logger.error('verify_papiex_options() passed, you are probably on PPAN')
 
     logger.warning('CHECKING verify_stage_command()...')
-    retval = verify_stage_command()
+    retval = verify_stage_command() and retval
 
     logger.warning('CHECKING verify_papiex()...')
-    retval = verify_papiex()
+    retval = verify_papiex() and retval
 
     return retval
 
