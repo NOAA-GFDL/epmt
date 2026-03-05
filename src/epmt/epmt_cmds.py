@@ -127,7 +127,7 @@ def PrintWarning():
 
 def verify_install_prefix():
     install_prefix = settings.install_prefix
-    # print("settings.install_prefix =",install_prefix, end='')
+    print("settings.install_prefix =",install_prefix, end='')
 
     retval = True
     # Check for bad stuff and shortcut
@@ -209,7 +209,7 @@ def verify_papiex_options():
     #pass
 
     s = get_papiex_options(settings)
-    # print("papiex_options =",s, end='')
+    print("papiex_options =",s, end='')
     logger.info(f'papiex_options = {s}')
     logger.info(f'settings.install_prefix = {settings.install_prefix}')
     retval = True
