@@ -1,4 +1,5 @@
 from setuptools import setup
+from glob import glob as _glob
 
 setup(name="epmt",
       version="4.11.0",
@@ -47,26 +48,8 @@ setup(name="epmt",
 # (Lines 88-92 removed)
       
       data_files=[('lib/python3.9/site-packages/epmt/lib',
-                   [
-#                    'papiex-epmt-install/lib/libmonitor_wrap.a',
-                    'papiex-epmt-install/lib/libmonitor.so',
-                    'papiex-epmt-install/lib/libmonitor.so.0',                         
-                    'papiex-epmt-install/lib/libmonitor.so.0.0.0',
-#                    'papiex-epmt-install/lib/libpapi.a',
-#                    'papiex-epmt-install/lib/libpapi.so',
-#                    'papiex-epmt-install/lib/libpapi.so.5',                    
-#                    'papiex-epmt-install/lib/libpapi.so.5.7.0',
-#                    'papiex-epmt-install/lib/libpapi.so.5.7.0.0',                    
-#                    'papiex-epmt-install/lib/libpfm.a',
-#                    'papiex-epmt-install/lib/libpfm.so',
-#                    'papiex-epmt-install/lib/libpfm.so.4',
-#                    'papiex-epmt-install/lib/libpfm.so.4.10.1',
-                    'papiex-epmt-install/lib/libpapiex.so',
-                    'papiex-epmt-install/lib/libpapiex.so.2',                    
-#                    'papiex-epmt-install/lib/libpapiex.so.2.3.14',
-
-
-                   ] ),
+                   _glob('papiex-epmt-install/lib/*.so*')
+                   ),
                  ],
       scripts=['scripts/epmt'],
       )

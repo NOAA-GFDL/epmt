@@ -911,11 +911,23 @@ def epmt_source(slurm_prolog=False, papiex_debug=False, monitor_debug=False, run
     cmd = add_var(cmd,
                   "PAPIEX_OPTIONS" + equals + get_papiex_options(settings))
     old_pl_libs = environ.get("LD_PRELOAD", "")
-    papiex_pl_libs = settings.install_prefix + "/lib/libpapiex.so:" + settings.install_prefix + "/lib/libmonitor.so:" + \
-        settings.install_prefix + "/lib/libpapi.so:" + settings.install_prefix + "/lib/libpfm.so"
+    papiex_lib_dir = settings.install_prefix + "/lib"
+    papiex_lib_candidates = [
+        papiex_lib_dir + "/libpapiex.so",
+        papiex_lib_dir + "/libmonitor.so",
+        papiex_lib_dir + "/libpapi.so",
+        papiex_lib_dir + "/libpfm.so",
+    ]
+    papiex_pl_libs = ":".join(lib for lib in papiex_lib_candidates if path.exists(lib))
+    old_ldlib = environ.get("LD_LIBRARY_PATH", "")
+    new_ldlib = papiex_lib_dir + (":" + old_ldlib if old_ldlib else "")
     if run_cmd:
+        ld_preload_parts = [p for p in [papiex_pl_libs, old_pl_libs] if p]
         cmd = add_var(cmd,
-                      "LD_PRELOAD" + equals + papiex_pl_libs + ":" + old_pl_libs)
+                      "LD_LIBRARY_PATH" + equals + new_ldlib)
+        if ld_preload_parts:
+            cmd = add_var(cmd,
+                          "LD_PRELOAD" + equals + ":".join(ld_preload_parts))
     else:
         cmd = add_var(cmd,
                       "PAPIEX_OLD_LD_PRELOAD" + equals + old_pl_libs)
@@ -924,10 +936,10 @@ def epmt_source(slurm_prolog=False, papiex_debug=False, monitor_debug=False, run
 
     # Use export -n which keeps the variable but prevents it from being exported
     if slurm_prolog:
-        cmd += "export LD_PRELOAD=" + papiex_pl_libs
-        if len(old_pl_libs) > 0:
-            cmd += ":" + old_pl_libs
-        cmd += "\n"
+        cmd += "export LD_LIBRARY_PATH=" + new_ldlib + "\n"
+        ld_preload_parts = [p for p in [papiex_pl_libs, old_pl_libs] if p]
+        if ld_preload_parts:
+            cmd += "export LD_PRELOAD=" + ":".join(ld_preload_parts) + "\n"
 
     elif undercsh:
         tmp = "setenv PAPIEX_OPTIONS $PAPIEX_OPTIONS; setenv LD_PRELOAD $PAPIEX_LD_PRELOAD;"
