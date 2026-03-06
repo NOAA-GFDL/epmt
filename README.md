@@ -1,6 +1,6 @@
 # EPMT
 
-**Experiment Performance Management Tool**  aka  
+**Ephemeral Performance and Metadata Tracker**  aka  
 **WorkflowDB** aka  
 **PerfMiner**
 

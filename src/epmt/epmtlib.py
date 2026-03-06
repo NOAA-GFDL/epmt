@@ -23,6 +23,20 @@ from time import time
 # compare of two version tuples and python will do the right thing
 _version = (4, 11, 0)
 
+# EPMT: Ephemeral Performance and Metadata Tracker
+# ...or was it "Experiment Performance Management Tool"?
+# ...or "Every Programmer's Magical Toolkit"?
+# ...or "Elegant Processes, Monitored Tirelessly"?
+# Honestly, no one really remembers what EPMT stands for.
+# But hey, at least the acronym stuck.
+_epmt_acronyms = [
+    "Ephemeral Performance and Metadata Tracker",
+    "Excellent Program for Monitoring Things",
+    "Every Programmer's Magical Toolkit",
+    "Elegant Processes, Monitored Tirelessly",
+    "Enormously Productive Metrics Tracker",
+]
+
 
 def version():
     return _version
@@ -30,7 +44,15 @@ def version():
 
 def version_str(terse=False):
     v = ".".join([str(i) for i in _version])
-    return v if terse else "EPMT {0}".format(v)
+    if terse:
+        return v
+    from random import random
+    # Easter egg: 1 in 10 chance of showing a fake backronym
+    if random() < 0.1:
+        from random import choice
+        alt = choice(_epmt_acronyms[1:])
+        return "EPMT {0} ({1}... wait, that's not right)".format(v, alt)
+    return "EPMT {0} (Ephemeral Performance and Metadata Tracker)".format(v)
 
 
 def get_username():

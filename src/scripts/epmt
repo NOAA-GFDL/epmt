@@ -39,7 +39,7 @@ parser = DefaultHelpParser(
     add_help=True, epilog=config_string_file.getvalue(),
     description="This is a tool to collect metadata and performance data about an entire job- "
     "down to the individual threads in individual processes. "
-    "This tool, EPMT, uses papiex to perform the process monitoring. "
+    "This tool, EPMT (Ephemeral Performance and Metadata Tracker), uses papiex to perform the process monitoring. "
     "It is targeted at batch or ephemeral jobs, not daemon processes.",
     formatter_class=argparse.RawDescriptionHelpFormatter)
 parser.add_argument(
