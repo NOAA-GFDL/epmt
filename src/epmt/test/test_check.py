@@ -27,6 +27,11 @@ def _perf_event_paranoid_ok():
         return False
 
 
+def _epmt_run_available():
+    """Return True if epmt_run can execute (requires a SLURM/PBS job ID env var)."""
+    return any(os.environ.get(v) for v in ['SLURM_JOB_ID', 'SLURM_JOBID', 'PBS_JOB_ID'])
+
+
 class EPMTCheck(unittest.TestCase):
 
     def test_verify_db_params(self):
@@ -82,7 +87,7 @@ class EPMTCheck(unittest.TestCase):
         from epmt.epmt_cmds import verify_papiex
         with capture() as (out, err):
             result = verify_papiex()
-        if _papiex_libs_present():
+        if _papiex_libs_present() and _epmt_run_available():
             self.assertTrue(result)
         else:
             self.assertFalse(result)
@@ -92,9 +97,10 @@ class EPMTCheck(unittest.TestCase):
         with capture() as (out, err):
             result = epmt_check()
         # epmt_check returns True only when all non-guarded checks pass.
+        # verify_papiex needs both papiex libs and a job ID (SLURM/PBS).
         # In source-tree CI the papiex libs and perf paranoid checks fail.
-        # In Docker CI all non-guarded checks pass.
-        if _papiex_libs_present() and _perf_event_paranoid_ok():
+        # In Docker CI without SLURM job context, verify_papiex fails.
+        if _papiex_libs_present() and _perf_event_paranoid_ok() and _epmt_run_available():
             self.assertTrue(result)
         else:
             self.assertFalse(result)
