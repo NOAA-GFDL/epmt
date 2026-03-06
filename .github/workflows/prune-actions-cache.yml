@@ -1,6 +1,9 @@
 name: Prune Actions Cache
 
 on:
+  push:
+    branches:
+      - copilot/sub-pr-121
   schedule:
     - cron: '0 0 * * 0'   # every Sunday at midnight UTC
   workflow_dispatch:
@@ -12,19 +15,28 @@ jobs:
   prune:
     runs-on: ubuntu-latest
     steps:
-      - name: Delete caches unused for 7+ days
+      - name: Delete caches for branches that no longer exist
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
         run: |
-          CUTOFF=$(date -u -d '7 days ago' +%Y-%m-%dT%H:%M:%SZ)
+          # Collect all current branch names
+          BRANCHES=$(gh api "/repos/${REPO}/branches?per_page=100" \
+            --paginate \
+            --jq '.[].name')
 
+          # Find head-ref caches and delete any whose branch has been removed
           gh api \
             -H "Accept: application/vnd.github+json" \
             "/repos/${REPO}/actions/caches" \
             --paginate \
-            --jq ".actions_caches[] | select(.last_accessed_at < \"${CUTOFF}\") | .id" \
-          | while read -r id; do
-              echo "Deleting cache ${id}"
-              gh api --method DELETE "/repos/${REPO}/actions/caches/${id}" --silent
+            --jq '.actions_caches[] | select(.ref | startswith("refs/heads/")) | "\(.id)\t\(.ref)"' \
+          | while IFS=$'\t' read -r id ref; do
+              branch="${ref#refs/heads/}"
+              if ! printf '%s\n' "$BRANCHES" | grep -qxF "$branch"; then
+                echo "Deleting cache ${id} (branch '${branch}' no longer exists)"
+                gh api --method DELETE "/repos/${REPO}/actions/caches/${id}" --silent
+              else
+                echo "Skipping cache ${id} (branch '${branch}' still active)"
+              fi
             done
