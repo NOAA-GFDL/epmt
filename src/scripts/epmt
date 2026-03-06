@@ -272,20 +272,6 @@ gui_parser = subparser.add_parser(
     help="Run the EPMT dashboard GUI",
     description="gui a web-based dashboard accessible at: http://localhost:8050")
 
-# Integration tests PARSER
-integration_test_parser = subparser.add_parser(
-    'integration',
-    help="Run EPMT integration tests",
-    description="runs integration tests")
-integration_test_parser.add_argument(
-    'epmt_cmd_args',
-    default=[], nargs='*',
-    help='Specific integration test to run')
-integration_test_parser.add_argument(
-    '-x', '--exclude',
-    default=[], nargs='*',
-    help='integration test to exclude')
-
 # Drop PARSER
 drop_parser = subparser.add_parser(
     'drop',

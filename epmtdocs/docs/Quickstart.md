@@ -171,16 +171,7 @@ $ cp $EPMT_PREFIX/epmt-install/preset_settings/settings_sqlite_inmem_sqlalchemy.
 
 ```
 $ cd $EPMT_PREFIX/epmt-install/epmt
-$ test/integration/run_integration 
- ✓ epmt version
- ✓ epmt submit
- - epmt_concat -h (skipped)
- ...
- ✓ no daemon running
- ✓ start epmt daemon
- ✓ stop epmt daemon
-
-11 tests, 0 failures, 6 skipped
+$ pytest -x -vv test/integration/test_integration_*.py
 ```
 
 ### Run unit tests
