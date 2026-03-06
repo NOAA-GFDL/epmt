@@ -114,15 +114,15 @@ def write_job_epilog(jobdatafile, metadata):
     return False
 
 def PrintFail():
-    print("\t" + bcolors.FAIL + "Fail" + bcolors.ENDC)
+    print("\t" + bcolors.FAIL + "Fail" + bcolors.ENDC, flush=True)
 
 
 def PrintPass():
-    print("\t" + bcolors.OKBLUE + "Pass" + bcolors.ENDC)
+    print("\t" + bcolors.OKBLUE + "Pass" + bcolors.ENDC, flush=True)
 
 
 def PrintWarning():
-    print("\t" + bcolors.WARNING + "Pass" + bcolors.ENDC)
+    print("\t" + bcolors.WARNING + "Pass" + bcolors.ENDC, flush=True)
 
 
 def verify_install_prefix():
@@ -269,7 +269,7 @@ def verify_db_params():
 
 def verify_perf():
     f = "/proc/sys/kernel/perf_event_paranoid"
-    print('perf_event_paranoid must exist at...')
+    print('perf_event_paranoid must exist at...', flush=True)
     print(f, end='')
 
     try:
