@@ -1,4 +1,12 @@
 from setuptools import setup
+import sysconfig
+import os
+
+# Compute site-packages path relative to the install prefix
+_site_packages_rel = os.path.relpath(
+    sysconfig.get_path('purelib'),
+    sysconfig.get_path('data')
+)
 
 setup(name="epmt",
       version="4.11.0",
@@ -46,7 +54,7 @@ setup(name="epmt",
 
 # (Lines 88-92 removed)
       
-      data_files=[('lib/python3.9/site-packages/epmt/lib',
+      data_files=[(f'{_site_packages_rel}/epmt/lib',
                    [
 #                    'papiex-epmt-install/lib/libmonitor_wrap.a',
                     'papiex-epmt-install/lib/libmonitor.so',

@@ -35,28 +35,16 @@ RUN yum install -y \
 
 ARG sqlite_year
 ARG sqlite_version
-RUN cd /usr/src \
-    && echo "downloading sqlite3 ${sqlite_version}" \
-    && curl -o sqlite-amalgamation-${sqlite_version}.zip https://www.sqlite.org/${sqlite_year}/sqlite-amalgamation-${sqlite_version}.zip \
-    && unzip sqlite-amalgamation-${sqlite_version}.zip \
-    && echo "building libsqlite3 ${sqlite_version} w/ json1 and more" \
-    && cd sqlite-amalgamation-${sqlite_version} \
-    && gcc -shared -fPIC -O2  -DSQLITE_ENABLE_JSON1 -DSQLITE_ENABLE_LOAD_EXTENSION -DSQLITE_MAX_VARIABLE_NUMBER=9999 sqlite3.c -o /usr/lib64/libsqlite3.so
-
 ARG python_version
-RUN rm -rf /usr/local/bin/python* /usr/local/lib/*python*
-RUN cd /usr/src \
-    && echo "downloading python" \
-    && curl -o Python-${python_version}.tgz https://www.python.org/ftp/python/${python_version}/Python-${python_version}.tgz \
-    && tar xzf Python-${python_version}.tgz \
-    && cd Python-${python_version} \
-    && echo "building python3" \
-    && ./configure --prefix=/usr --enable-shared --enable-optimizations --enable-loadable-sqlite-extensions \
-    && make --silent install > /dev/null
 
-RUN ldconfig
+# Install Python 3.9 and SQLite from system packages instead of building from source
+RUN rm -rf /usr/local/bin/python* /usr/local/lib/*python*
+RUN dnf module install python39 -y \
+    && dnf install -y python39-devel \
+    && alternatives --set python3 /usr/bin/python3.9
+
 RUN python3 -V
-RUN pip3 install --upgrade pip
+RUN python3 -m pip install --upgrade pip
 
 RUN yum install -y gcc-c++
 
@@ -82,8 +70,9 @@ COPY src/dist/${epmt_python_full_release} .
 
 RUN python3 -m pip install ${epmt_python_full_release}
 
-RUN tar zxf ${epmt_python_full_release}  \
-    && mv epmt-${epmt_version}/papiex-epmt-install /usr/lib/python3.9/site-packages/
+RUN SITE_PACKAGES=$(python3 -c "import site; print(site.getsitepackages()[0])") \
+    && tar zxf ${epmt_python_full_release} \
+    && mv epmt-${epmt_version}/papiex-epmt-install ${SITE_PACKAGES}/
 #    && rm -rf *.tgz
 COPY utils/epmt-installer .
 
