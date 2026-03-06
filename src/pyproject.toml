@@ -134,7 +134,7 @@ dependencies = [
     "scipy",
     "seaborn",
     "Send2Trash",
-	"setuptools",
+    "setuptools",
     "six",
     "SQLAlchemy>=1.4.54",
     "statsmodels",

@@ -1,5 +1,4 @@
 from setuptools import setup
-from glob import glob
 import sysconfig
 
 _site_packages_relative = sysconfig.get_path('purelib').replace(sysconfig.get_path('data') + '/', '')

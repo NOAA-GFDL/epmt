@@ -154,11 +154,6 @@ jobs:
       - name: pip install pytest
         run: docker exec ${{ env.CONTAINER_NAME }} pip3 install pytest
 
-      - name: Discover site-packages path
-        run: |
-          SITE_PACKAGES=$(docker exec ${{ env.CONTAINER_NAME }} python3 -c "import site; print(site.getsitepackages()[0])")
-          echo "SITE_PACKAGES=${SITE_PACKAGES}" >> $GITHUB_ENV
-
       - name: test_anysh (GUARDED)
         continue-on-error: true
         run: docker exec ${{ env.CONTAINER_NAME }} bash -c 'cd $(python3 -c "import site; print(site.getsitepackages()[0])") && TZ=UTC pytest -x -vv epmt/test/test_anysh.py'
