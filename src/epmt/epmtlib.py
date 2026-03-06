@@ -12,6 +12,7 @@ from json import dumps, loads
 from logging import getLogger, DEBUG, ERROR, INFO, WARNING, CRITICAL
 from os import environ, unlink, devnull, getuid
 from pwd import getpwuid
+from random import choice, random
 from subprocess import call
 from time import time
 
@@ -46,10 +47,8 @@ def version_str(terse=False):
     v = ".".join([str(i) for i in _version])
     if terse:
         return v
-    from random import random
     # Easter egg: 1 in 10 chance of showing a fake backronym
     if random() < 0.1:
-        from random import choice
         alt = choice(_epmt_acronyms[1:])
         return "EPMT {0} ({1}... wait, that's not right)".format(v, alt)
     return "EPMT {0} (Ephemeral Performance and Metadata Tracker)".format(v)
