@@ -448,7 +448,7 @@ def main():
             epmt_help_api(args.api[1:])
         sysexit(0)
 
-    # Print help if
+    # Print help if no command is provided
     if args.command is None:
         parser.print_help()
         sysexit(0)
