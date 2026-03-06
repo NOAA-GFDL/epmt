@@ -296,6 +296,6 @@ jobs:
         run: |
           pylint --rcfile pylintrc --fail-under 5.5 src/epmt/ui
 
-      - name: run pylint on epmt entry-point script
+      - name: run pylint on epmt CLI module
         run: |
-          pylint --rcfile pylintrc --fail-under 10 src/scripts/epmt
+          pylint --rcfile pylintrc --fail-under 10 src/epmt/cli.py
