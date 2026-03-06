@@ -6,7 +6,7 @@ from epmt import epmt_outliers as eod
 # epmt_stat contains statistical functions
 from epmt import epmt_stat as es
 from epmt import epmt_query as eq
-from epmt import orm as *
+from epmt.orm import *
 import pandas
 from pandas import DataFrame
 
