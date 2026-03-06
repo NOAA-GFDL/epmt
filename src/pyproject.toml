@@ -1,15 +1,13 @@
 [build-system]
 requires = [
-	#"setuptools == 69.0.2"
     "setuptools >= 61, <69",
-    "setuptools_scm[toml] >= 4, <6",
     "wheel >= 0.29.0"
 ]
 build-backend = "setuptools.build_meta"
 
 [project]
 name            = "epmt"
-version         = "4.11.0"
+dynamic         = ["version"]
 authors         = [ { name = "Minimal Metrics, LLC", email = "some.where@over.there" } ]
 description     = "Experiment Performance Metrics Toolkit"
 readme          = "README.md"
@@ -150,6 +148,55 @@ dependencies = [
     "wrapt",
     "zipp",
 ]
+
+[project.scripts]
+epmt = "epmt.cli:main"
+
 [project.urls]
 "Homepage" = "https://gitlab.com/minimal-metrics-llc/epmt/epmt"
 "Bug Tracker" = "https://gitlab.com/minimal-metrics-llc/epmt/epmt/-/issues"
+
+[tool.setuptools.dynamic]
+version = {attr = "epmt.epmtlib.__version__"}
+
+[tool.setuptools.packages.find]
+where = ["."]
+
+[tool.setuptools.package-data]
+epmt = [
+    "alembic.ini",
+    "preset_settings/*.py",
+
+    "epmt_migrations/README",
+    "epmt_migrations/env.py",
+    "epmt_migrations/script.py.mako",
+    "epmt_migrations/docker-entrypoint-initdb.d/init-user-db.sh",
+    "epmt_migrations/versions/*",
+
+    "test/run",
+    "test/test_run.sh",
+    "test/test_source.csh",
+
+    "test/data/corrupted_csv/*",
+    "test/data/csv/*",
+    "test/data/daemon/627919.tgz",
+    "test/data/daemon/ingest/*",
+    "test/data/misc/*",
+    "test/data/outliers/*",
+    "test/data/outliers_nb/*",
+    "test/data/query/*",
+    "test/data/query_notebook/*",
+    "test/data/submit/692500.tgz",
+    "test/data/submit/804268.tgz",
+    "test/data/submit/804280.tgz",
+    "test/data/submit/3455/*",
+    "test/data/tsv/collated-tsv-2220.tgz",
+    "test/data/tsv/12340/*",
+
+    "test/integration/conftest.py",
+    "test/integration/test_integration_*.py",
+    "test/integration/epmt-annotate.sh",
+    "test/integration/epmt-escape-workload.sh",
+
+    "test/shell/*",
+]

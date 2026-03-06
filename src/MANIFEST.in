@@ -1,0 +1,2 @@
+recursive-include papiex-epmt-install/lib *.so*
+include scripts/epmt
