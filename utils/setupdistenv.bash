@@ -12,5 +12,3 @@ ${install_prefix}epmt/test/integration/libs/bats/install.sh /usr/local
 export PATH=$PATH:/usr/local/bin:/usr/local/libexec
 
 echo "" && echo "------ epmt -v check ------" && epmt -v check
-echo "" && echo "------ epmt -v unittest ------" && epmt -v unittest
-echo "" && echo "------ pytest integration ------" && TZ=UTC pytest -x -vv $(python3 -c 'from epmt.epmtlib import get_install_root; print(get_install_root())')/test/integration/test_integration_*.py

@@ -46,8 +46,6 @@ build:python3:
 
     - epmt -v check && echo "success! :-)" || echo "fail! but keep going..."
 
-    - epmt -v unittest && echo "success! :-)" || echo "fail! but keep going..."
-
     - pip install pytest || echo "tried to install pytest but failed. keep going!"
 
 #	# this takes A LONG TIME!

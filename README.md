@@ -25,27 +25,6 @@ WARNING:epmtlib:No job name found, defaulting to unknown
 epmt run functionality  Pass
 ```
 
-We have a comprehensive set of unit tests. The epmt unittest command will begin those tests:
-```
-$ epmt unittest
-
-
-Running test.test_lib
-test_dict_filter (test.test_lib.EPMTLib) ... ok
-test_merge_intervals (test.test_lib.EPMTLib) ... ok
-test_sqlite_json_support (test.test_lib.EPMTLib) ... ok
-test_url_to_db_params (test.test_lib.EPMTLib) ... ok
-
-----------------------------------------------------------------------
-Ran 4 tests in 0.086s
-
-OK
-....
-
-OK
-All tests successfully PASSED
-```
-
 ## Modes of EPMT
 
 There are three modes to **EPMT** usage, collection, submission and analysis, and have an increasing number of dependencies:

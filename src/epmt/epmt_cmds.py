@@ -1654,9 +1654,9 @@ def epmt_dbsize(findwhat=['database', 'table', 'index', 'tablespace'],
         findwhat = ['database', 'table', 'index', 'tablespace']
     return orm_db_size(findwhat, usejson, usebytes)
 
-def epmt_shell(ipython=True):
+def epmt_shell():
     '''
-    Start a shell. if ipython is True (default) start a powerful ipython shell, otherwise a vanilla python shell
+    Start an interactive IPython shell.
     '''
 
     # we import builtins so pyinstaller will use the full builtins module
@@ -1676,14 +1676,8 @@ def epmt_shell(ipython=True):
     except BaseException:
         pass
 
-    if ipython:
-        # ipython shell
-        from IPython import embed
-        embed(**kwargs)
-    else:
-        # regular python shell
-        from code import interact
-        interact(**kwargs)
+    from IPython import embed
+    embed(**kwargs)
 
 
 def epmt_entrypoint(args):
@@ -1751,45 +1745,6 @@ def epmt_entrypoint(args):
         # logger.info('//CALL// docsapp.run //CALL//')
         # docs = Thread(target=docsapp.run, kwargs={'port':8080, 'host':'0.0.0.0'})
         # docs.start()
-
-        return 0
-
-    if args.command == 'unittest':
-        import unittest
-        from importlib import import_module
-        TEST_MODULES = [
-            'test.test_anysh',
-            'test.test_cmds',
-            'test.test_db_migration',
-            'test.test_db_schema',
-            'test.test_explore',
-            'test.test_lib',
-            'test.test_outliers',
-            'test.test_query',
-            'test.test_run',
-            'test.test_settings',
-            'test.test_shell',
-            'test.test_stat',
-            'test.test_submit'
-        ]
-
-        if args.epmt_cmd_args:
-            TEST_MODULES = args.epmt_cmd_args
-
-        success_list = []
-        for m in TEST_MODULES:
-            m = f'epmt.{m}'
-            mod = import_module(m)
-            suite = unittest.TestLoader().loadTestsFromModule(mod)
-            print('\n\nRunning', m)
-            result = unittest.TextTestRunner(verbosity=2).run(suite)
-            success_list.append(result.wasSuccessful())
-            if not result.wasSuccessful():
-                print('\n\nOne (or more) unit tests FAILED', file=stderr)
-                # return -1
-
-        if not all(success_list):
-            return -1
 
         return 0
 
