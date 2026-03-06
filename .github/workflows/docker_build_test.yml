@@ -156,7 +156,7 @@ jobs:
 
       - name: Detect site-packages path
         run: |
-          SITE_PACKAGES=$(docker exec ${{ env.CONTAINER_NAME }} python3 -c "import site; print(site.getsitepackages()[0])")
+          SITE_PACKAGES=$(docker exec ${{ env.CONTAINER_NAME }} python3 -c "import sysconfig; print(sysconfig.get_path('purelib'))")
           echo "SITE_PACKAGES=${SITE_PACKAGES}" >> $GITHUB_ENV
           echo "Site packages path: ${SITE_PACKAGES}"
 

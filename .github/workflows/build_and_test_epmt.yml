@@ -70,7 +70,7 @@ jobs:
 
       - name: create links to papiex executables, adjust path
         run: |
-          SITE_PACKAGES=$(python3 -c "import site; print(site.getsitepackages()[0])")
+          SITE_PACKAGES=$(python3 -c "import sysconfig; print(sysconfig.get_path('purelib'))")
           mkdir -p ${SITE_PACKAGES}/papiex-epmt-install
           ln -s  ${SITE_PACKAGES}/epmt/lib ${SITE_PACKAGES}/papiex-epmt-install/
           ln -s  ${SITE_PACKAGES}/epmt/bin ${SITE_PACKAGES}/papiex-epmt-install/
@@ -91,7 +91,7 @@ jobs:
 
       - name: enable subprocess coverage for integration tests
         run: |
-          SITE_PACKAGES=$(python3 -c "import site; print(site.getsitepackages()[0])")
+          SITE_PACKAGES=$(python3 -c "import sysconfig; print(sysconfig.get_path('purelib'))")
           echo "import coverage; coverage.process_startup()" > ${SITE_PACKAGES}/coverage_subprocess.pth
           echo "Installed coverage subprocess hook at ${SITE_PACKAGES}/coverage_subprocess.pth"
 

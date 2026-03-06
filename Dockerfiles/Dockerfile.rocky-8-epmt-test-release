@@ -70,7 +70,7 @@ COPY src/dist/${epmt_python_full_release} .
 
 RUN python3 -m pip install ${epmt_python_full_release}
 
-RUN SITE_PACKAGES=$(python3 -c "import site; print(site.getsitepackages()[0])") \
+RUN SITE_PACKAGES=$(python3 -c "import sysconfig; print(sysconfig.get_path('purelib'))") \
     && tar zxf ${epmt_python_full_release} \
     && mv epmt-${epmt_version}/papiex-epmt-install ${SITE_PACKAGES}/
 #    && rm -rf *.tgz

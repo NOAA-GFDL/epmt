@@ -35,7 +35,7 @@ build:python3:
     - make dist python-dist dist-test
 
     - pip3 install src/dist/epmt*gz
-    - SITE_PACKAGES=$(python3 -c "import site; print(site.getsitepackages()[0])")
+    - SITE_PACKAGES=$(python3 -c "import sysconfig; print(sysconfig.get_path('purelib'))")
     - mkdir -p ${SITE_PACKAGES}/papiex-epmt-install
     - ln -s  ${SITE_PACKAGES}/epmt/lib ${SITE_PACKAGES}/papiex-epmt-install/
     - ln -s  ${SITE_PACKAGES}/epmt/bin ${SITE_PACKAGES}/papiex-epmt-install/
