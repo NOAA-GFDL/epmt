@@ -1,0 +1,30 @@
+name: Prune Actions Cache
+
+on:
+  schedule:
+    - cron: '0 0 * * 0'   # every Sunday at midnight UTC
+  workflow_dispatch:
+
+permissions:
+  actions: write
+
+jobs:
+  prune:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete caches unused for 7+ days
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          CUTOFF=$(date -u -d '7 days ago' +%Y-%m-%dT%H:%M:%SZ)
+
+          gh api \
+            -H "Accept: application/vnd.github+json" \
+            "/repos/${REPO}/actions/caches" \
+            --paginate \
+            --jq ".actions_caches[] | select(.last_accessed_at < \"${CUTOFF}\") | .id" \
+          | while read -r id; do
+              echo "Deleting cache ${id}"
+              gh api --method DELETE "/repos/${REPO}/actions/caches/${id}" --silent
+            done
