@@ -155,7 +155,7 @@ jobs:
             make --debug OS_TARGET=${OS_TARGET} dist python-dist dist-test
 
       - name: Build epmt-full-release
-        run: make --debug OS_TARGET=${OS_TARGET} epmt-full-release
+        run: make --debug OS_TARGET=${OS_TARGET} DOCKER_RUN_OPTS="${DOCKER_RUN_OPTS}" epmt-full-release
 
       # ── test-release image: layer-cached across runs via --cache-from ──
       # This image changes every commit (new EPMT artifacts baked in), so we
