@@ -126,6 +126,7 @@ def PrintWarning():
 
 
 def verify_install_prefix():
+    '''Verify that the papiex install directory contains the required shared libraries.'''
     install_prefix = settings.install_prefix
     print("settings.install_prefix =",install_prefix, end='')
 
@@ -159,6 +160,7 @@ def verify_install_prefix():
 
 
 def verify_epmt_output_prefix():
+    '''Verify that the output directory can be created, listed, and cleaned up.'''
     opf = settings.epmt_output_prefix
     retval = True
     print("settings.epmt_output_prefix =", opf, end='')
@@ -204,10 +206,10 @@ def verify_epmt_output_prefix():
     return retval
 
 def verify_papiex_options():
-    ## This function is under review for potential deprecation due to limited usage and unclear requirements.
-    ## If deprecation is confirmed, it will be removed in a future release. Otherwise, it may be implemented to handle papiex options.
-    #pass
-
+    '''Verify that the PAPI perf_event component is active and that each
+    configured papiex event can be resolved by papi_command_line.
+    Requires hardware counter access; expected to fail in VM/container
+    environments where perf_event_open() is restricted.'''
     s = get_papiex_options(settings)
     print("papiex_options =",s, end='')
     logger.info(f'papiex_options = {s}')
@@ -252,6 +254,7 @@ def verify_papiex_options():
 
 
 def verify_db_params():
+    '''Verify that the database can be connected to using the configured db_params.'''
     print("settings.db_params =", str(settings.db_params), end='')
     try:
         from epmt.orm import setup_db
@@ -268,6 +271,7 @@ def verify_db_params():
 
 
 def verify_perf():
+    '''Verify that /proc/sys/kernel/perf_event_paranoid exists and is <= 2.'''
     f = "/proc/sys/kernel/perf_event_paranoid"
     print('perf_event_paranoid must exist at...', flush=True)
     print(f, end='')
@@ -291,6 +295,7 @@ def verify_perf():
 
 
 def verify_stage_command():
+    '''Verify that the configured stage command can copy a file to the stage destination.'''
     print("epmt stage functionality", end='')
 
     stage_cmd = settings.stage_command
@@ -325,6 +330,7 @@ def verify_stage_command():
 
 
 def verify_papiex():
+    '''Verify that ``epmt run`` can execute a trivial command and produce expected output files.'''
     print("epmt run functionality", end='')
     logger.info("\tepmt run -a /bin/sleep 1")
     retval = epmt_run(["/bin/sleep", "1"], wrapit=True)
@@ -363,9 +369,10 @@ def verify_papiex():
 
 
 def epmt_check():
-    '''
-    all checks below return false if
-    '''
+    '''Run all verification checks and return False if any required check fails.
+    verify_papiex_options is guarded — its failure is logged but does not
+    affect the return value (it requires hardware counter access unavailable
+    in most VM/container environments).'''
 
     retval = True
 
