@@ -42,11 +42,11 @@ build:python3:
 
     - export PATH='/usr/bin:${PATH}:/usr/local/bin:/usr/local/libexec'
 
-    - epmt -v -V && echo "success! :-)" || echo "fail! but keep going..."
+    - epmt -v -V
 
-    - epmt -v check && echo "success! :-)" || echo "fail! but keep going..."
+    - epmt -v check
 
-    - pip install pytest || echo "tried to install pytest but failed. keep going!"
+    - pip install pytest
 
 #	# this takes A LONG TIME!
 #    - epmt -v -V && echo "success! :-)" || echo "fail! but keep going..."    - epmt integration && echo "success! :-)" || echo "fail! but keep going..."

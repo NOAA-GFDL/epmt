@@ -171,10 +171,10 @@ python-dist:
 	@echo "**********************************************************"
 	@echo "************** python3 setup.py sdist ********************"
 	@echo "**********************************************************"	
-	cd src && echo "GOOD: cd src" || echo "I FAILED: cd src" ; \
-	tar zxf ../$(PAPIEX_RELEASE) && echo "GOOD: tar -zxf ../PAPIEX_RELEASE" || echo "I FAILED: tar zxf ../PAPIEX_RELEASE" ; \
-	python3 setup.py sdist && echo "GOOD: python3 setup.py sdist" || echo "I FAILED: python3 setup.py sdist" ; \
-	chmod a+r dist/* && echo "GOOD: chmod a+r dist/*" || echo "I FAILED: chmod a+r dist/*"
+	cd src && \
+	tar zxf ../$(PAPIEX_RELEASE) && \
+	python3 setup.py sdist && \
+	chmod a+r dist/*
 
 # creates a tarball containing test directories. If the test directory exists, clobber and re-create
 test-$(EPMT_RELEASE) dist-test:
@@ -249,8 +249,7 @@ $(EPMT_DASH_SRC): $(EPMT_DASH_SRC_TARBALL)
 	ls $(EPMT_DASH_SRC) ; \
 	echo "making symbolic link to epmt/ui/docs/index.md" ; \
 	cd epmtdocs/docs && \
-	ln -s ../../$(EPMT_DASH_SRC)/docs/index.md index.md || \
-	echo "symbolic link creation failed. but it's OK." ; \
+	ln -s ../../$(EPMT_DASH_SRC)/docs/index.md index.md ; \
 	cd -
 
 $(EPMT_DASH_SRC_TARBALL):
@@ -367,16 +366,10 @@ check-release:
 	bash -c 'echo 2 > /proc/sys/kernel/perf_event_paranoid; epmt -vv -V ; \
 	echo "" ; \
 	echo "" ; \
-	echo "" && echo "------ epmt -vv check ------" && epmt -vv check \
-	|| echo "epmt -vv check failure guard, keep going" ; \
+	echo "" && echo "------ epmt -vv check ------" && epmt -vv check ; \
 	echo "" ; \
 	echo "" ; \
-	echo "" && echo "------ epmt -vv unittest ------" && epmt -vv unittest \
-	|| echo "epmt -vv unittest failure guard, keep going" ; \
-	echo "" ; \
-	echo "" ; \
-	echo "" && echo "------ pytest integration ------" && TZ=UTC pytest -x -vv src/epmt/test/integration/test_integration_*.py \
-	|| echo "pytest integration failure guard, keep going" ; \
+	echo "" && echo "------ pytest integration ------" && TZ=UTC pytest -x -vv src/epmt/test/integration/test_integration_*.py ; \
 	echo ""'
 	@echo
 	@echo
