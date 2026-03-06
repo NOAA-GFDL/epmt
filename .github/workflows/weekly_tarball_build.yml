@@ -5,6 +5,11 @@ on:
     # Build and cache tarballs every Monday at 6am UTC so that PR runs can
     # restore them from cache and skip the expensive download/compile steps.
     - cron: '0 6 * * 1'
+  # TEMPORARY: one-time trigger to verify this workflow runs on this PR branch.
+  # Remove after merge.
+  push:
+    branches:
+      - copilot/sub-pr-106-again
   workflow_dispatch:
 
 # cancel any in-progress run if a newer one is triggered

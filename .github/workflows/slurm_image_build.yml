@@ -6,6 +6,11 @@ on:
     # be built from source.  The resulting image is cached for use by
     # docker_build_test which restores it instead of rebuilding every PR.
     - cron: '0 6 * * 1'
+  # TEMPORARY: one-time trigger to verify this workflow runs on this PR branch.
+  # Remove after merge.
+  push:
+    branches:
+      - copilot/sub-pr-106-again
   workflow_dispatch:
 
 # cancel any in-progress run if a newer one is triggered
