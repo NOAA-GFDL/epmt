@@ -33,15 +33,28 @@ jobs:
       SLURM_TAG: "slurm-25-05-3-1"
       IMAGE_TAG: "25.05.3"
       SLURM_CLUSTER_TAG: "0.9.0"
+      # Build environment versions (must match Makefile)
+      PYTHON_VERSION: "3.9.22"
+      SQLITE_VERSION: "3490100"
+      SQLITE_YEAR: "2025"
 
     steps:
       - uses: actions/checkout@v4
 
+      - name: Extract build variables
+        run: |
+          EPMT_VERSION=$(sed -n '/_version = /p' src/epmt/epmtlib.py | sed 's/ //g; s/,/./g; s/.*(\(.*\))/\1/')
+          echo "EPMT_VERSION=${EPMT_VERSION}" >> $GITHUB_ENV
+          echo "EPMT_FULL_RELEASE=EPMT-release-${EPMT_VERSION}-${OS_TARGET}.tgz" >> $GITHUB_ENV
+          echo "EPMT_PYTHON_FULL_RELEASE=epmt-${EPMT_VERSION}.tar.gz" >> $GITHUB_ENV
+          echo "EPMT_INSTALL_PATH=/opt/minimalmetrics" >> $GITHUB_ENV
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
         with:
-          # Use docker driver to store images in local daemon
-          # (docker-container driver requires --load and may not propagate errors)
+          # Use docker driver to store images in local daemon.
+          # The docker driver uses BuildKit internally (default in modern Docker)
+          # and supports --cache-from with inline cache metadata.
           driver: docker
 
       - name: Cache slurm-cluster image
@@ -88,19 +101,118 @@ jobs:
       - name: Build papiex-dist
         run: make --debug OS_TARGET=${OS_TARGET} DOCKER_RUN_OPTS="${DOCKER_RUN_OPTS}" papiex-dist
 
-      - name: Build docker-dist
-        run: make --debug OS_TARGET=${OS_TARGET} DOCKER_RUN_OPTS="${DOCKER_RUN_OPTS}" docker-dist
+      # ── epmt-build image: cached across runs ──
+      # This image contains the build environment (OS packages, sqlite, Python,
+      # pip deps) but NOT epmt code.  It only changes when the Dockerfile or
+      # requirements change, so we cache the full image via docker save/load.
+      - name: Cache epmt-build image
+        id: cache-epmt-build
+        if: github.event_name != 'schedule'
+        uses: actions/cache@v4
+        with:
+          path: /tmp/epmt-build-image.tar
+          key: epmt-build-${{ env.OS_TARGET }}-py${{ env.PYTHON_VERSION }}-sqlite${{ env.SQLITE_VERSION }}-${{ hashFiles('Dockerfiles/Dockerfile.rocky-8-epmt-build', 'requirements.txt.py3') }}
+
+      - name: Load cached epmt-build image
+        if: steps.cache-epmt-build.outputs.cache-hit == 'true'
+        run: |
+          docker load -i /tmp/epmt-build-image.tar
+          # Re-tag if EPMT_VERSION changed (the image content is version-independent)
+          LOADED=$(docker images --format '{{.Repository}}:{{.Tag}}' | grep 'epmt-build' | head -1)
+          if [ -n "$LOADED" ] && [ "$LOADED" != "${OS_TARGET}-epmt-build:${EPMT_VERSION}" ]; then
+            docker tag "$LOADED" "${OS_TARGET}-epmt-build:${EPMT_VERSION}"
+          fi
+
+      - name: Build epmt-build image
+        if: steps.cache-epmt-build.outputs.cache-hit != 'true'
+        run: |
+          docker build \
+            --build-arg BUILDKIT_INLINE_CACHE=1 \
+            -f Dockerfiles/Dockerfile.${OS_TARGET}-epmt-build \
+            -t ${OS_TARGET}-epmt-build:${EPMT_VERSION} \
+            --build-arg sqlite_version=${SQLITE_VERSION} \
+            --build-arg sqlite_year=${SQLITE_YEAR} \
+            --build-arg python_version=${PYTHON_VERSION} .
+
+      - name: Save epmt-build image for caching
+        if: steps.cache-epmt-build.outputs.cache-hit != 'true'
+        run: docker save ${OS_TARGET}-epmt-build:${EPMT_VERSION} -o /tmp/epmt-build-image.tar
+
+      - name: Verify epmt-build image exists
+        run: |
+          if ! docker image inspect ${OS_TARGET}-epmt-build:${EPMT_VERSION} > /dev/null 2>&1; then
+            echo "::error::Docker image '${OS_TARGET}-epmt-build:${EPMT_VERSION}' not found."
+            exit 1
+          fi
+
+      # Run the actual epmt build inside the (now cached) build image.
+      # This replaces the docker-run half of `make docker-dist`.
+      - name: Build epmt artifacts in container
+        run: |
+          docker run ${DOCKER_RUN_OPTS} --privileged \
+            --volume=$(pwd):$(pwd) -w $(pwd) \
+            ${OS_TARGET}-epmt-build:${EPMT_VERSION} \
+            make --debug OS_TARGET=${OS_TARGET} dist python-dist dist-test
 
       - name: Build epmt-full-release
-        run: make --debug OS_TARGET=${OS_TARGET} DOCKER_RUN_OPTS="${DOCKER_RUN_OPTS}" epmt-full-release
+        run: make --debug OS_TARGET=${OS_TARGET} epmt-full-release
+
+      # ── test-release image: layer-cached across runs via --cache-from ──
+      # This image changes every commit (new EPMT artifacts baked in), so we
+      # can't skip the build.  But the expensive early layers (yum, sqlite,
+      # Python, pip install) are identical across commits.  We cache the
+      # previous run's image and feed it to --cache-from so BuildKit reuses
+      # those layers instead of rebuilding them from scratch.
+      - name: Cache test-release image
+        id: cache-test-release
+        if: github.event_name != 'schedule'
+        uses: actions/cache@v4
+        with:
+          path: /tmp/test-release-image.tar
+          key: test-release-${{ env.OS_TARGET }}-py${{ env.PYTHON_VERSION }}-sqlite${{ env.SQLITE_VERSION }}-${{ hashFiles('Dockerfiles/Dockerfile.rocky-8-epmt-test-release', 'requirements.txt.py3') }}-${{ github.sha }}
+          restore-keys: |
+            test-release-${{ env.OS_TARGET }}-py${{ env.PYTHON_VERSION }}-sqlite${{ env.SQLITE_VERSION }}-${{ hashFiles('Dockerfiles/Dockerfile.rocky-8-epmt-test-release', 'requirements.txt.py3') }}-
+
+      - name: Load cached test-release image for layer reuse
+        run: |
+          if [ -f /tmp/test-release-image.tar ]; then
+            docker load -i /tmp/test-release-image.tar || true
+            # Tag with a fixed name so --cache-from can reference it
+            # regardless of what version was in the previously cached image
+            LOADED=$(docker images --format '{{.Repository}}:{{.Tag}}' | grep 'epmt-test-release' | head -1)
+            if [ -n "$LOADED" ]; then
+              docker tag "$LOADED" epmt-test-release-cache:latest
+              echo "Loaded cached image ${LOADED} as epmt-test-release-cache:latest"
+            fi
+          else
+            echo "No cached test-release image found, building from scratch"
+          fi
 
       - name: Build check-release image
-        run: make --debug OS_TARGET=${OS_TARGET} DOCKER_RUN_OPTS="${DOCKER_RUN_OPTS}" build-check-release
+        run: |
+          CACHE_FROM=""
+          if docker image inspect epmt-test-release-cache:latest > /dev/null 2>&1; then
+            CACHE_FROM="--cache-from epmt-test-release-cache:latest"
+            echo "Using cached layers from previous test-release image"
+          fi
+          docker build \
+            --build-arg BUILDKIT_INLINE_CACHE=1 \
+            ${CACHE_FROM} \
+            -f Dockerfiles/Dockerfile.${OS_TARGET}-epmt-test-release \
+            -t ${OS_TARGET}-epmt-test-release:${EPMT_VERSION} \
+            --build-arg epmt_version=${EPMT_VERSION} \
+            --build-arg install_path=${EPMT_INSTALL_PATH} \
+            --build-arg epmt_full_release=${EPMT_FULL_RELEASE} \
+            --build-arg epmt_python_full_release=${EPMT_PYTHON_FULL_RELEASE} \
+            --build-arg sqlite_version=${SQLITE_VERSION} \
+            --build-arg sqlite_year=${SQLITE_YEAR} \
+            --build-arg python_version=${PYTHON_VERSION} .
+
+      - name: Save test-release image for caching
+        run: docker save ${OS_TARGET}-epmt-test-release:${EPMT_VERSION} -o /tmp/test-release-image.tar
 
       - name: Verify check-release image exists
         run: |
-          # Extract EPMT_VERSION using the same sed logic as the Makefile (line 44)
-          EPMT_VERSION=$(sed -n '/_version = /p' src/epmt/epmtlib.py | sed 's/ //g; s/,/./g; s/.*(\(.*\))/\1/')
           IMAGE="${OS_TARGET}-epmt-test-release:${EPMT_VERSION}"
           echo "Checking for Docker image: ${IMAGE}"
           if ! docker image inspect "${IMAGE}" > /dev/null 2>&1; then
@@ -111,11 +223,8 @@ jobs:
 
       - name: Set up check-release test infrastructure
         run: |
-          # Extract EPMT_VERSION using the same sed logic as the Makefile
-          EPMT_VERSION=$(sed -n '/_version = /p' src/epmt/epmtlib.py | sed 's/ //g; s/,/./g; s/.*(\(.*\))/\1/')
           CONTAINER_NAME="${OS_TARGET}-epmt-${EPMT_VERSION}-test-release"
           IMAGE_NAME="${OS_TARGET}-epmt-test-release:${EPMT_VERSION}"
-          echo "EPMT_VERSION=${EPMT_VERSION}" >> $GITHUB_ENV
           echo "CONTAINER_NAME=${CONTAINER_NAME}" >> $GITHUB_ENV
 
           # Clean up any previous resources
