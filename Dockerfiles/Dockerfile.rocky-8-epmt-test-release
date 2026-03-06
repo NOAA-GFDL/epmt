@@ -83,7 +83,8 @@ COPY src/dist/${epmt_python_full_release} .
 RUN python3 -m pip install ${epmt_python_full_release}
 
 RUN tar zxf ${epmt_python_full_release}  \
-    && mv epmt-${epmt_version}/papiex-epmt-install /usr/lib/python3.9/site-packages/
+    && SITE_PACKAGES=$(python3 -c "import site; print(site.getsitepackages()[0])") \
+    && mv epmt-${epmt_version}/papiex-epmt-install ${SITE_PACKAGES}/
 #    && rm -rf *.tgz
 COPY utils/epmt-installer .
 

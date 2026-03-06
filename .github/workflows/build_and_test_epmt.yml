@@ -49,9 +49,10 @@ jobs:
         run: |
           cd /usr/src
           echo 'downloading python'
-          curl -o Python-3.9.22.tgz https://www.python.org/ftp/python/3.9.22/Python-3.9.22.tgz
-          tar xzf Python-3.9.22.tgz
-          cd Python-3.9.22
+          PYTHON_VERSION=3.12.9
+          curl -o Python-${PYTHON_VERSION}.tgz https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tgz
+          tar xzf Python-${PYTHON_VERSION}.tgz
+          cd Python-${PYTHON_VERSION}
           echo 'building python3'
           ./configure --quiet --prefix=/usr --enable-shared --enable-optimizations --enable-loadable-sqlite-extensions
           make --silent install > /dev/null
@@ -86,9 +87,10 @@ jobs:
 
       - name: create links to papiex executables, adjust path
         run: |
-          mkdir -p /usr/lib/python3.9/site-packages/papiex-epmt-install
-          ln -s  /usr/lib/python3.9/site-packages/epmt/lib /usr/lib/python3.9/site-packages/papiex-epmt-install/
-          ln -s  /usr/lib/python3.9/site-packages/epmt/bin /usr/lib/python3.9/site-packages/papiex-epmt-install/
+          SITE_PACKAGES=$(python3 -c "import site; print(site.getsitepackages()[0])")
+          mkdir -p ${SITE_PACKAGES}/papiex-epmt-install
+          ln -s  ${SITE_PACKAGES}/epmt/lib ${SITE_PACKAGES}/papiex-epmt-install/
+          ln -s  ${SITE_PACKAGES}/epmt/bin ${SITE_PACKAGES}/papiex-epmt-install/
           export PATH='/usr/bin:${PATH}:/usr/local/libexec:/usr/local/bin'
 
       - name: epmt version

@@ -69,9 +69,9 @@ nltk
 notebook<7
 numba
 numexpr
-numpy==1.26.4
+numpy>=1.26.4
 packaging
-pandas==1.5.3
+pandas>=1.5.3
 pandocfilters
 parso
 patsy
@@ -88,8 +88,8 @@ py-cpuinfo
 pycparser
 PyGithub
 Pygments
-pyinstaller==5.7.0
-pyinstaller-hooks-contrib==2023.11
+pyinstaller>=5.7.0
+pyinstaller-hooks-contrib>=2023.11
 PyJWT
 PyNaCl
 pyod
@@ -109,9 +109,9 @@ scikit-learn
 scipy
 seaborn
 Send2Trash
-setuptools==69.0.2
+setuptools>=69.0.2
 six
-SQLAlchemy==1.4.54
+SQLAlchemy>=1.4.54
 statsmodels
 suod
 terminado
@@ -120,7 +120,7 @@ threadpoolctl
 tornado
 tqdm
 traitlets
-typed-ast
+typed-ast; python_version < "3.12"
 typing_extensions
 tzlocal
 urllib3

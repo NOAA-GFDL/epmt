@@ -13,8 +13,14 @@ version         = "4.11.0"
 authors         = [ { name = "Minimal Metrics, LLC", email = "some.where@over.there" } ]
 description     = "Experiment Performance Metrics Toolkit"
 readme          = "README.md"
-requires-python = "==3.9.22"
-classifiers     = [ "Programming Language :: Python :: 3", ]
+requires-python = ">=3.9"
+classifiers     = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
 # 20231102 caw: pyinstaller is pinned at 5.7.0, latest version doesn't allow the settings.py tactic.
 dependencies = [
     "alembic",
@@ -88,9 +94,9 @@ dependencies = [
     "notebook<7",
     "numba",
     "numexpr",
-    "numpy==1.26.4",
+    "numpy>=1.26.4",
     "packaging",
-    "pandas==1.5.3",
+    "pandas>=1.5.3",
     "pandocfilters",
     "parso",
     "patsy",
@@ -107,8 +113,8 @@ dependencies = [
     "pycparser",
     "PyGithub",
     "Pygments",
-    "pyinstaller==5.7.0",
-    "pyinstaller-hooks-contrib==2023.11",
+    "pyinstaller>=5.7.0",
+    "pyinstaller-hooks-contrib>=2023.11",
     "PyJWT",
     "PyNaCl",
     "pyod",
@@ -130,7 +136,7 @@ dependencies = [
     "Send2Trash",
 	"setuptools",
     "six",
-    "SQLAlchemy==1.4.54",
+    "SQLAlchemy>=1.4.54",
     "statsmodels",
     "suod",
     "terminado",
@@ -139,7 +145,7 @@ dependencies = [
     "tornado",
     "tqdm",
     "traitlets",
-    "typed-ast",
+    "typed-ast; python_version < '3.12'",
     "typing_extensions",
     "tzlocal",
     "urllib3",

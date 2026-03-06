@@ -70,9 +70,10 @@ COPY ${epmt_full_release} .
 COPY src/dist/${epmt_python_full_release} .
 RUN python3 -m pip install ${epmt_python_full_release}
 
-RUN mkdir /usr/lib/python3.9/site-packages/papiex-oss \
+RUN SITE_PACKAGES=$(python3 -c "import site; print(site.getsitepackages()[0])") \
+    && mkdir ${SITE_PACKAGES}/papiex-oss \
     && tar zxf ${epmt_python_full_release}  \
-    && mv epmt-${epmt_version}/papiex-epmt-install /usr/lib/python3.9/site-packages/papiex-oss 
+    && mv epmt-${epmt_version}/papiex-epmt-install ${SITE_PACKAGES}/papiex-oss 
 #    && rm -rf *.tgz
  
 COPY utils/epmt-installer .
