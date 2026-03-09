@@ -5,9 +5,6 @@ on:
   push:
     branches:
       - main
-  schedule:
-    # Weekly rebuild on Mondays at 6am UTC to verify SLURM image can still be built
-    - cron: '0 6 * * 1'
 
 # cancel running jobs if there's a newer push
 concurrency:
@@ -37,6 +34,9 @@ jobs:
       PYTHON_VERSION: "3.9.22"
       SQLITE_VERSION: "3490100"
       SQLITE_YEAR: "2025"
+      # Tarball source identifiers — must match Makefile and weekly_tarball_build.yml
+      PAPIEX_VERSION: "2.3.15"
+      EPMT_DASH_SRC_BRANCH: "autopep8.poke"
 
     steps:
       - uses: actions/checkout@v4
@@ -57,10 +57,8 @@ jobs:
           # and supports --cache-from with inline cache metadata.
           driver: docker
 
-      - name: Cache slurm-cluster image
+      - name: Check Cache for slurm-cluster image
         id: cache-slurm
-        # Scheduled runs skip the cache to verify the image can still be built from source
-        if: github.event_name != 'schedule'
         uses: actions/cache@v4
         with:
           path: /tmp/slurm-cluster-image.tar
@@ -95,17 +93,61 @@ jobs:
       - name: Clean all
         run: make --debug OS_TARGET=${OS_TARGET} clean-all
 
+      # ── epmt-dash tarball: cached across runs ──────────────────────────────
+      # Cache key: branch name.  Update EPMT_DASH_SRC_BRANCH (env + Makefile)
+      # to invalidate.  The weekly_tarball_build workflow pre-warms this cache
+      # every Monday; the build below is a fallback for cache misses.
+      # clean-all does not remove src/epmt/ui, so a restored cache survives it.
+      - name: Check Cache for epmt-dash
+        id: cache-epmt-dash
+        uses: actions/cache@v4
+        with:
+          path: src/epmt/ui
+          key: epmt-dash-${{ env.EPMT_DASH_SRC_BRANCH }}
+
       - name: Build epmt-dash
+        if: steps.cache-epmt-dash.outputs.cache-hit != 'true'
         run: make --debug OS_TARGET=${OS_TARGET} epmt-dash
 
+      - name: Verify epmt-dash directory exists
+        run: |
+          if [ ! -d "src/epmt/ui" ]; then
+            echo "::error::src/epmt/ui not found after epmt-dash step."
+            exit 1
+          fi
+          echo "src/epmt/ui exists."
+
+      # ── papiex tarball: cached across runs ────────────────────────────────
+      # Cache key: version + OS target.  Update PAPIEX_VERSION (env + Makefile)
+      # to invalidate.  The weekly_tarball_build workflow pre-warms this cache
+      # every Monday; the build below is a fallback for cache misses.
+      # clean-all does not remove papiex-epmt-*.tgz, so a restored cache
+      # survives it.
+      - name: Check Cache for papiex tarball
+        id: cache-papiex
+        uses: actions/cache@v4
+        with:
+          path: papiex-epmt-${{ env.PAPIEX_VERSION }}-${{ env.OS_TARGET }}.tgz
+          key: papiex-${{ env.PAPIEX_VERSION }}-${{ env.OS_TARGET }}
+
       - name: Build papiex-dist
+        if: steps.cache-papiex.outputs.cache-hit != 'true'
         run: make --debug OS_TARGET=${OS_TARGET} DOCKER_RUN_OPTS="${DOCKER_RUN_OPTS}" papiex-dist
+
+      - name: Verify papiex tarball exists
+        run: |
+          TARBALL="papiex-epmt-${PAPIEX_VERSION}-${OS_TARGET}.tgz"
+          if [ ! -f "${TARBALL}" ]; then
+            echo "::error::Papiex tarball '${TARBALL}' not found."
+            exit 1
+          fi
+          echo "Papiex tarball '${TARBALL}' exists."
 
       # ── epmt-build image: cached across runs ──
       # This image contains the build environment (OS packages, sqlite, Python,
       # pip deps) but NOT epmt code.  It only changes when the Dockerfile or
       # requirements change, so we cache the full image via docker save/load.
-      - name: Cache epmt-build image
+      - name: Check Cache for epmt-build image
         id: cache-epmt-build
         if: github.event_name != 'schedule'
         uses: actions/cache@v4
@@ -163,7 +205,7 @@ jobs:
       # Python, pip install) are identical across commits.  We cache the
       # previous run's image and feed it to --cache-from so BuildKit reuses
       # those layers instead of rebuilding them from scratch.
-      - name: Cache test-release image
+      - name: Check Cache for test-release image
         id: cache-test-release
         if: github.event_name != 'schedule'
         uses: actions/cache@v4

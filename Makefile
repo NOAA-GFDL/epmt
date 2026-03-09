@@ -256,7 +256,7 @@ $(EPMT_DASH_SRC): $(EPMT_DASH_SRC_TARBALL)
 $(EPMT_DASH_SRC_TARBALL):
 	@echo "(EPMT_DASH_SRC_TARBALL) whoami: $(shell whoami)"
 	echo "grabbing epmt-dash via curl" ; \
-	curl -L -O $(EPMT_DASH_SRC_URL) ; \
+	curl -L --fail --retry 3 --retry-delay 5 -O $(EPMT_DASH_SRC_URL) ; \
 	ls $(EPMT_DASH_SRC_TARBALL) ; \
 # ----------- \end EPMT_DASH THINGS ---------- #
 
@@ -302,7 +302,7 @@ $(PAPIEX_SRC): $(PAPIEX_SRC_TARBALL)
 
 $(PAPIEX_SRC_TARBALL):
 	@echo "(PAPIEX_SRC_TARBALL) whoami: $(shell whoami)"
-	curl -L -O $(PAPIEX_SRC_URL) ; \
+	curl -L --fail --retry 3 --retry-delay 5 -O $(PAPIEX_SRC_URL) ; \
 	ls $(PAPIEX_SRC_TARBALL)
 # ----------- \end PAPIEX THINGS ---------- #
 

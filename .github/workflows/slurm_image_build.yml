@@ -1,0 +1,69 @@
+name: slurm_image_build
+
+on:
+  schedule:
+    # Weekly build on Mondays at 6am UTC to verify the SLURM image can still
+    # be built from source.  The resulting image is cached for use by
+    # docker_build_test which restores it instead of rebuilding every PR.
+    - cron: '0 6 * * 1'
+  ## DEBUG: uncomment these lines if one needs to run sooner, rather than later
+  ## re-comment pre-merge
+  #push:
+  workflow_dispatch:
+
+# cancel any in-progress run if a newer one is triggered
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build-slurm-image:
+    runs-on: ubuntu-latest
+    env:
+      # Values from giovtorres/slurm-docker-cluster .env file.
+      # docker build does not read .env files (only docker-compose does),
+      # so we define these here and pass SLURM_TAG as --build-arg.
+      SLURM_TAG: "slurm-25-05-3-1"
+      IMAGE_TAG: "25.05.3"
+      SLURM_CLUSTER_TAG: "0.9.0"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Always build from source to verify the image can still be built.
+      # Cache key covers all version identifiers; bumping any one of them
+      # produces a new key and forces a fresh build in docker_build_test.
+      - name: Build slurm-cluster image
+        run: |
+          set -e
+          git clone --branch ${{ env.SLURM_CLUSTER_TAG }} --depth 1 \
+            https://github.com/giovtorres/slurm-docker-cluster.git \
+            /tmp/slurm-docker-cluster
+          docker build --progress=plain \
+            --build-arg SLURM_TAG=${SLURM_TAG} \
+            -t slurm-cluster:${IMAGE_TAG} \
+            /tmp/slurm-docker-cluster
+
+      - name: Verify slurm-cluster image exists
+        run: |
+          if ! docker image inspect slurm-cluster:${IMAGE_TAG} > /dev/null 2>&1; then
+            echo "::error::Docker image 'slurm-cluster:${IMAGE_TAG}' was not built."
+            exit 1
+          fi
+          echo "Image 'slurm-cluster:${IMAGE_TAG}' exists."
+
+      - name: Save slurm-cluster image to tarball
+        run: docker save slurm-cluster:${IMAGE_TAG} -o /tmp/slurm-cluster-image.tar
+
+      # Save the freshly built image to cache.  docker_build_test restores
+      # this cache on PR/push runs so the expensive SLURM build is skipped.
+      # If the key already exists (same versions), the save is a no-op, but
+      # the build above still ran and verified buildability.
+      - name: Cache slurm-cluster image
+        uses: actions/cache/save@v4
+        with:
+          path: /tmp/slurm-cluster-image.tar
+          key: slurm-cluster-${{ env.IMAGE_TAG }}-${{ env.SLURM_TAG }}-v${{ env.SLURM_CLUSTER_TAG }}
