@@ -116,6 +116,12 @@ jobs:
         env:
           COVERAGE_FILE: .coverage.anysh
 
+      - name:  test_check
+        run:  |
+          TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/test_check.py
+        env:
+          COVERAGE_FILE: .coverage.check
+
       - name:  test_cmds
         run:  |
           TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/test_cmds.py

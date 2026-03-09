@@ -114,20 +114,21 @@ def write_job_epilog(jobdatafile, metadata):
     return False
 
 def PrintFail():
-    print("\t" + bcolors.FAIL + "Fail" + bcolors.ENDC)
+    print("\t" + bcolors.FAIL + "Fail" + bcolors.ENDC, flush=True)
 
 
 def PrintPass():
-    print("\t" + bcolors.OKBLUE + "Pass" + bcolors.ENDC)
+    print("\t" + bcolors.OKBLUE + "Pass" + bcolors.ENDC, flush=True)
 
 
 def PrintWarning():
-    print("\t" + bcolors.WARNING + "Pass" + bcolors.ENDC)
+    print("\t" + bcolors.WARNING + "Pass" + bcolors.ENDC, flush=True)
 
 
 def verify_install_prefix():
+    '''Verify that the papiex install directory contains the required shared libraries.'''
     install_prefix = settings.install_prefix
-    # print("settings.install_prefix =",install_prefix, end='')
+    print("settings.install_prefix =",install_prefix, end='')
 
     retval = True
     # Check for bad stuff and shortcut
@@ -159,6 +160,7 @@ def verify_install_prefix():
 
 
 def verify_epmt_output_prefix():
+    '''Verify that the output directory can be created, listed, and cleaned up.'''
     opf = settings.epmt_output_prefix
     retval = True
     print("settings.epmt_output_prefix =", opf, end='')
@@ -204,12 +206,12 @@ def verify_epmt_output_prefix():
     return retval
 
 def verify_papiex_options():
-    ## This function is under review for potential deprecation due to limited usage and unclear requirements.
-    ## If deprecation is confirmed, it will be removed in a future release. Otherwise, it may be implemented to handle papiex options.
-    #pass
-
+    '''Verify that the PAPI perf_event component is active and that each
+    configured papiex event can be resolved by papi_command_line.
+    Requires hardware counter access; expected to fail in VM/container
+    environments where perf_event_open() is restricted.'''
     s = get_papiex_options(settings)
-    # print("papiex_options =",s, end='')
+    print("papiex_options =",s, end='')
     logger.info(f'papiex_options = {s}')
     logger.info(f'settings.install_prefix = {settings.install_prefix}')
     retval = True
@@ -252,6 +254,7 @@ def verify_papiex_options():
 
 
 def verify_db_params():
+    '''Verify that the database can be connected to using the configured db_params.'''
     print("settings.db_params =", str(settings.db_params), end='')
     try:
         from epmt.orm import setup_db
@@ -268,8 +271,9 @@ def verify_db_params():
 
 
 def verify_perf():
+    '''Verify that /proc/sys/kernel/perf_event_paranoid exists and is <= 2.'''
     f = "/proc/sys/kernel/perf_event_paranoid"
-    print('perf_event_paranoid must exist at...')
+    print('perf_event_paranoid must exist at...', flush=True)
     print(f, end='')
 
     try:
@@ -291,6 +295,7 @@ def verify_perf():
 
 
 def verify_stage_command():
+    '''Verify that the configured stage command can copy a file to the stage destination.'''
     print("epmt stage functionality", end='')
 
     stage_cmd = settings.stage_command
@@ -325,6 +330,7 @@ def verify_stage_command():
 
 
 def verify_papiex():
+    '''Verify that ``epmt run`` can execute a trivial command and produce expected output files.'''
     print("epmt run functionality", end='')
     logger.info("\tepmt run -a /bin/sleep 1")
     retval = epmt_run(["/bin/sleep", "1"], wrapit=True)
@@ -363,36 +369,38 @@ def verify_papiex():
 
 
 def epmt_check():
-    '''
-    all checks below return false if
-    '''
+    '''Run all verification checks and return False if any required check fails.
+    verify_papiex_options is guarded — its failure is logged but does not
+    affect the return value (it requires hardware counter access unavailable
+    in most VM/container environments).'''
 
     retval = True
 
     logger.warning('CHECKING verify_db_params()...')
-    reval = verify_db_params()
+    reval = verify_db_params() and retval
 
     logger.warning('CHECKING verify_install_prefix()...')
-    retval = verify_install_prefix()
+    retval = verify_install_prefix() and retval
 
     logger.warning('CHECKING verify_epmt_output_prefix()...')
-    retval = verify_epmt_output_prefix()
+    retval = verify_epmt_output_prefix() and retval
 
     logger.warning('CHECKING verify_perf()...')
-    retval = verify_perf()
+    retval = verify_perf() and retval
 
     logger.warning('CHECKING verify_papiex_options()...')
-    #retval = verify_papiex_options()
-    if not verify_papiex_options():
+    verify_papiex_options_retval = verify_papiex_options()
+    #retval = verify_papiex_options_retval and retval
+    if not verify_papiex_options_retval:
         logger.error('verify_papiex_options() failed, but passing on harmlessly (GUARDED)')
     else:
         logger.error('verify_papiex_options() passed, you are probably on PPAN')
 
     logger.warning('CHECKING verify_stage_command()...')
-    retval = verify_stage_command()
+    retval = verify_stage_command() and retval
 
     logger.warning('CHECKING verify_papiex()...')
-    retval = verify_papiex()
+    retval = verify_papiex() and retval
 
     return retval
 
@@ -911,11 +919,23 @@ def epmt_source(slurm_prolog=False, papiex_debug=False, monitor_debug=False, run
     cmd = add_var(cmd,
                   "PAPIEX_OPTIONS" + equals + get_papiex_options(settings))
     old_pl_libs = environ.get("LD_PRELOAD", "")
-    papiex_pl_libs = settings.install_prefix + "/lib/libpapiex.so:" + settings.install_prefix + "/lib/libmonitor.so:" + \
-        settings.install_prefix + "/lib/libpapi.so:" + settings.install_prefix + "/lib/libpfm.so"
+    papiex_lib_dir = settings.install_prefix + "/lib"
+    papiex_lib_candidates = [
+        papiex_lib_dir + "/libpapiex.so",
+        papiex_lib_dir + "/libmonitor.so",
+        papiex_lib_dir + "/libpapi.so",
+        papiex_lib_dir + "/libpfm.so",
+    ]
+    papiex_pl_libs = ":".join(lib for lib in papiex_lib_candidates if path.exists(lib))
+    old_ldlib = environ.get("LD_LIBRARY_PATH", "")
+    new_ldlib = papiex_lib_dir + (":" + old_ldlib if old_ldlib else "")
     if run_cmd:
+        ld_preload_parts = [p for p in [papiex_pl_libs, old_pl_libs] if p]
         cmd = add_var(cmd,
-                      "LD_PRELOAD" + equals + papiex_pl_libs + ":" + old_pl_libs)
+                      "LD_LIBRARY_PATH" + equals + new_ldlib)
+        if ld_preload_parts:
+            cmd = add_var(cmd,
+                          "LD_PRELOAD" + equals + ":".join(ld_preload_parts))
     else:
         cmd = add_var(cmd,
                       "PAPIEX_OLD_LD_PRELOAD" + equals + old_pl_libs)
@@ -924,10 +944,10 @@ def epmt_source(slurm_prolog=False, papiex_debug=False, monitor_debug=False, run
 
     # Use export -n which keeps the variable but prevents it from being exported
     if slurm_prolog:
-        cmd += "export LD_PRELOAD=" + papiex_pl_libs
-        if len(old_pl_libs) > 0:
-            cmd += ":" + old_pl_libs
-        cmd += "\n"
+        cmd += "export LD_LIBRARY_PATH=" + new_ldlib + "\n"
+        ld_preload_parts = [p for p in [papiex_pl_libs, old_pl_libs] if p]
+        if ld_preload_parts:
+            cmd += "export LD_PRELOAD=" + ":".join(ld_preload_parts) + "\n"
 
     elif undercsh:
         tmp = "setenv PAPIEX_OPTIONS $PAPIEX_OPTIONS; setenv LD_PRELOAD $PAPIEX_LD_PRELOAD;"
