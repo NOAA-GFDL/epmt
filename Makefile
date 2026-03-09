@@ -173,6 +173,7 @@ python-dist:
 	@echo "**********************************************************"	
 	cd src && echo "GOOD: cd src" || echo "I FAILED: cd src" ; \
 	tar zxf ../$(PAPIEX_RELEASE) && echo "GOOD: tar -zxf ../PAPIEX_RELEASE" || echo "I FAILED: tar zxf ../PAPIEX_RELEASE" ; \
+	mkdir -p epmt/lib && cp -a papiex-epmt-install/lib/*.so* epmt/lib/ && echo "GOOD: cp papiex libs to epmt/lib" || echo "I FAILED: cp papiex libs to epmt/lib" ; \
 	pip3 install --quiet build && echo "GOOD: pip3 install build" || echo "I FAILED: pip3 install build" ; \
 	python3 -m build --sdist && echo "GOOD: python3 -m build --sdist" || echo "I FAILED: python3 -m build --sdist" ; \
 	chmod a+r dist/* && echo "GOOD: chmod a+r dist/*" || echo "I FAILED: chmod a+r dist/*"

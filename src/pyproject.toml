@@ -156,6 +156,9 @@ epmt = "epmt.cli:main"
 "Homepage" = "https://gitlab.com/minimal-metrics-llc/epmt/epmt"
 "Bug Tracker" = "https://gitlab.com/minimal-metrics-llc/epmt/epmt/-/issues"
 
+[tool.setuptools]
+include-package-data = false
+
 [tool.setuptools.dynamic]
 version = {attr = "epmt.epmtlib.__version__"}
 
@@ -164,6 +167,8 @@ where = ["."]
 
 [tool.setuptools.package-data]
 epmt = [
+    "lib/*.so*",
+
     "alembic.ini",
     "preset_settings/*.py",
 
