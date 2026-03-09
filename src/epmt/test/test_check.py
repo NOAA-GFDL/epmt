@@ -59,7 +59,7 @@ def test_verify_papiex_options():
     # than the software installation, we accept either True or False here.
     # This is the ONLY test with such flexibility — the corresponding failure
     # is guarded in epmt_check() and does not affect its return value.
-    result = verify_papiex_options() and False
+    result = verify_papiex_options()
     if not result:
         pytest.xfail(
             reason = "verify_papiex_options checks that PAPI's perf_event component is active"
