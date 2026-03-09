@@ -5,9 +5,6 @@ on:
   push:
     branches:
       - main
-  schedule:
-    # Weekly rebuild on Mondays at 6am UTC to verify SLURM image can still be built
-    - cron: '0 6 * * 1'
 
 # cancel running jobs if there's a newer push
 concurrency:
@@ -33,21 +30,35 @@ jobs:
       SLURM_TAG: "slurm-25-05-3-1"
       IMAGE_TAG: "25.05.3"
       SLURM_CLUSTER_TAG: "0.9.0"
+      # Build environment versions (must match Makefile)
+      PYTHON_VERSION: "3.9.22"
+      SQLITE_VERSION: "3490100"
+      SQLITE_YEAR: "2025"
+      # Tarball source identifiers — must match Makefile and weekly_tarball_build.yml
+      PAPIEX_VERSION: "2.3.15"
+      EPMT_DASH_SRC_BRANCH: "autopep8.poke"
 
     steps:
       - uses: actions/checkout@v4
 
+      - name: Extract build variables
+        run: |
+          EPMT_VERSION=$(sed -n '/_version = /p' src/epmt/epmtlib.py | sed 's/ //g; s/,/./g; s/.*(\(.*\))/\1/')
+          echo "EPMT_VERSION=${EPMT_VERSION}" >> $GITHUB_ENV
+          echo "EPMT_FULL_RELEASE=EPMT-release-${EPMT_VERSION}-${OS_TARGET}.tgz" >> $GITHUB_ENV
+          echo "EPMT_PYTHON_FULL_RELEASE=epmt-${EPMT_VERSION}.tar.gz" >> $GITHUB_ENV
+          echo "EPMT_INSTALL_PATH=/opt/minimalmetrics" >> $GITHUB_ENV
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
         with:
-          # Use docker driver to store images in local daemon
-          # (docker-container driver requires --load and may not propagate errors)
+          # Use docker driver to store images in local daemon.
+          # The docker driver uses BuildKit internally (default in modern Docker)
+          # and supports --cache-from with inline cache metadata.
           driver: docker
 
-      - name: Cache slurm-cluster image
+      - name: Check Cache for slurm-cluster image
         id: cache-slurm
-        # Scheduled runs skip the cache to verify the image can still be built from source
-        if: github.event_name != 'schedule'
         uses: actions/cache@v4
         with:
           path: /tmp/slurm-cluster-image.tar
@@ -82,25 +93,168 @@ jobs:
       - name: Clean all
         run: make --debug OS_TARGET=${OS_TARGET} clean-all
 
+      # ── epmt-dash tarball: cached across runs ──────────────────────────────
+      # Cache key: branch name.  Update EPMT_DASH_SRC_BRANCH (env + Makefile)
+      # to invalidate.  The weekly_tarball_build workflow pre-warms this cache
+      # every Monday; the build below is a fallback for cache misses.
+      # clean-all does not remove src/epmt/ui, so a restored cache survives it.
+      - name: Check Cache for epmt-dash
+        id: cache-epmt-dash
+        uses: actions/cache@v4
+        with:
+          path: src/epmt/ui
+          key: epmt-dash-${{ env.EPMT_DASH_SRC_BRANCH }}
+
       - name: Build epmt-dash
+        if: steps.cache-epmt-dash.outputs.cache-hit != 'true'
         run: make --debug OS_TARGET=${OS_TARGET} epmt-dash
 
+      - name: Verify epmt-dash directory exists
+        run: |
+          if [ ! -d "src/epmt/ui" ]; then
+            echo "::error::src/epmt/ui not found after epmt-dash step."
+            exit 1
+          fi
+          echo "src/epmt/ui exists."
+
+      # ── papiex tarball: cached across runs ────────────────────────────────
+      # Cache key: version + OS target.  Update PAPIEX_VERSION (env + Makefile)
+      # to invalidate.  The weekly_tarball_build workflow pre-warms this cache
+      # every Monday; the build below is a fallback for cache misses.
+      # clean-all does not remove papiex-epmt-*.tgz, so a restored cache
+      # survives it.
+      - name: Check Cache for papiex tarball
+        id: cache-papiex
+        uses: actions/cache@v4
+        with:
+          path: papiex-epmt-${{ env.PAPIEX_VERSION }}-${{ env.OS_TARGET }}.tgz
+          key: papiex-${{ env.PAPIEX_VERSION }}-${{ env.OS_TARGET }}
+
       - name: Build papiex-dist
+        if: steps.cache-papiex.outputs.cache-hit != 'true'
         run: make --debug OS_TARGET=${OS_TARGET} DOCKER_RUN_OPTS="${DOCKER_RUN_OPTS}" papiex-dist
 
-      - name: Build docker-dist
-        run: make --debug OS_TARGET=${OS_TARGET} DOCKER_RUN_OPTS="${DOCKER_RUN_OPTS}" docker-dist
+      - name: Verify papiex tarball exists
+        run: |
+          TARBALL="papiex-epmt-${PAPIEX_VERSION}-${OS_TARGET}.tgz"
+          if [ ! -f "${TARBALL}" ]; then
+            echo "::error::Papiex tarball '${TARBALL}' not found."
+            exit 1
+          fi
+          echo "Papiex tarball '${TARBALL}' exists."
+
+      # ── epmt-build image: cached across runs ──
+      # This image contains the build environment (OS packages, sqlite, Python,
+      # pip deps) but NOT epmt code.  It only changes when the Dockerfile or
+      # requirements change, so we cache the full image via docker save/load.
+      - name: Check Cache for epmt-build image
+        id: cache-epmt-build
+        if: github.event_name != 'schedule'
+        uses: actions/cache@v4
+        with:
+          path: /tmp/epmt-build-image.tar
+          key: epmt-build-${{ env.OS_TARGET }}-py${{ env.PYTHON_VERSION }}-sqlite${{ env.SQLITE_VERSION }}-${{ hashFiles('Dockerfiles/Dockerfile.rocky-8-epmt-build', 'requirements.txt.py3') }}
+
+      - name: Load cached epmt-build image
+        if: steps.cache-epmt-build.outputs.cache-hit == 'true'
+        run: |
+          docker load -i /tmp/epmt-build-image.tar
+          # Re-tag if EPMT_VERSION changed (the image content is version-independent)
+          LOADED=$(docker images --format '{{.Repository}}:{{.Tag}}' | grep 'epmt-build' | head -1)
+          if [ -n "$LOADED" ] && [ "$LOADED" != "${OS_TARGET}-epmt-build:${EPMT_VERSION}" ]; then
+            docker tag "$LOADED" "${OS_TARGET}-epmt-build:${EPMT_VERSION}"
+          fi
+
+      - name: Build epmt-build image
+        if: steps.cache-epmt-build.outputs.cache-hit != 'true'
+        run: |
+          docker build \
+            --build-arg BUILDKIT_INLINE_CACHE=1 \
+            -f Dockerfiles/Dockerfile.${OS_TARGET}-epmt-build \
+            -t ${OS_TARGET}-epmt-build:${EPMT_VERSION} \
+            --build-arg sqlite_version=${SQLITE_VERSION} \
+            --build-arg sqlite_year=${SQLITE_YEAR} \
+            --build-arg python_version=${PYTHON_VERSION} .
+
+      - name: Save epmt-build image for caching
+        if: steps.cache-epmt-build.outputs.cache-hit != 'true'
+        run: docker save ${OS_TARGET}-epmt-build:${EPMT_VERSION} -o /tmp/epmt-build-image.tar
+
+      - name: Verify epmt-build image exists
+        run: |
+          if ! docker image inspect ${OS_TARGET}-epmt-build:${EPMT_VERSION} > /dev/null 2>&1; then
+            echo "::error::Docker image '${OS_TARGET}-epmt-build:${EPMT_VERSION}' not found."
+            exit 1
+          fi
+
+      # Run the actual epmt build inside the (now cached) build image.
+      # This replaces the docker-run half of `make docker-dist`.
+      - name: Build epmt artifacts in container
+        run: |
+          docker run ${DOCKER_RUN_OPTS} --privileged \
+            --volume=$(pwd):$(pwd) -w $(pwd) \
+            ${OS_TARGET}-epmt-build:${EPMT_VERSION} \
+            make --debug OS_TARGET=${OS_TARGET} dist python-dist dist-test
 
       - name: Build epmt-full-release
         run: make --debug OS_TARGET=${OS_TARGET} DOCKER_RUN_OPTS="${DOCKER_RUN_OPTS}" epmt-full-release
 
+      # ── test-release image: layer-cached across runs via --cache-from ──
+      # This image changes every commit (new EPMT artifacts baked in), so we
+      # can't skip the build.  But the expensive early layers (yum, sqlite,
+      # Python, pip install) are identical across commits.  We cache the
+      # previous run's image and feed it to --cache-from so BuildKit reuses
+      # those layers instead of rebuilding them from scratch.
+      - name: Check Cache for test-release image
+        id: cache-test-release
+        if: github.event_name != 'schedule'
+        uses: actions/cache@v4
+        with:
+          path: /tmp/test-release-image.tar
+          key: test-release-${{ env.OS_TARGET }}-py${{ env.PYTHON_VERSION }}-sqlite${{ env.SQLITE_VERSION }}-${{ hashFiles('Dockerfiles/Dockerfile.rocky-8-epmt-test-release', 'requirements.txt.py3') }}-${{ github.sha }}
+          restore-keys: |
+            test-release-${{ env.OS_TARGET }}-py${{ env.PYTHON_VERSION }}-sqlite${{ env.SQLITE_VERSION }}-${{ hashFiles('Dockerfiles/Dockerfile.rocky-8-epmt-test-release', 'requirements.txt.py3') }}-
+
+      - name: Load cached test-release image for layer reuse
+        run: |
+          if [ -f /tmp/test-release-image.tar ]; then
+            docker load -i /tmp/test-release-image.tar || true
+            # Tag with a fixed name so --cache-from can reference it
+            # regardless of what version was in the previously cached image
+            LOADED=$(docker images --format '{{.Repository}}:{{.Tag}}' | grep 'epmt-test-release' | head -1)
+            if [ -n "$LOADED" ]; then
+              docker tag "$LOADED" epmt-test-release-cache:latest
+              echo "Loaded cached image ${LOADED} as epmt-test-release-cache:latest"
+            fi
+          else
+            echo "No cached test-release image found, building from scratch"
+          fi
+
       - name: Build check-release image
-        run: make --debug OS_TARGET=${OS_TARGET} DOCKER_RUN_OPTS="${DOCKER_RUN_OPTS}" build-check-release
+        run: |
+          CACHE_FROM=""
+          if docker image inspect epmt-test-release-cache:latest > /dev/null 2>&1; then
+            CACHE_FROM="--cache-from epmt-test-release-cache:latest"
+            echo "Using cached layers from previous test-release image"
+          fi
+          docker build \
+            --build-arg BUILDKIT_INLINE_CACHE=1 \
+            ${CACHE_FROM} \
+            -f Dockerfiles/Dockerfile.${OS_TARGET}-epmt-test-release \
+            -t ${OS_TARGET}-epmt-test-release:${EPMT_VERSION} \
+            --build-arg epmt_version=${EPMT_VERSION} \
+            --build-arg install_path=${EPMT_INSTALL_PATH} \
+            --build-arg epmt_full_release=${EPMT_FULL_RELEASE} \
+            --build-arg epmt_python_full_release=${EPMT_PYTHON_FULL_RELEASE} \
+            --build-arg sqlite_version=${SQLITE_VERSION} \
+            --build-arg sqlite_year=${SQLITE_YEAR} \
+            --build-arg python_version=${PYTHON_VERSION} .
+
+      - name: Save test-release image for caching
+        run: docker save ${OS_TARGET}-epmt-test-release:${EPMT_VERSION} -o /tmp/test-release-image.tar
 
       - name: Verify check-release image exists
         run: |
-          # Extract EPMT_VERSION using the same sed logic as the Makefile (line 44)
-          EPMT_VERSION=$(sed -n '/_version = /p' src/epmt/epmtlib.py | sed 's/ //g; s/,/./g; s/.*(\(.*\))/\1/')
           IMAGE="${OS_TARGET}-epmt-test-release:${EPMT_VERSION}"
           echo "Checking for Docker image: ${IMAGE}"
           if ! docker image inspect "${IMAGE}" > /dev/null 2>&1; then
@@ -111,11 +265,8 @@ jobs:
 
       - name: Set up check-release test infrastructure
         run: |
-          # Extract EPMT_VERSION using the same sed logic as the Makefile
-          EPMT_VERSION=$(sed -n '/_version = /p' src/epmt/epmtlib.py | sed 's/ //g; s/,/./g; s/.*(\(.*\))/\1/')
           CONTAINER_NAME="${OS_TARGET}-epmt-${EPMT_VERSION}-test-release"
           IMAGE_NAME="${OS_TARGET}-epmt-test-release:${EPMT_VERSION}"
-          echo "EPMT_VERSION=${EPMT_VERSION}" >> $GITHUB_ENV
           echo "CONTAINER_NAME=${CONTAINER_NAME}" >> $GITHUB_ENV
 
           # Clean up any previous resources
@@ -147,16 +298,17 @@ jobs:
       - name: epmt version
         run: docker exec ${{ env.CONTAINER_NAME }} epmt -vv -V
 
-      - name: epmt check (GUARDED)
-        continue-on-error: true
+      - name: epmt check
         run: docker exec ${{ env.CONTAINER_NAME }} epmt -vv check
 
       - name: pip install pytest
         run: docker exec ${{ env.CONTAINER_NAME }} pip3 install pytest
 
-      - name: test_anysh (GUARDED)
-        continue-on-error: true
+      - name: test_anysh
         run: docker exec ${{ env.CONTAINER_NAME }} bash -c 'cd /usr/lib/python3.9/site-packages && TZ=UTC pytest -x -vv epmt/test/test_anysh.py'
+
+      - name: test_check
+        run: docker exec ${{ env.CONTAINER_NAME }} bash -c 'cd /usr/lib/python3.9/site-packages && TZ=UTC pytest -x -vv epmt/test/test_check.py'
 
       - name: test_cmds
         run: docker exec ${{ env.CONTAINER_NAME }} bash -c 'cd /usr/lib/python3.9/site-packages && TZ=UTC pytest -x -vv epmt/test/test_cmds.py'
@@ -179,8 +331,7 @@ jobs:
       - name: test_query
         run: docker exec ${{ env.CONTAINER_NAME }} bash -c 'cd /usr/lib/python3.9/site-packages && TZ=UTC pytest -x -vv epmt/test/test_query.py'
 
-      - name: test_run (GUARDED)
-        continue-on-error: true
+      - name: test_run
         run: docker exec ${{ env.CONTAINER_NAME }} bash -c 'cd /usr/lib/python3.9/site-packages && TZ=UTC pytest -x -vv epmt/test/test_run.py'
 
       - name: test_settings
@@ -199,8 +350,7 @@ jobs:
         continue-on-error: true
         run: docker exec ${{ env.CONTAINER_NAME }} bash -c 'cd /usr/lib/python3.9/site-packages && TZ=UTC pytest -x -vv epmt/test/integration/test_integration_basic.py'
 
-      - name: integration, escape (GUARDED)
-        continue-on-error: true
+      - name: integration, escape
         run: docker exec ${{ env.CONTAINER_NAME }} bash -c 'cd /usr/lib/python3.9/site-packages && TZ=UTC pytest -x -vv epmt/test/integration/test_integration_escape.py'
 
       - name: integration, concat
@@ -224,8 +374,7 @@ jobs:
         continue-on-error: true
         run: docker exec ${{ env.CONTAINER_NAME }} bash -c 'cd /usr/lib/python3.9/site-packages && TZ=UTC pytest -x -vv epmt/test/integration/test_integration_slurm.py'
 
-      - name: integration, collate-tsv (GUARDED)
-        continue-on-error: true
+      - name: integration, collate-tsv
         run: docker exec ${{ env.CONTAINER_NAME }} bash -c 'cd /usr/lib/python3.9/site-packages && TZ=UTC pytest -x -vv epmt/test/integration/test_integration_collate_tsv.py'
 
       - name: integration, kernel-compile
