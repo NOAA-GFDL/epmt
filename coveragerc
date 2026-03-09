@@ -3,7 +3,6 @@ parallel = True
 include =
     */epmt/*
     */bin/epmt
-    */scripts/epmt
 omit =
     */epmt/ui/*
     */epmt/test/*
@@ -12,6 +11,3 @@ omit =
 source =
     src/epmt/
     */site-packages/epmt/
-scripts =
-    src/scripts/epmt
-    */bin/epmt
