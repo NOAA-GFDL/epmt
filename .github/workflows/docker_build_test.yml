@@ -57,7 +57,7 @@ jobs:
           # and supports --cache-from with inline cache metadata.
           driver: docker
 
-      - name: Cache slurm-cluster image
+      - name: Check Cache for slurm-cluster image
         id: cache-slurm
         uses: actions/cache@v4
         with:
@@ -98,7 +98,7 @@ jobs:
       # to invalidate.  The weekly_tarball_build workflow pre-warms this cache
       # every Monday; the build below is a fallback for cache misses.
       # clean-all does not remove src/epmt/ui, so a restored cache survives it.
-      - name: Cache epmt-dash
+      - name: Check Cache for epmt-dash
         id: cache-epmt-dash
         uses: actions/cache@v4
         with:
@@ -123,7 +123,7 @@ jobs:
       # every Monday; the build below is a fallback for cache misses.
       # clean-all does not remove papiex-epmt-*.tgz, so a restored cache
       # survives it.
-      - name: Cache papiex tarball
+      - name: Check Cache for papiex tarball
         id: cache-papiex
         uses: actions/cache@v4
         with:
@@ -147,7 +147,7 @@ jobs:
       # This image contains the build environment (OS packages, sqlite, Python,
       # pip deps) but NOT epmt code.  It only changes when the Dockerfile or
       # requirements change, so we cache the full image via docker save/load.
-      - name: Cache epmt-build image
+      - name: Check Cache for epmt-build image
         id: cache-epmt-build
         if: github.event_name != 'schedule'
         uses: actions/cache@v4
@@ -205,7 +205,7 @@ jobs:
       # Python, pip install) are identical across commits.  We cache the
       # previous run's image and feed it to --cache-from so BuildKit reuses
       # those layers instead of rebuilding them from scratch.
-      - name: Cache test-release image
+      - name: Check Cache for test-release image
         id: cache-test-release
         if: github.event_name != 'schedule'
         uses: actions/cache@v4
