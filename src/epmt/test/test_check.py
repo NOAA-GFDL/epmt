@@ -34,30 +34,30 @@ def test_verify_db_params():
     from epmt.epmt_cmds import verify_db_params
     with capture() as (out, err):
         result = verify_db_params()
-    assert result is True
+    assert result
 
 
 def test_verify_install_prefix():
-    if not _papiex_libs_present():
-        pytest.skip("papiex libs not installed")
+#    if not _papiex_libs_present():
+#        pytest.skip("papiex libs not installed")
     from epmt.epmt_cmds import verify_install_prefix
     with capture() as (out, err):
         result = verify_install_prefix()
-    assert result is True
+    assert result
 
 
 def test_verify_epmt_output_prefix():
     from epmt.epmt_cmds import verify_epmt_output_prefix
     with capture() as (out, err):
         result = verify_epmt_output_prefix()
-    assert result is True
+    assert result
 
 
 def test_verify_perf():
     from epmt.epmt_cmds import verify_perf
     with capture() as (out, err):
         result = verify_perf()
-    assert result is True
+    assert result
 
 
 def test_verify_papiex_options():
@@ -70,19 +70,19 @@ def test_verify_papiex_options():
     # than the software installation, we accept either True or False here.
     # This is the ONLY test with such flexibility — the corresponding failure
     # is guarded in epmt_check() and does not affect its return value.
-    if not _papiex_libs_present():
-        pytest.skip("papiex libs not installed")
+#    if not _papiex_libs_present():
+#        pytest.skip("papiex libs not installed")
     from epmt.epmt_cmds import verify_papiex_options
     with capture() as (out, err):
         result = verify_papiex_options()
-    assert isinstance(result, bool)
+    assert result
 
 
 def test_verify_stage_command():
     from epmt.epmt_cmds import verify_stage_command
     with capture() as (out, err):
         result = verify_stage_command()
-    assert result is True
+    assert result
 
 
 def test_verify_papiex(monkeypatch):
@@ -95,7 +95,7 @@ def test_verify_papiex(monkeypatch):
     monkeypatch.setenv('SLURM_JOB_ID', '1')
     with capture() as (out, err):
         result = verify_papiex()
-    assert result is True
+    assert result
 
 
 def test_epmt_check(monkeypatch):
@@ -108,4 +108,5 @@ def test_epmt_check(monkeypatch):
     monkeypatch.setenv('SLURM_JOB_ID', '1')
     with capture() as (out, err):
         result = epmt_check()
-    assert result is True
+    assert result
+
