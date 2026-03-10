@@ -102,6 +102,7 @@ jobs:
       OS_TARGET: "rocky-8"
       PAPIEX_VERSION: "2.3.15"
       EPMT_DASH_SRC_BRANCH: "autopep8.poke"
+      options: --privileged
 
     steps:
       - uses: actions/checkout@v4
