@@ -2,7 +2,6 @@
 parallel = True
 include =
     */epmt/*
-    */bin/epmt
 omit =
     */epmt/ui/*
     */epmt/test/*
