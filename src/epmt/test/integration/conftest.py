@@ -62,8 +62,20 @@ def epmt_python_setting(expr):
 
 @pytest.fixture
 def resource_path():
-    """Return the path to src/epmt (used to locate test data)."""
+    """Return the path to the epmt package directory (used to locate test data).
+
+    In a source-tree layout the package lives under ``<cwd>/src/epmt``.
+    In an installed layout (e.g. Docker release image) the package has been
+    installed into site-packages so we fall back to the location of the
+    ``epmt`` package itself.
+    """
+    # Source-tree layout (build_and_test_epmt runs from repo root)
     path = os.path.join(os.getcwd(), "src", "epmt")
+    if os.path.isdir(path):
+        return path
+    # Installed layout (docker_build_test runs from site-packages)
+    import epmt  # pylint: disable=import-outside-toplevel
+    path = os.path.dirname(epmt.__file__)
     assert os.path.isdir(path), f"resource_path {path} does not exist"
     return path
 
