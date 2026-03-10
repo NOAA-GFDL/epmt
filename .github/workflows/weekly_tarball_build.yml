@@ -110,7 +110,7 @@ jobs:
         run: |
           yum update -y
           yum install -y make gcc gcc-c++ gcc-gfortran curl tar gzip \
-            findutils perl
+            findutils perl python3
 
       # ── epmt-dash (container-path cache) ────────────────────────────
       # Same content as the build-tarballs job above, but saved from a
