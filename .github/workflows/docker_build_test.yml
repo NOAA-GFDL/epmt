@@ -365,8 +365,7 @@ jobs:
       - name: integration, shell
         run: docker exec ${{ env.CONTAINER_NAME }} bash -c 'cd /usr/lib/python3.9/site-packages && TZ=UTC pytest -x -vv epmt/test/integration/test_integration_shell.py'
 
-      - name: integration, annotate (GUARDED)
-        continue-on-error: true
+      - name: integration, annotate
         run: docker exec ${{ env.CONTAINER_NAME }} bash -c 'cd /usr/lib/python3.9/site-packages && TZ=UTC pytest -x -vv epmt/test/integration/test_integration_annotate.py'
 
       - name: integration, explore
