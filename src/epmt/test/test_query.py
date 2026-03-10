@@ -222,7 +222,15 @@ class QueryAPI(unittest.TestCase):
             for outform in ['terse', 'dict', 'pandas', 'orm']:
                 procs2 = eq.conv_procs(procs, fmt=outform)
                 if isinstance(procs, pd.DataFrame):
-                    self.assertTrue(eq.conv_procs(procs2, fmt=inform, order=Process.start).equals(procs))
+                    # Sort by 'id' (unique, deterministic) before comparing
+                    # because ORDER BY start does not guarantee a stable order
+                    # for processes that share the same start timestamp.
+                    # Align columns via expected.columns in case the
+                    # round-trip reorders dict keys.
+                    result = eq.conv_procs(procs2, fmt=inform, order=Process.start)
+                    result = result.sort_values('id').reset_index(drop=True)
+                    expected = procs.sort_values('id').reset_index(drop=True)
+                    self.assertTrue(result[expected.columns].equals(expected))
                 else:
                     if inform != 'orm':
                         self.assertEqual(eq.conv_procs(procs2, fmt=inform, order=Process.start), procs)
