@@ -1349,6 +1349,8 @@ enabled: boolean, optional
         info_dict['pca'] = {'inp_features': orig_features, 'out_features': pca_features}
 
     # now save the ref model
+    save_refmodel(ReferenceModel, jobs=jobs, computed=computed, info_dict = info_dict, enabled=enabled, name=name, tags=tag, op_tags=op_tags)
+'''
     r = orm_create(ReferenceModel, jobs=jobs, name=name, tags=tag, op_tags=op_tags, computed=computed, info_dict = info_dict, enabled=enabled)
     orm_commit()
     if fmt == 'orm':
@@ -1357,7 +1359,7 @@ enabled: boolean, optional
         return r.id
     r_dict = orm_to_dict(r, with_collections=True)
     return pd.Series(r_dict) if fmt == 'pandas' else r_dict
-
+'''
 # returns the number of models deleted.
 #jobs, computed, infodict, and emabled can all be retrieved from the ReferenceModel object
 def save_refmodel(ReferenceModel, jobs, computed, info_dict, enabled, name=None, tag={}, op_tags=[]):
