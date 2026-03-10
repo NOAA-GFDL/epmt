@@ -34,6 +34,8 @@ jobs:
       PAPIEX_VERSION: "2.3.15"
       EPMT_DASH_SRC_BRANCH: "autopep8.poke"
       OS_TARGET: "rocky-8"
+      # SLURM version — must match docker_build_test.yml
+      SLURM_TAG: "slurm-25-05-3-1"
 
     container:
       image: rockylinux:8
@@ -308,12 +310,138 @@ jobs:
           COVERAGE_FILE: .coverage.integration_explore
           COVERAGE_PROCESS_START: coveragerc
 
+      # ── SLURM installation (built from source, cached) ────────────────
+      - name: Check Cache for SLURM build
+        id: cache-slurm
+        uses: actions/cache@v4
+        with:
+          path: /tmp/slurm-install
+          key: slurm-${{ env.SLURM_TAG }}-rocky8-v1
+
+      - name: Install munge (SLURM auth dependency)
+        run: |
+          yum install -y epel-release
+          yum install -y munge munge-devel munge-libs
+
+      - name: Build SLURM from source
+        if: steps.cache-slurm.outputs.cache-hit != 'true'
+        run: |
+          git clone --depth 1 -b ${SLURM_TAG} https://github.com/SchedMD/slurm.git /tmp/slurm-src
+          cd /tmp/slurm-src
+          ./configure --prefix=/usr --sysconfdir=/etc/slurm
+          make -j$(nproc)
+          DESTDIR=/tmp/slurm-install make install
+          rm -rf /tmp/slurm-src
+
+      - name: Install SLURM binaries
+        run: |
+          cp -a /tmp/slurm-install/usr/* /usr/
+          ldconfig
+          which slurmctld slurmd sbatch sinfo scontrol squeue
+
+      - name: Start SLURM daemons for integration tests
+        run: |
+          set -e
+          HOSTNAME=$(hostname)
+          CPUS=$(nproc)
+
+          mkdir -p /etc/slurm
+          cat > /etc/slurm/slurm.conf << EOFSLURM
+          ClusterName=linux
+          SlurmctldHost=${HOSTNAME}
+          MpiDefault=none
+          ProctrackType=proctrack/linuxproc
+          ReturnToService=2
+          SlurmctldPidFile=/var/run/slurmd/slurmctld.pid
+          SlurmctldPort=6817
+          SlurmdPidFile=/var/run/slurmd/slurmd.pid
+          SlurmdPort=6818
+          SlurmdSpoolDir=/var/spool/slurmd
+          SlurmUser=root
+          StateSaveLocation=/var/lib/slurmd
+          SwitchType=switch/none
+          TaskPlugin=task/none
+          InactiveLimit=0
+          KillWait=30
+          MinJobAge=300
+          SlurmctldTimeout=300
+          SlurmdTimeout=300
+          Waittime=0
+          SchedulerType=sched/backfill
+          SelectType=select/cons_tres
+          SelectTypeParameters=CR_Core
+          AccountingStorageType=accounting_storage/none
+          SlurmctldDebug=info
+          SlurmctldLogFile=/var/log/slurm/slurmctld.log
+          SlurmdDebug=info
+          SlurmdLogFile=/var/log/slurm/slurmd.log
+          NodeName=${HOSTNAME} CPUs=${CPUS} RealMemory=1000 State=UNKNOWN
+          PartitionName=normal Nodes=ALL Default=YES MaxTime=INFINITE State=UP
+          EOFSLURM
+
+          cat > /etc/slurm/cgroup.conf << EOFCGROUP
+          CgroupPlugin=disabled
+          IgnoreSystemd=yes
+          EOFCGROUP
+
+          mkdir -p /var/spool/slurmd /var/lib/slurmd /var/log/slurm /var/run/slurmd
+
+          # Generate munge key and start munged
+          mkdir -p /etc/munge /var/log/munge /var/run/munge
+          dd if=/dev/urandom bs=1 count=1024 > /etc/munge/munge.key 2>/dev/null
+          chown -R munge:munge /etc/munge /var/log/munge /var/run/munge
+          chmod 0700 /etc/munge
+          chmod 0400 /etc/munge/munge.key
+          runuser -u munge -- /usr/sbin/munged
+
+          # Start SLURM controller (with -i to ignore stale state files)
+          /usr/sbin/slurmctld -i
+
+          # Start SLURM compute node daemon
+          /usr/sbin/slurmd
+
+          # Wait for SLURM node to register and become idle.
+          # ReturnToService=2 in slurm.conf handles the UNKNOWN->IDLE
+          # transition automatically once slurmd registers with slurmctld.
+          for i in $(seq 1 60); do
+            STATE=$(sinfo -N --noheader -o "%T" 2>/dev/null | head -1)
+            if [ "$STATE" = "idle" ]; then
+              echo "SLURM is ready (node idle):"
+              sinfo
+              sinfo -N
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "ERROR: SLURM node did not reach idle state"
+          sinfo -N 2>/dev/null || true
+          scontrol show node 2>/dev/null || true
+          tail -30 /var/log/slurm/slurmctld.log 2>/dev/null || true
+          tail -30 /var/log/slurm/slurmd.log 2>/dev/null || true
+          exit 1
+
       - name: integration, slurm
         run: |
           TZ=UTC pytest -x -vv src/epmt/test/integration/test_integration_slurm.py
         env:
           COVERAGE_FILE: .coverage.integration_slurm
           COVERAGE_PROCESS_START: coveragerc
+
+      - name: SLURM diagnostics (on failure)
+        if: failure()
+        run: |
+          echo "=== SLURM job output files ==="
+          for f in /tmp/slurm-*.out; do
+            [ -f "$f" ] && echo "--- $f ---" && cat "$f" && echo
+          done
+          echo "=== slurmctld log (last 50 lines) ==="
+          tail -50 /var/log/slurm/slurmctld.log 2>/dev/null || true
+          echo "=== slurmd log (last 50 lines) ==="
+          tail -50 /var/log/slurm/slurmd.log 2>/dev/null || true
+          echo "=== squeue ==="
+          squeue -l 2>/dev/null || true
+          echo "=== sacct ==="
+          sacct -l 2>/dev/null || true
 
       - name: integration, collate-tsv
         run: |
