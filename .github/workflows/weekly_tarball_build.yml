@@ -7,7 +7,7 @@ on:
     - cron: '0 6 * * 1'
   ## DEBUG: uncomment these lines if one needs to run sooner, rather than later
   ## re-comment pre-merge
-  push:
+  # push:
   workflow_dispatch:
 
 # cancel any in-progress run if a newer one is triggered
@@ -110,7 +110,7 @@ jobs:
         run: |
           yum update -y
           yum install -y make gcc gcc-c++ gcc-gfortran curl tar gzip \
-            findutils perl python3
+            findutils perl python3 procps-ng bind-utils tcsh tcl git
 
       # ── epmt-dash (container-path cache) ────────────────────────────
       # Same content as the build-tarballs job above, but saved from a
