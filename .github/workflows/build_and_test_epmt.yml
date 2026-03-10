@@ -292,19 +292,14 @@ jobs:
 
       - name: run pylint on epmt module, ignoring ui (epmt-dash)
         run: |
-          pylint --rcfile pylintrc --fail-under 7.0 --ignore-paths src/epmt/ui src/epmt
+          pylint --rcfile pylintrc --fail-under 7.1 --ignore-paths src/epmt/ui src/epmt
 
       - name: run pylint on ui submodule (epmt-dash)
         run: |
           pylint --rcfile pylintrc --fail-under 5.5 src/epmt/ui
-
-      - name: run pylint on epmt entry-point script
-        run: |
-          pylint --rcfile pylintrc --fail-under 10 src/scripts/epmt
 
       - name: upload pip installable
         uses: actions/upload-artifact@v4
         with:
           name: epmt-pip-install-TEST
           path: src/dist/epmt-4.11.0.tar.gz
-

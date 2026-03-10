@@ -22,6 +22,7 @@ from time import time
 # Since we are saving as a tuple you can do a simple
 # compare of two version tuples and python will do the right thing
 _version = (4, 11, 0)
+__version__ = ".".join([str(i) for i in _version])
 
 
 def version():
@@ -29,8 +30,7 @@ def version():
 
 
 def version_str(terse=False):
-    v = ".".join([str(i) for i in _version])
-    return v if terse else "EPMT {0}".format(v)
+    return __version__ if terse else "EPMT {0}".format(__version__)
 
 
 def get_username():
