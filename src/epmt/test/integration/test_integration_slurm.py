@@ -7,7 +7,6 @@ They are automatically skipped if SLURM commands are not found.
 """
 import os
 import time
-import stat
 import pytest
 
 from conftest import run_cmd, epmt_setting
@@ -89,8 +88,7 @@ def _create_slurm_prolog(path):
             '    $EPMT source --slurm\n'
             'fi\n'
         )
-    os.chmod(path, stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP |
-             stat.S_IROTH | stat.S_IXOTH)
+    os.chmod(path, 0o755)
 
 
 def _create_slurm_epilog(path):
@@ -113,8 +111,7 @@ def _create_slurm_epilog(path):
             '    fi\n'
             'fi\n'
         )
-    os.chmod(path, stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP |
-             stat.S_IROTH | stat.S_IXOTH)
+    os.chmod(path, 0o755)
 
 
 def _find_resource_path(tmp_path):
