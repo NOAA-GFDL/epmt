@@ -7,7 +7,7 @@ on:
     - cron: '0 6 * * 1'
   ## DEBUG: uncomment these lines if one needs to run sooner, rather than later
   ## re-comment pre-merge
-  push:
+  # push:
   workflow_dispatch:
 
 # cancel any in-progress run if a newer one is triggered
