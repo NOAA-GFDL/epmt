@@ -374,8 +374,7 @@ jobs:
         continue-on-error: true
         run: docker exec ${{ env.CONTAINER_NAME }} bash -c 'cd /usr/lib/python3.9/site-packages && TZ=UTC pytest -x -vv epmt/test/integration/test_integration_explore.py'
 
-      - name: integration, slurm (GUARDED)
-        continue-on-error: true
+      - name: integration, slurm
         run: docker exec ${{ env.CONTAINER_NAME }} bash -c 'cd /usr/lib/python3.9/site-packages && TZ=UTC pytest -x -vv epmt/test/integration/test_integration_slurm.py'
 
       - name: integration, collate-tsv
