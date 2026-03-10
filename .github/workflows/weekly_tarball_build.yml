@@ -103,6 +103,10 @@ jobs:
       OS_TARGET: "rocky-8"
       PAPIEX_VERSION: "2.3.15"
       EPMT_DASH_SRC_BRANCH: "autopep8.poke"
+      # Build environment versions — must match Makefile and build_and_test_epmt.yml
+      PYTHON_VERSION: "3.9.22"
+      SQLITE_VERSION: "3490100"
+      SQLITE_YEAR: "2025"
 
     steps:
       - uses: actions/checkout@v4
@@ -110,8 +114,10 @@ jobs:
       - name: Install build dependencies
         run: |
           yum update -y
-          yum install -y make gcc gcc-c++ gcc-gfortran curl tar gzip \
-            findutils perl python3 procps-ng bind-utils tcsh tcl git
+          yum install -y make gcc gcc-c++ gcc-gfortran curl tar gzip unzip \
+            findutils perl python3 procps-ng bind-utils tcsh tcl git \
+            zlib-devel bzip2-devel readline-devel sqlite-devel openssl-devel \
+            xz-devel libffi-devel
 
       # ── epmt-dash (container-path cache) ────────────────────────────
       # Same content as the build-tarballs job above, but saved from a
@@ -151,3 +157,42 @@ jobs:
         with:
           path: papiex-epmt-${{ env.PAPIEX_VERSION }}-${{ env.OS_TARGET }}.tgz
           key: papiex-outside-docker-${{ env.PAPIEX_VERSION }}-${{ env.OS_TARGET }}
+
+      # ── Python + SQLite from source (container-path cache) ──────────
+      # Pre-warm the Python/SQLite build cache so build_and_test_epmt
+      # can skip the expensive compilation on most runs.
+      - name: Build SQLite from source
+        run: |
+          mkdir -p $GITHUB_WORKSPACE/.cache/python-sqlite/usr/lib64
+          cd /usr/src
+          curl -o sqlite-amalgamation-${{ env.SQLITE_VERSION }}.zip \
+            https://www.sqlite.org/${{ env.SQLITE_YEAR }}/sqlite-amalgamation-${{ env.SQLITE_VERSION }}.zip
+          unzip sqlite-amalgamation-${{ env.SQLITE_VERSION }}.zip
+          cd sqlite-amalgamation-${{ env.SQLITE_VERSION }}
+          gcc -shared -fPIC -O2 -DSQLITE_ENABLE_JSON1 -DSQLITE_ENABLE_LOAD_EXTENSION \
+            -DSQLITE_MAX_VARIABLE_NUMBER=9999 sqlite3.c \
+            -o $GITHUB_WORKSPACE/.cache/python-sqlite/usr/lib64/libsqlite3.so
+          cp $GITHUB_WORKSPACE/.cache/python-sqlite/usr/lib64/libsqlite3.so /usr/lib64/libsqlite3.so
+          ldconfig
+
+      - name: Build Python from source
+        run: |
+          cd /usr/src
+          curl -o Python-${{ env.PYTHON_VERSION }}.tgz \
+            https://www.python.org/ftp/python/${{ env.PYTHON_VERSION }}/Python-${{ env.PYTHON_VERSION }}.tgz
+          tar xzf Python-${{ env.PYTHON_VERSION }}.tgz
+          cd Python-${{ env.PYTHON_VERSION }}
+          ./configure --quiet --prefix=/usr --enable-shared --enable-optimizations --enable-loadable-sqlite-extensions
+          make --silent install DESTDIR=$GITHUB_WORKSPACE/.cache/python-sqlite > /dev/null
+
+      - name: Verify Python build
+        run: |
+          cp -a .cache/python-sqlite/usr/* /usr/
+          ldconfig
+          python3 -V
+
+      - name: Cache Python and SQLite build (container path)
+        uses: actions/cache/save@v4
+        with:
+          path: .cache/python-sqlite
+          key: python-sqlite-${{ env.PYTHON_VERSION }}-${{ env.SQLITE_VERSION }}-rocky8-v1

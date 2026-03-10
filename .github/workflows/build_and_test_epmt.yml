@@ -8,18 +8,14 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-# ── Speed-up ideas (not yet implemented) ──────────────────────────────
-# 1. Cache pip downloads: restore PIP_CACHE_DIR with actions/cache to
-#    avoid re-downloading wheels on every push.
-# 2. Cache the Python-from-source build (/usr/src/Python-3.9.22) and
-#    sqlite build.  These rarely change and together account for several
-#    minutes of wall-clock time.
-# 3. Pre-build a Rocky 8 container image (like docker_build_test's
-#    epmt-build image) that already has yum packages, Python, SQLite,
-#    and pip deps installed, then reference it as the job container.
-#    This would eliminate the yum/python/sqlite/pip steps entirely.
-# 4. Combine the individual pytest steps into fewer invocations to
-#    reduce per-step overhead (GitHub Actions step startup ~2-3s each).
+# ── Speed-up notes ────────────────────────────────────────────────────
+# • Python and SQLite source builds are cached via actions/cache so they
+#   are only compiled on the first run (or when versions change).
+#   The weekly_tarball_build workflow pre-warms this cache every Monday.
+# • Further ideas:
+#   1. Cache pip downloads: restore PIP_CACHE_DIR with actions/cache.
+#   2. Pre-build a Rocky 8 container image with all deps pre-installed.
+#   3. Combine individual pytest steps to reduce per-step overhead.
 
 
 jobs:
@@ -30,6 +26,10 @@ jobs:
     #  - postgres:latest
 
     env:
+      # Build environment versions — must match Makefile and weekly_tarball_build.yml
+      PYTHON_VERSION: "3.9.22"
+      SQLITE_VERSION: "3490100"
+      SQLITE_YEAR: "2025"
       # Tarball source identifiers — must match Makefile and weekly_tarball_build.yml
       PAPIEX_VERSION: "2.3.15"
       EPMT_DASH_SRC_BRANCH: "autopep8.poke"
@@ -54,33 +54,53 @@ jobs:
             readline-devel sqlite-devel openssl-devel xz xz-devel libffi-devel \
             gcc-c++ gcc-gfortran tcl environment-modules perl bind-utils openssh-clients openssh-server
 
-      - name: install and configure sqlite3 from source
+      # ── Python + SQLite from source: cached across runs ───────────────
+      # Cache key includes both versions so bumping either triggers a
+      # rebuild.  The weekly_tarball_build workflow pre-warms this cache
+      # every Monday; the build steps below are a fallback for misses.
+      - name: Cache Python and SQLite builds
+        id: cache-python-sqlite
+        uses: actions/cache@v4
+        with:
+          path: .cache/python-sqlite
+          key: python-sqlite-${{ env.PYTHON_VERSION }}-${{ env.SQLITE_VERSION }}-rocky8-v1
+
+      - name: Build SQLite from source
+        if: steps.cache-python-sqlite.outputs.cache-hit != 'true'
         run: |
+          mkdir -p $GITHUB_WORKSPACE/.cache/python-sqlite/usr/lib64
           cd /usr/src
           echo 'downloading sqlite3'
-          curl -o sqlite-amalgamation-3490100.zip https://www.sqlite.org/2025/sqlite-amalgamation-3490100.zip
-          unzip sqlite-amalgamation-3490100.zip
+          curl -o sqlite-amalgamation-${{ env.SQLITE_VERSION }}.zip \
+            https://www.sqlite.org/${{ env.SQLITE_YEAR }}/sqlite-amalgamation-${{ env.SQLITE_VERSION }}.zip
+          unzip sqlite-amalgamation-${{ env.SQLITE_VERSION }}.zip
           echo 'building libsqlite3 with json1 and other useful extensions'
-          cd sqlite-amalgamation-3490100
-          gcc -shared -fPIC -O2  -DSQLITE_ENABLE_JSON1 -DSQLITE_ENABLE_LOAD_EXTENSION -DSQLITE_MAX_VARIABLE_NUMBER=9999 sqlite3.c -o /usr/lib64/libsqlite3.so
+          cd sqlite-amalgamation-${{ env.SQLITE_VERSION }}
+          gcc -shared -fPIC -O2 -DSQLITE_ENABLE_JSON1 -DSQLITE_ENABLE_LOAD_EXTENSION \
+            -DSQLITE_MAX_VARIABLE_NUMBER=9999 sqlite3.c \
+            -o $GITHUB_WORKSPACE/.cache/python-sqlite/usr/lib64/libsqlite3.so
+          cp $GITHUB_WORKSPACE/.cache/python-sqlite/usr/lib64/libsqlite3.so /usr/lib64/libsqlite3.so
+          ldconfig
 
-      - name: install python3 from source
+      - name: Build Python from source
+        if: steps.cache-python-sqlite.outputs.cache-hit != 'true'
         run: |
           cd /usr/src
           echo 'downloading python'
-          curl -o Python-3.9.22.tgz https://www.python.org/ftp/python/3.9.22/Python-3.9.22.tgz
-          tar xzf Python-3.9.22.tgz
-          cd Python-3.9.22
+          curl -o Python-${{ env.PYTHON_VERSION }}.tgz \
+            https://www.python.org/ftp/python/${{ env.PYTHON_VERSION }}/Python-${{ env.PYTHON_VERSION }}.tgz
+          tar xzf Python-${{ env.PYTHON_VERSION }}.tgz
+          cd Python-${{ env.PYTHON_VERSION }}
           echo 'building python3'
           ./configure --quiet --prefix=/usr --enable-shared --enable-optimizations --enable-loadable-sqlite-extensions
-          make --silent install > /dev/null
+          make --silent install DESTDIR=$GITHUB_WORKSPACE/.cache/python-sqlite > /dev/null
 
-      - name: configure python3 and upgrade pip and grab gcc-c++
+      - name: Deploy Python and SQLite
         run: |
+          cp -a .cache/python-sqlite/usr/* /usr/
           ldconfig
           python3 -V
           pip3 install --upgrade pip
-          yum install -y gcc-c++
 
       - name: install requirements
         run: |
@@ -130,9 +150,10 @@ jobs:
 
       - name: create links to papiex executables, adjust path
         run: |
-          mkdir -p /usr/lib/python3.9/site-packages/papiex-epmt-install
-          ln -s  /usr/lib/python3.9/site-packages/epmt/lib /usr/lib/python3.9/site-packages/papiex-epmt-install/
-          ln -s  /usr/lib/python3.9/site-packages/epmt/bin /usr/lib/python3.9/site-packages/papiex-epmt-install/
+          SITE_PACKAGES=$(python3 -c "import site; print(site.getsitepackages()[0])")
+          mkdir -p ${SITE_PACKAGES}/papiex-epmt-install
+          ln -s  ${SITE_PACKAGES}/epmt/lib ${SITE_PACKAGES}/papiex-epmt-install/
+          ln -s  ${SITE_PACKAGES}/epmt/bin ${SITE_PACKAGES}/papiex-epmt-install/
           export PATH='/usr/bin:${PATH}:/usr/local/libexec:/usr/local/bin'
 
       - name: epmt version
