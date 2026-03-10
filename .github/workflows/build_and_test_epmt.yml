@@ -321,6 +321,7 @@ jobs:
       - name: Install munge (SLURM auth dependency)
         run: |
           yum install -y epel-release
+          yum config-manager --set-enabled powertools
           yum install -y munge munge-devel munge-libs
 
       - name: Build SLURM from source
