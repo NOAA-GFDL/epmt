@@ -430,11 +430,12 @@ jobs:
 
             # Wait for SLURM node to register and become ready for jobs.
             # After slurmd starts, the node appears in "unk" (unknown) state.
-            # We must set it to idle before jobs can be scheduled.
+            # We use "state=resume" to transition it to idle (you cannot set
+            # "state=idle" directly — that is not a valid admin state).
             for i in $(seq 1 30); do
               if sinfo -N --noheader 2>/dev/null | grep -q .; then
-                # Node registered — force it to idle so jobs can run
-                scontrol update nodename=${HOSTNAME} state=idle
+                # Node registered — resume it so it transitions to idle
+                scontrol update nodename=${HOSTNAME} state=resume
                 break
               fi
               sleep 1
