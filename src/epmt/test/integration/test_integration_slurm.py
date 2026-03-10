@@ -218,6 +218,16 @@ def setup_and_teardown(tmp_path):
     assert os.path.isdir(os.path.join(resource_path, "slurm")), \
         "Could not find slurm scripts directory"
 
+    # The default epmt config uses sqlite:///:memory: which creates
+    # a fresh in-memory DB per process.  The example scripts call
+    # separate epmt commands (submit, dump, delete) — each a new
+    # process — so the data vanishes between invocations.  Point
+    # EPMT_DB_URL at a file-based SQLite DB so data persists across
+    # the multiple epmt invocations within a single SLURM job.
+    db_file = str(tmp_path / "epmt_test.sqlite")
+    old_db_url = os.environ.get("EPMT_DB_URL")
+    os.environ["EPMT_DB_URL"] = f"sqlite:///{db_file}"
+
     # Create test scripts
     for shell, shebang in [
         ("tcsh", "#!/bin/tcsh"),
@@ -233,6 +243,11 @@ def setup_and_teardown(tmp_path):
     yield {"stage_dest": stage_dest, "resource_path": resource_path}
 
     # Cleanup
+    if old_db_url is None:
+        os.environ.pop("EPMT_DB_URL", None)
+    else:
+        os.environ["EPMT_DB_URL"] = old_db_url
+
     for shell in ("tcsh", "csh", "bash", "sh"):
         script = f"/tmp/sleeptest.{shell}"
         if os.path.exists(script):
