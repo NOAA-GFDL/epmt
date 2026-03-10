@@ -1,5 +1,10 @@
 # EPMT
 
+[![build_and_test_epmt](https://github.com/NOAA-GFDL/epmt/actions/workflows/build_and_test_epmt.yml/badge.svg)](https://github.com/NOAA-GFDL/epmt/actions/workflows/build_and_test_epmt.yml)
+[![docker_build_test](https://github.com/NOAA-GFDL/epmt/actions/workflows/docker_build_test.yml/badge.svg)](https://github.com/NOAA-GFDL/epmt/actions/workflows/docker_build_test.yml)
+[![codecov](https://codecov.io/gh/NOAA-GFDL/epmt/branch/main/graph/badge.svg)](https://codecov.io/gh/NOAA-GFDL/epmt)
+[![pylint](https://img.shields.io/badge/pylint-%E2%89%A57.0-brightgreen)](https://github.com/NOAA-GFDL/epmt/actions/workflows/build_and_test_epmt.yml)
+
 **Experiment Performance Management Tool**  aka  
 **WorkflowDB** aka  
 **PerfMiner**
@@ -494,4 +499,72 @@ The collector library may not have been built for the current environment or the
 OS version does not match the current environment. 
 
 ### Virtual Environments:
-Note that often in virtual environments, hardware counters are not often available in the VM. 
+Note that often in virtual environments, hardware counters are not often available in the VM.
+
+---
+
+## CI/CD Workflows and Caching
+
+EPMT's GitHub Actions CI is split into focused workflows that use `actions/cache` to avoid
+rebuilding expensive artifacts on every pull request run.
+
+### Workflows
+
+| Workflow | Trigger | Purpose |
+|---|---|---|
+| `docker_build_test.yml` | `push` to `main`, `pull_request` | Full build + test pipeline; restores cached artifacts before building |
+| `slurm_image_build.yml` | Weekly (Mon 06:00 UTC), `workflow_dispatch` | Builds the `slurm-cluster` Docker image from source and saves it to cache |
+| `weekly_tarball_build.yml` | Weekly (Mon 06:00 UTC), `workflow_dispatch` | Compiles `papiex` and downloads `epmt-dash`, then saves both to cache |
+| `build_and_test_epmt.yml` | `push` to `main`, `pull_request` | Source-tree unit tests (no Docker) |
+
+### Caches and Invalidation
+
+Each cache step is keyed on its build prerequisites — analogous to how `make` uses file
+modification times to decide whether a target must be rebuilt.  Changing a prerequisite
+produces a new cache key, causing a cache miss and forcing a fresh build.
+
+| Cache | Cache key components | Invalidation trigger | Notes |
+|---|---|---|---|
+| `epmt-build` Docker image | `OS_TARGET` + `PYTHON_VERSION` + `SQLITE_VERSION` + `hashFiles(Dockerfile, requirements.txt.py3)` | Edit the Dockerfile or requirements file, or bump any version variable | Fully content-hash based — closest analogy to `make` |
+| `papiex` compiled tarball | `PAPIEX_VERSION` + `OS_TARGET` | Bump `PAPIEX_VERSION` in `docker_build_test.yml`, `weekly_tarball_build.yml`, and the `Makefile` | Version-gated; relies on papiex using immutable release tags |
+| `test-release` Docker image | `OS_TARGET` + `PYTHON_VERSION` + `SQLITE_VERSION` + `hashFiles(Dockerfile, requirements.txt.py3)` + `github.sha` | Always rebuilds (by design) — `restore-keys` prefix reuses unchanged early layers via `--cache-from` | Image content changes every commit; layer reuse keeps it fast |
+| `slurm-cluster` Docker image | `IMAGE_TAG` + `SLURM_TAG` + `SLURM_CLUSTER_TAG` | Bump any of the three version variables in `docker_build_test.yml` and `slurm_image_build.yml` | Version-string based; upstream tag mutations without a version bump won't invalidate |
+| `epmt-dash` UI directory | `EPMT_DASH_SRC_BRANCH` | Change `EPMT_DASH_SRC_BRANCH` in `docker_build_test.yml`, `weekly_tarball_build.yml`, and the `Makefile` | Branch-name based; new commits to the same branch don't invalidate — the weekly workflow bounds staleness to ≤1 week |
+
+### Cache Invalidation Gap vs. `make`
+
+`make` detects prerequisite changes via file modification times regardless of version numbers.
+The GitHub Actions caches above use version strings or content hashes instead, so:
+
+* **`epmt-build`** is fully `make`-like — changing the Dockerfile or requirements file immediately
+  produces a different hash and forces a rebuild.
+* **`papiex`** and **`slurm-cluster`** require a deliberate version bump in the workflow env block
+  to trigger a rebuild.  Remote source changes without a version bump go undetected until the next
+  weekly build.
+* **`epmt-dash`** requires either a branch rename or waiting for the weekly build.  The weekly
+  `weekly_tarball_build.yml` workflow always fetches fresh content, bounding maximum staleness to
+  one week.
+
+### Forcing a Rebuild
+
+To force any individual cache to rebuild, bump the relevant version variable in the `env:` section
+of **both** the weekly workflow and `docker_build_test.yml`, and update the `Makefile` to match:
+
+```
+# docker_build_test.yml  (and weekly_tarball_build.yml)
+env:
+  PAPIEX_VERSION: "2.3.16"          # bump to force papiex rebuild
+  EPMT_DASH_SRC_BRANCH: "new-branch" # change to force epmt-dash rebuild
+  IMAGE_TAG: "25.05.4"              # bump to force slurm-cluster rebuild
+```
+
+The `epmt-build` cache is invalidated automatically whenever `Dockerfiles/Dockerfile.rocky-8-epmt-build`
+or `requirements.txt.py3` is modified — no manual version bump is needed.
+
+### Weekly Pre-warming
+
+`slurm_image_build.yml` and `weekly_tarball_build.yml` run every Monday morning to pre-warm their
+respective caches before the working week begins.  `docker_build_test.yml` then restores those
+caches on pull request and push runs, skipping the expensive Docker compile steps.  If the cache
+is missing (first run, eviction, or new key), `docker_build_test.yml` falls back to building the
+artifact inline so the pipeline never silently skips a required build step. 

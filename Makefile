@@ -169,11 +169,13 @@ $(EPMT_RELEASE) dist:
 python-dist:
 	@echo "(python-dist) whoami: $(shell whoami)"
 	@echo "**********************************************************"
-	@echo "************** python3 setup.py sdist ********************"
+	@echo "********** python3 -m build --sdist **********************"
 	@echo "**********************************************************"	
 	cd src && echo "GOOD: cd src" || echo "I FAILED: cd src" ; \
 	tar zxf ../$(PAPIEX_RELEASE) && echo "GOOD: tar -zxf ../PAPIEX_RELEASE" || echo "I FAILED: tar zxf ../PAPIEX_RELEASE" ; \
-	python3 setup.py sdist && echo "GOOD: python3 setup.py sdist" || echo "I FAILED: python3 setup.py sdist" ; \
+	mkdir -p epmt/lib && cp -a papiex-epmt-install/lib/*.so* epmt/lib/ && echo "GOOD: cp papiex libs to epmt/lib" || echo "I FAILED: cp papiex libs to epmt/lib" ; \
+	pip3 install --quiet build && echo "GOOD: pip3 install build" || echo "I FAILED: pip3 install build" ; \
+	python3 -m build --sdist && echo "GOOD: python3 -m build --sdist" || echo "I FAILED: python3 -m build --sdist" ; \
 	chmod a+r dist/* && echo "GOOD: chmod a+r dist/*" || echo "I FAILED: chmod a+r dist/*"
 
 # creates a tarball containing test directories. If the test directory exists, clobber and re-create
@@ -256,7 +258,7 @@ $(EPMT_DASH_SRC): $(EPMT_DASH_SRC_TARBALL)
 $(EPMT_DASH_SRC_TARBALL):
 	@echo "(EPMT_DASH_SRC_TARBALL) whoami: $(shell whoami)"
 	echo "grabbing epmt-dash via curl" ; \
-	curl -L -O $(EPMT_DASH_SRC_URL) ; \
+	curl -L --fail --retry 3 --retry-delay 5 -O $(EPMT_DASH_SRC_URL) ; \
 	ls $(EPMT_DASH_SRC_TARBALL) ; \
 # ----------- \end EPMT_DASH THINGS ---------- #
 
@@ -302,7 +304,7 @@ $(PAPIEX_SRC): $(PAPIEX_SRC_TARBALL)
 
 $(PAPIEX_SRC_TARBALL):
 	@echo "(PAPIEX_SRC_TARBALL) whoami: $(shell whoami)"
-	curl -L -O $(PAPIEX_SRC_URL) ; \
+	curl -L --fail --retry 3 --retry-delay 5 -O $(PAPIEX_SRC_URL) ; \
 	ls $(PAPIEX_SRC_TARBALL)
 # ----------- \end PAPIEX THINGS ---------- #
 

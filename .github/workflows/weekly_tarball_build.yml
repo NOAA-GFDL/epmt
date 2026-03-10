@@ -1,0 +1,88 @@
+name: weekly_tarball_build
+
+on:
+  schedule:
+    # Build and cache tarballs every Monday at 6am UTC so that PR runs can
+    # restore them from cache and skip the expensive download/compile steps.
+    - cron: '0 6 * * 1'
+  ## DEBUG: uncomment these lines if one needs to run sooner, rather than later
+  ## re-comment pre-merge
+  #push:
+  workflow_dispatch:
+
+# cancel any in-progress run if a newer one is triggered
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build-tarballs:
+    runs-on: ubuntu-latest
+    env:
+      OS_TARGET: "rocky-8"
+      # Override docker run options for non-interactive CI.
+      # Papiex Makefile default is "--rm -it", but -it causes "not a TTY" error.
+      DOCKER_RUN_OPTS: "--rm"
+      # Tarball source identifiers — update these to invalidate their caches.
+      PAPIEX_VERSION: "2.3.15"
+      EPMT_DASH_SRC_BRANCH: "autopep8.poke"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # ── epmt-dash ─────────────────────────────────────────────────────────
+      # Downloads the epmt-dash UI tarball from GitHub and extracts it to
+      # src/epmt/ui.  Always fetched fresh here to verify the URL is still
+      # reachable; the resulting directory is cached for docker_build_test.
+      #
+      # Cache invalidation: update EPMT_DASH_SRC_BRANCH in the env section
+      # above (and in the Makefile) when a different branch is needed.
+      - name: Build epmt-dash
+        run: make --debug OS_TARGET=${OS_TARGET} epmt-dash
+
+      - name: Verify epmt-dash directory exists
+        run: |
+          if [ ! -d "src/epmt/ui" ]; then
+            echo "::error::src/epmt/ui not found after epmt-dash build."
+            exit 1
+          fi
+          echo "src/epmt/ui exists."
+
+      # Save src/epmt/ui so docker_build_test can restore it and skip
+      # the download+extraction entirely (make sees the target satisfied).
+      - name: Cache epmt-dash
+        uses: actions/cache/save@v4
+        with:
+          path: src/epmt/ui
+          key: epmt-dash-${{ env.EPMT_DASH_SRC_BRANCH }}
+
+      # ── papiex ────────────────────────────────────────────────────────────
+      # Downloads papiex source and compiles it inside a Docker container,
+      # producing papiex-epmt-{VERSION}-{OS_TARGET}.tgz.  Always built fresh
+      # here to verify the build still works; the tarball is cached for
+      # docker_build_test.
+      #
+      # Cache invalidation: update PAPIEX_VERSION in the env section above
+      # (and in the Makefile) when a new papiex release is needed.
+      - name: Build papiex-dist
+        run: make --debug OS_TARGET=${OS_TARGET} DOCKER_RUN_OPTS="${DOCKER_RUN_OPTS}" papiex-dist
+
+      - name: Verify papiex tarball exists
+        run: |
+          TARBALL="papiex-epmt-${PAPIEX_VERSION}-${OS_TARGET}.tgz"
+          if [ ! -f "${TARBALL}" ]; then
+            echo "::error::Papiex tarball '${TARBALL}' not found after build."
+            exit 1
+          fi
+          echo "Papiex tarball '${TARBALL}' exists."
+
+      # Save the compiled tarball so docker_build_test can restore it and
+      # skip the Docker-based papiex compilation entirely.
+      - name: Cache papiex tarball
+        uses: actions/cache/save@v4
+        with:
+          path: papiex-epmt-${{ env.PAPIEX_VERSION }}-${{ env.OS_TARGET }}.tgz
+          key: papiex-${{ env.PAPIEX_VERSION }}-${{ env.OS_TARGET }}

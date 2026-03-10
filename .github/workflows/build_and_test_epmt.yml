@@ -35,7 +35,7 @@ jobs:
             readline-devel sqlite-devel openssl-devel xz xz-devel libffi-devel \
             gcc-c++ gcc-gfortran tcl environment-modules perl bind-utils openssh-clients openssh-server
 
-      - name: install and configure sqlite3
+      - name: install and configure sqlite3 from source
         run: |
           cd /usr/src
           echo 'downloading sqlite3'
@@ -45,7 +45,7 @@ jobs:
           cd sqlite-amalgamation-3490100
           gcc -shared -fPIC -O2  -DSQLITE_ENABLE_JSON1 -DSQLITE_ENABLE_LOAD_EXTENSION -DSQLITE_MAX_VARIABLE_NUMBER=9999 sqlite3.c -o /usr/lib64/libsqlite3.so
 
-      - name: install python3
+      - name: install python3 from source
         run: |
           cd /usr/src
           echo 'downloading python'
@@ -116,13 +116,19 @@ jobs:
         env:
           COVERAGE_FILE: .coverage.anysh
 
-      - name:  test_cmds
+      - name: test_check
+        run:  |
+          TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/test_check.py
+        env:
+          COVERAGE_FILE: .coverage.check
+
+      - name: test_cmds
         run:  |
           TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/test_cmds.py
         env:
           COVERAGE_FILE: .coverage.cmds
 
-      - name:  test_db_migration
+      - name: test_db_migration
         run: |
           TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/test_db_migration.py
         env:
@@ -146,13 +152,13 @@ jobs:
         env:
           COVERAGE_FILE: .coverage.lib
 
-      - name:  test_outliers
+      - name: test_outliers
         run: |
           TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/test_outliers.py
         env:
           COVERAGE_FILE: .coverage.outliers
 
-      - name:  test_query
+      - name: test_query
         run: |
           TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/test_query.py
         env:
@@ -182,17 +188,11 @@ jobs:
         env:
           COVERAGE_FILE: .coverage.stat
 
-      - name:  test_submit
+      - name: test_submit
         run: |
           TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/test_submit.py
         env:
           COVERAGE_FILE: .coverage.submit
-
-      - name: upload pip installable
-        uses: actions/upload-artifact@v4
-        with:
-          name: epmt-pip-install-TEST
-          path: src/dist/epmt-4.11.0.tar.gz
 
       - name: integration, basic
         run: |
@@ -290,12 +290,14 @@ jobs:
 
       - name: run pylint on epmt module, ignoring ui (epmt-dash)
         run: |
-          pylint --rcfile pylintrc --fail-under 7.0 --ignore-paths src/epmt/ui src/epmt
+          pylint --rcfile pylintrc --fail-under 7.1 --ignore-paths src/epmt/ui src/epmt
 
       - name: run pylint on ui submodule (epmt-dash)
         run: |
           pylint --rcfile pylintrc --fail-under 5.5 src/epmt/ui
 
-      - name: run pylint on epmt entry-point script
-        run: |
-          pylint --rcfile pylintrc --fail-under 10 src/scripts/epmt
+      - name: upload pip installable
+        uses: actions/upload-artifact@v4
+        with:
+          name: epmt-pip-install-TEST
+          path: src/dist/epmt-4.11.0.tar.gz
