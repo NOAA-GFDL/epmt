@@ -398,6 +398,24 @@ jobs:
       - name: integration, slurm
         run: docker exec ${{ env.CONTAINER_NAME }} bash -c 'cd /usr/lib/python3.9/site-packages && TZ=UTC pytest -x -vv epmt/test/integration/test_integration_slurm.py'
 
+      - name: SLURM diagnostics (on failure)
+        if: failure()
+        run: |
+          docker exec ${{ env.CONTAINER_NAME }} bash -c '
+            echo "=== SLURM job output files ==="
+            for f in /tmp/slurm-*.out; do
+              [ -f "$f" ] && echo "--- $f ---" && cat "$f" && echo
+            done
+            echo "=== slurmctld log (last 50 lines) ==="
+            tail -50 /var/log/slurm/slurmctld.log 2>/dev/null || true
+            echo "=== slurmd log (last 50 lines) ==="
+            tail -50 /var/log/slurm/slurmd.log 2>/dev/null || true
+            echo "=== squeue ==="
+            squeue -l 2>/dev/null || true
+            echo "=== sacct ==="
+            sacct -l 2>/dev/null || true
+          '
+
       - name: test_anysh
         run: docker exec ${{ env.CONTAINER_NAME }} bash -c 'cd /usr/lib/python3.9/site-packages && TZ=UTC pytest -x -vv epmt/test/test_anysh.py'
 
