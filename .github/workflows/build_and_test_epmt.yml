@@ -100,11 +100,11 @@ jobs:
           cp -a .cache/python-sqlite/usr/* /usr/
           ldconfig
           python3 -V
-          pip3 install --upgrade pip
+          python3 -m pip install --upgrade pip
 
       - name: install requirements
         run: |
-          pip3 install -r requirements.txt.py3
+          python3 -m pip install -r requirements.txt.py3
 
       # ── epmt-dash tarball: cached across runs ──────────────────────────────
       # Cache key: branch name.  Update EPMT_DASH_SRC_BRANCH (env + Makefile)
@@ -146,7 +146,7 @@ jobs:
       - name: pip install epmt pip-package
         run: |
           ls src/dist/epmt*gz
-          pip3 install src/dist/epmt*gz
+          python3 -m pip install src/dist/epmt*gz
 
       - name: create links to papiex executables, adjust path
         run: |
@@ -167,7 +167,7 @@ jobs:
 
       - name: pip install pytest specifically
         run: |
-          pip install pytest pytest-cov coverage
+          python3 -m pip install pytest pytest-cov coverage
 
       - name: enable subprocess coverage for integration tests
         run: |
@@ -351,7 +351,7 @@ jobs:
 
       - name: install pylint
         run: |
-          pip install pylint
+          python3 -m pip install pylint
 
       - name: run pylint on epmt module, ignoring ui (epmt-dash)
         run: |
