@@ -78,8 +78,9 @@ jobs:
           git clone --branch ${{ env.SLURM_CLUSTER_TAG }} --depth 1 https://github.com/giovtorres/slurm-docker-cluster.git /tmp/slurm-docker-cluster
           docker build --progress=plain --build-arg SLURM_TAG=${SLURM_TAG} -t slurm-cluster:${IMAGE_TAG} /tmp/slurm-docker-cluster
 
+      # this only runs for the main branch
       - name: Save slurm-cluster image for caching
-        if: steps.cache-slurm.outputs.cache-hit != 'true'
+        if: steps.cache-slurm.outputs.cache-hit != 'true' && github.ref == 'refs/heads/main'
         run: docker save slurm-cluster:${IMAGE_TAG} -o /tmp/slurm-cluster-image.tar
 
       - name: Verify slurm-cluster image exists
@@ -176,8 +177,9 @@ jobs:
             --build-arg sqlite_year=${SQLITE_YEAR} \
             --build-arg python_version=${PYTHON_VERSION} .
 
+      # this only runs for the main branch
       - name: Save epmt-build image for caching
-        if: steps.cache-epmt-build.outputs.cache-hit != 'true'
+        if: steps.cache-epmt-build.outputs.cache-hit != 'true' && github.ref == 'refs/heads/main'
         run: docker save ${OS_TARGET}-epmt-build:${EPMT_VERSION} -o /tmp/epmt-build-image.tar
 
       - name: Verify epmt-build image exists
@@ -250,7 +252,9 @@ jobs:
             --build-arg sqlite_year=${SQLITE_YEAR} \
             --build-arg python_version=${PYTHON_VERSION} .
 
+      # this only runs for main
       - name: Save test-release image for caching
+        if: github.ref == 'refs/heads/main'
         run: docker save ${OS_TARGET}-epmt-test-release:${EPMT_VERSION} -o /tmp/test-release-image.tar
 
       - name: Verify check-release image exists
