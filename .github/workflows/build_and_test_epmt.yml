@@ -338,7 +338,7 @@ jobs:
         run: |
           cp -a /tmp/slurm-install/usr/* /usr/
           ldconfig
-          which slurmctld slurmd sbatch sinfo scontrol squeue
+          for cmd in slurmctld slurmd sbatch sinfo scontrol squeue; do command -v $cmd || exit 1; done
 
       - name: Start SLURM daemons for integration tests
         run: |
