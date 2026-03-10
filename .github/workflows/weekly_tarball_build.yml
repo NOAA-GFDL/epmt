@@ -86,3 +86,44 @@ jobs:
         with:
           path: papiex-epmt-${{ env.PAPIEX_VERSION }}-${{ env.OS_TARGET }}.tgz
           key: papiex-${{ env.PAPIEX_VERSION }}-${{ env.OS_TARGET }}
+
+  # ── papiex (OUTSIDE_DOCKER) ──────────────────────────────────────────
+  # build_and_test_epmt runs inside a plain Rocky Linux 8 container (no
+  # Docker-in-Docker) so it compiles papiex natively via OUTSIDE_DOCKER.
+  # This job pre-warms that cache in the same kind of environment.
+  build-papiex-outside-docker:
+    runs-on: ubuntu-latest
+    container:
+      image: rockylinux:8
+    env:
+      OS_TARGET: "rocky-8"
+      PAPIEX_VERSION: "2.3.15"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          yum update -y
+          yum install -y make gcc gcc-c++ gcc-gfortran curl tar gzip \
+            findutils perl
+
+      - name: Build papiex-dist (OUTSIDE_DOCKER)
+        run: make OUTSIDE_DOCKER='YUP' papiex-dist
+
+      - name: Verify papiex tarball exists
+        run: |
+          TARBALL="papiex-epmt-${PAPIEX_VERSION}-${OS_TARGET}.tgz"
+          if [ ! -f "${TARBALL}" ]; then
+            echo "::error::Papiex OUTSIDE_DOCKER tarball '${TARBALL}' not found."
+            exit 1
+          fi
+          echo "Papiex OUTSIDE_DOCKER tarball '${TARBALL}' exists."
+
+      # Save the natively compiled tarball so build_and_test_epmt can
+      # restore it and skip the expensive compilation step.
+      - name: Cache papiex tarball (OUTSIDE_DOCKER)
+        uses: actions/cache/save@v4
+        with:
+          path: papiex-epmt-${{ env.PAPIEX_VERSION }}-${{ env.OS_TARGET }}.tgz
+          key: papiex-outside-docker-${{ env.PAPIEX_VERSION }}-${{ env.OS_TARGET }}

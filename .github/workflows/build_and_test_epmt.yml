@@ -8,6 +8,19 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# ── Speed-up ideas (not yet implemented) ──────────────────────────────
+# 1. Cache pip downloads: restore PIP_CACHE_DIR with actions/cache to
+#    avoid re-downloading wheels on every push.
+# 2. Cache the Python-from-source build (/usr/src/Python-3.9.22) and
+#    sqlite build.  These rarely change and together account for several
+#    minutes of wall-clock time.
+# 3. Pre-build a Rocky 8 container image (like docker_build_test's
+#    epmt-build image) that already has yum packages, Python, SQLite,
+#    and pip deps installed, then reference it as the job container.
+#    This would eliminate the yum/python/sqlite/pip steps entirely.
+# 4. Combine the individual pytest steps into fewer invocations to
+#    reduce per-step overhead (GitHub Actions step startup ~2-3s each).
+
 
 jobs:
   build-linux:
@@ -15,6 +28,12 @@ jobs:
 
     #service:
     #  - postgres:latest
+
+    env:
+      # Tarball source identifiers — must match Makefile and weekly_tarball_build.yml
+      PAPIEX_VERSION: "2.3.15"
+      EPMT_DASH_SRC_BRANCH: "autopep8.poke"
+      OS_TARGET: "rocky-8"
 
     container:
       image: rockylinux:8
@@ -67,11 +86,36 @@ jobs:
         run: |
           pip3 install -r requirements.txt.py3
 
+      # ── epmt-dash tarball: cached across runs ──────────────────────────────
+      # Cache key: branch name.  Update EPMT_DASH_SRC_BRANCH (env + Makefile)
+      # to invalidate.  The weekly_tarball_build workflow pre-warms this cache
+      # every Monday; the build below is a fallback for cache misses.
+      - name: Check Cache for epmt-dash
+        id: cache-epmt-dash
+        uses: actions/cache@v4
+        with:
+          path: src/epmt/ui
+          key: epmt-dash-${{ env.EPMT_DASH_SRC_BRANCH }}
+
       - name: make dash tarball
+        if: steps.cache-epmt-dash.outputs.cache-hit != 'true'
         run: |
           make epmt-dash
 
+      # ── papiex tarball (OUTSIDE_DOCKER): cached across runs ────────────────
+      # Cache key: version + OS target + "outside-docker" suffix to distinguish
+      # from the Docker-built variant cached by docker_build_test.
+      # The weekly_tarball_build workflow pre-warms this cache every Monday;
+      # the build below is a fallback for cache misses.
+      - name: Check Cache for papiex tarball (OUTSIDE_DOCKER)
+        id: cache-papiex
+        uses: actions/cache@v4
+        with:
+          path: papiex-epmt-${{ env.PAPIEX_VERSION }}-${{ env.OS_TARGET }}.tgz
+          key: papiex-outside-docker-${{ env.PAPIEX_VERSION }}-${{ env.OS_TARGET }}
+
       - name: make papiex tarball
+        if: steps.cache-papiex.outputs.cache-hit != 'true'
         run: |
           make OUTSIDE_DOCKER='YUP' papiex-dist
 
