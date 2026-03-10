@@ -428,21 +428,10 @@ jobs:
             # Start SLURM compute node daemon
             /usr/sbin/slurmd
 
-            # Wait for SLURM node to register and become ready for jobs.
-            # After slurmd starts, the node appears in "unk" (unknown) state.
-            # We use "state=resume" to transition it to idle (you cannot set
-            # "state=idle" directly — that is not a valid admin state).
-            for i in $(seq 1 30); do
-              if sinfo -N --noheader 2>/dev/null | grep -q .; then
-                # Node registered — resume it so it transitions to idle
-                scontrol update nodename=${HOSTNAME} state=resume
-                break
-              fi
-              sleep 1
-            done
-
-            # Verify the node is actually idle (ready for jobs)
-            for i in $(seq 1 15); do
+            # Wait for SLURM node to register and become idle.
+            # ReturnToService=2 in slurm.conf handles the UNKNOWN->IDLE
+            # transition automatically once slurmd registers with slurmctld.
+            for i in $(seq 1 60); do
               STATE=$(sinfo -N --noheader -o "%T" 2>/dev/null | head -1)
               if [ "$STATE" = "idle" ]; then
                 echo "SLURM is ready (node idle):"
@@ -454,8 +443,9 @@ jobs:
             done
             echo "ERROR: SLURM node did not reach idle state"
             sinfo -N 2>/dev/null || true
-            cat /var/log/slurm/slurmctld.log 2>/dev/null | tail -20 || true
-            cat /var/log/slurm/slurmd.log 2>/dev/null | tail -20 || true
+            scontrol show node 2>/dev/null || true
+            cat /var/log/slurm/slurmctld.log 2>/dev/null | tail -30 || true
+            cat /var/log/slurm/slurmd.log 2>/dev/null | tail -30 || true
             exit 1
           '
 
