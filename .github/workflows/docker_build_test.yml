@@ -428,17 +428,31 @@ jobs:
             # Start SLURM compute node daemon
             /usr/sbin/slurmd
 
-            # Wait for SLURM to become ready
+            # Wait for SLURM node to register and become ready for jobs.
+            # After slurmd starts, the node appears in "unk" (unknown) state.
+            # We must set it to idle before jobs can be scheduled.
             for i in $(seq 1 30); do
               if sinfo -N --noheader 2>/dev/null | grep -q .; then
-                echo "SLURM is ready:"
+                # Node registered — force it to idle so jobs can run
+                scontrol update nodename=${HOSTNAME} state=idle
+                break
+              fi
+              sleep 1
+            done
+
+            # Verify the node is actually idle (ready for jobs)
+            for i in $(seq 1 15); do
+              STATE=$(sinfo -N --noheader -o "%T" 2>/dev/null | head -1)
+              if [ "$STATE" = "idle" ]; then
+                echo "SLURM is ready (node idle):"
                 sinfo
                 sinfo -N
                 exit 0
               fi
               sleep 1
             done
-            echo "ERROR: SLURM failed to start within 30 seconds"
+            echo "ERROR: SLURM node did not reach idle state"
+            sinfo -N 2>/dev/null || true
             cat /var/log/slurm/slurmctld.log 2>/dev/null | tail -20 || true
             cat /var/log/slurm/slurmd.log 2>/dev/null | tail -20 || true
             exit 1
