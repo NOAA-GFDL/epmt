@@ -37,6 +37,33 @@ def _slurm_available():
     return True
 
 
+def _sbatch_wait(script, extra_args=""):
+    """Run ``sbatch --wait`` and return (result, job_output).
+
+    Redirects SLURM job stdout/stderr to ``/tmp/slurm-<jobid>.out`` so that
+    on failure the test can display the actual error from inside the job
+    (by default SLURM writes job output to ``slurm-<jobid>.out`` in the
+    working directory which is hard to locate reliably).
+    """
+    r = run_cmd(
+        f"sbatch --wait --output=/tmp/slurm-%j.out --error=/tmp/slurm-%j.out "
+        f"{extra_args} {script}"
+    )
+    # Extract job ID from "Submitted batch job N"
+    job_id = ""
+    for word in r.stdout.strip().split():
+        if word.isdigit():
+            job_id = word
+            break
+    # Read job output (combined stdout+stderr)
+    job_output = ""
+    if job_id:
+        out_file = f"/tmp/slurm-{job_id}.out"
+        out_r = run_cmd(f"cat {out_file} 2>/dev/null")
+        job_output = out_r.stdout
+    return r, job_output
+
+
 def _verify_staged_file(stage_dest):
     """Verify that a staged tgz file was created and has expected contents."""
     wait_seconds = 30
@@ -210,26 +237,54 @@ def setup_and_teardown(tmp_path):
 class TestSlurm:
     def test_sbatch_epmt_example_tcsh(self, setup_and_teardown):
         ctx = setup_and_teardown
-        r = run_cmd(f"sbatch --wait {ctx['resource_path']}/examples/epmt-example.tcsh")
-        assert r.returncode == 0, f"sbatch failed: {r.stderr}"
+        r, job_out = _sbatch_wait(
+            f"{ctx['resource_path']}/examples/epmt-example.tcsh"
+        )
+        assert r.returncode == 0, (
+            f"sbatch failed (rc={r.returncode}):\n"
+            f"  sbatch stdout: {r.stdout.strip()}\n"
+            f"  sbatch stderr: {r.stderr.strip()}\n"
+            f"  job output:\n{job_out}"
+        )
         _verify_staged_file(ctx["stage_dest"])
 
     def test_sbatch_epmt_example_csh(self, setup_and_teardown):
         ctx = setup_and_teardown
-        r = run_cmd(f"sbatch --wait {ctx['resource_path']}/examples/epmt-example.csh")
-        assert r.returncode == 0, f"sbatch failed: {r.stderr}"
+        r, job_out = _sbatch_wait(
+            f"{ctx['resource_path']}/examples/epmt-example.csh"
+        )
+        assert r.returncode == 0, (
+            f"sbatch failed (rc={r.returncode}):\n"
+            f"  sbatch stdout: {r.stdout.strip()}\n"
+            f"  sbatch stderr: {r.stderr.strip()}\n"
+            f"  job output:\n{job_out}"
+        )
         _verify_staged_file(ctx["stage_dest"])
 
     def test_sbatch_epmt_example_bash(self, setup_and_teardown):
         ctx = setup_and_teardown
-        r = run_cmd(f"sbatch --wait {ctx['resource_path']}/examples/epmt-example.bash")
-        assert r.returncode == 0, f"sbatch failed: {r.stderr}"
+        r, job_out = _sbatch_wait(
+            f"{ctx['resource_path']}/examples/epmt-example.bash"
+        )
+        assert r.returncode == 0, (
+            f"sbatch failed (rc={r.returncode}):\n"
+            f"  sbatch stdout: {r.stdout.strip()}\n"
+            f"  sbatch stderr: {r.stderr.strip()}\n"
+            f"  job output:\n{job_out}"
+        )
         _verify_staged_file(ctx["stage_dest"])
 
     def test_sbatch_epmt_example_sh(self, setup_and_teardown):
         ctx = setup_and_teardown
-        r = run_cmd(f"sbatch --wait {ctx['resource_path']}/examples/epmt-example.sh")
-        assert r.returncode == 0, f"sbatch failed: {r.stderr}"
+        r, job_out = _sbatch_wait(
+            f"{ctx['resource_path']}/examples/epmt-example.sh"
+        )
+        assert r.returncode == 0, (
+            f"sbatch failed (rc={r.returncode}):\n"
+            f"  sbatch stdout: {r.stdout.strip()}\n"
+            f"  sbatch stderr: {r.stderr.strip()}\n"
+            f"  job output:\n{job_out}"
+        )
         _verify_staged_file(ctx["stage_dest"])
 
     def test_srun_prolog_epilog_inline(self, setup_and_teardown):
