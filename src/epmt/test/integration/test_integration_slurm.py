@@ -2,8 +2,9 @@
 
 Translated from 025-slurm.bats.
 
-NOTE: These tests require a SLURM cluster with sinfo/srun/sbatch available.
-They are automatically skipped if SLURM commands are not found.
+NOTE: These tests require a SLURM cluster with sinfo/srun/sbatch available
+and the SLURM controller running.  They are automatically skipped if SLURM
+commands are not found or the controller is unreachable.
 """
 import os
 import time
@@ -13,11 +14,21 @@ from conftest import run_cmd, epmt_setting
 
 
 def _slurm_available():
-    """Check if SLURM commands are available."""
+    """Check if SLURM commands are available and the controller is reachable.
+
+    The Docker release image has SLURM binaries installed (from the
+    slurm-cluster base image) but does not necessarily start the SLURM
+    daemons.  We therefore verify both that the commands exist *and* that
+    ``sinfo`` can actually contact the controller.
+    """
     for cmd in ("sinfo", "srun", "sbatch"):
         r = run_cmd(f"command -v {cmd}")
         if r.returncode != 0:
             return False
+    # Verify the SLURM controller is reachable (not just installed)
+    r = run_cmd("sinfo -N --noheader")
+    if r.returncode != 0:
+        return False
     return True
 
 
