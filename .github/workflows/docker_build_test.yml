@@ -374,6 +374,76 @@ jobs:
         continue-on-error: true
         run: docker exec ${{ env.CONTAINER_NAME }} bash -c 'cd /usr/lib/python3.9/site-packages && TZ=UTC pytest -x -vv epmt/test/integration/test_integration_explore.py'
 
+      - name: Start SLURM daemons for integration tests
+        run: |
+          docker exec ${{ env.CONTAINER_NAME }} bash -c '
+            set -e
+            HOSTNAME=$(hostname)
+            CPUS=$(nproc)
+
+            # Override the multi-node docker-compose slurm.conf with a
+            # single-node configuration that runs inside this container.
+            cat > /etc/slurm/slurm.conf << EOFSLURM
+          ClusterName=linux
+          SlurmctldHost=${HOSTNAME}
+          MpiDefault=none
+          ProctrackType=proctrack/linuxproc
+          ReturnToService=2
+          SlurmctldPidFile=/var/run/slurmd/slurmctld.pid
+          SlurmctldPort=6817
+          SlurmdPidFile=/var/run/slurmd/slurmd.pid
+          SlurmdPort=6818
+          SlurmdSpoolDir=/var/spool/slurmd
+          SlurmUser=root
+          StateSaveLocation=/var/lib/slurmd
+          SwitchType=switch/none
+          TaskPlugin=task/none
+          InactiveLimit=0
+          KillWait=30
+          MinJobAge=300
+          SlurmctldTimeout=300
+          SlurmdTimeout=300
+          Waittime=0
+          SchedulerType=sched/backfill
+          SelectType=select/cons_tres
+          SelectTypeParameters=CR_Core
+          AccountingStorageType=accounting_storage/none
+          SlurmctldDebug=info
+          SlurmctldLogFile=/var/log/slurm/slurmctld.log
+          SlurmdDebug=info
+          SlurmdLogFile=/var/log/slurm/slurmd.log
+          NodeName=${HOSTNAME} CPUs=${CPUS} RealMemory=1000 State=UNKNOWN
+          PartitionName=normal Nodes=ALL Default=YES MaxTime=INFINITE State=UP
+          EOFSLURM
+
+            # Ensure required directories exist
+            mkdir -p /var/spool/slurmd /var/lib/slurmd /var/log/slurm /var/run/slurmd
+
+            # Start munge authentication daemon
+            gosu munge /usr/sbin/munged
+
+            # Start SLURM controller (with -i to ignore stale state files)
+            /usr/sbin/slurmctld -i
+
+            # Start SLURM compute node daemon
+            /usr/sbin/slurmd
+
+            # Wait for SLURM to become ready
+            for i in $(seq 1 30); do
+              if sinfo -N --noheader 2>/dev/null | grep -q .; then
+                echo "SLURM is ready:"
+                sinfo
+                sinfo -N
+                exit 0
+              fi
+              sleep 1
+            done
+            echo "ERROR: SLURM failed to start within 30 seconds"
+            cat /var/log/slurm/slurmctld.log 2>/dev/null | tail -20 || true
+            cat /var/log/slurm/slurmd.log 2>/dev/null | tail -20 || true
+            exit 1
+          '
+
       - name: integration, slurm
         run: docker exec ${{ env.CONTAINER_NAME }} bash -c 'cd /usr/lib/python3.9/site-packages && TZ=UTC pytest -x -vv epmt/test/integration/test_integration_slurm.py'
 
