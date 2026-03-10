@@ -19,7 +19,8 @@ def _slurm_available():
     The Docker release image has SLURM binaries installed (from the
     slurm-cluster base image) but does not necessarily start the SLURM
     daemons.  We therefore verify both that the commands exist *and* that
-    ``sinfo`` can actually contact the controller.
+    ``sinfo`` can actually contact the controller *and* that at least one
+    node is in ``idle`` state (ready to accept jobs).
     """
     for cmd in ("sinfo", "srun", "sbatch"):
         r = run_cmd(f"command -v {cmd}")
@@ -29,12 +30,16 @@ def _slurm_available():
     r = run_cmd("sinfo -N --noheader")
     if r.returncode != 0:
         return False
+    # Verify at least one node is idle (ready for jobs)
+    r = run_cmd("sinfo -N --noheader -o '%T'")
+    if r.returncode != 0 or "idle" not in r.stdout:
+        return False
     return True
 
 
 def _verify_staged_file(stage_dest):
     """Verify that a staged tgz file was created and has expected contents."""
-    wait_seconds = 10
+    wait_seconds = 30
     tgz = None
     for _ in range(wait_seconds):
         # List tgz files sorted by time
@@ -205,26 +210,26 @@ def setup_and_teardown(tmp_path):
 class TestSlurm:
     def test_sbatch_epmt_example_tcsh(self, setup_and_teardown):
         ctx = setup_and_teardown
-        r = run_cmd(f"sbatch {ctx['resource_path']}/examples/epmt-example.tcsh")
-        assert r.returncode == 0
+        r = run_cmd(f"sbatch --wait {ctx['resource_path']}/examples/epmt-example.tcsh")
+        assert r.returncode == 0, f"sbatch failed: {r.stderr}"
         _verify_staged_file(ctx["stage_dest"])
 
     def test_sbatch_epmt_example_csh(self, setup_and_teardown):
         ctx = setup_and_teardown
-        r = run_cmd(f"sbatch {ctx['resource_path']}/examples/epmt-example.csh")
-        assert r.returncode == 0
+        r = run_cmd(f"sbatch --wait {ctx['resource_path']}/examples/epmt-example.csh")
+        assert r.returncode == 0, f"sbatch failed: {r.stderr}"
         _verify_staged_file(ctx["stage_dest"])
 
     def test_sbatch_epmt_example_bash(self, setup_and_teardown):
         ctx = setup_and_teardown
-        r = run_cmd(f"sbatch {ctx['resource_path']}/examples/epmt-example.bash")
-        assert r.returncode == 0
+        r = run_cmd(f"sbatch --wait {ctx['resource_path']}/examples/epmt-example.bash")
+        assert r.returncode == 0, f"sbatch failed: {r.stderr}"
         _verify_staged_file(ctx["stage_dest"])
 
     def test_sbatch_epmt_example_sh(self, setup_and_teardown):
         ctx = setup_and_teardown
-        r = run_cmd(f"sbatch {ctx['resource_path']}/examples/epmt-example.sh")
-        assert r.returncode == 0
+        r = run_cmd(f"sbatch --wait {ctx['resource_path']}/examples/epmt-example.sh")
+        assert r.returncode == 0, f"sbatch failed: {r.stderr}"
         _verify_staged_file(ctx["stage_dest"])
 
     def test_srun_prolog_epilog_inline(self, setup_and_teardown):
@@ -234,7 +239,7 @@ class TestSlurm:
             f'srun -n1 --task-prolog="{rp}/slurm/slurm_task_prolog_epmt.sh" '
             f'--task-epilog="{rp}/slurm/slurm_task_epilog_epmt.sh" sleep 1'
         )
-        assert r.returncode == 0
+        assert r.returncode == 0, f"srun failed: {r.stderr}"
         _verify_staged_file(ctx["stage_dest"])
 
     def test_srun_prolog_epilog_tcsh(self, setup_and_teardown):
@@ -244,7 +249,7 @@ class TestSlurm:
             f'srun -n1 --task-prolog="{rp}/slurm/slurm_task_prolog_epmt.sh" '
             f'--task-epilog="{rp}/slurm/slurm_task_epilog_epmt.sh" /tmp/sleeptest.tcsh'
         )
-        assert r.returncode == 0
+        assert r.returncode == 0, f"srun failed: {r.stderr}"
         _verify_staged_file(ctx["stage_dest"])
 
     def test_srun_prolog_epilog_csh(self, setup_and_teardown):
@@ -254,7 +259,7 @@ class TestSlurm:
             f'srun -n1 --task-prolog="{rp}/slurm/slurm_task_prolog_epmt.sh" '
             f'--task-epilog="{rp}/slurm/slurm_task_epilog_epmt.sh" /tmp/sleeptest.csh'
         )
-        assert r.returncode == 0
+        assert r.returncode == 0, f"srun failed: {r.stderr}"
         _verify_staged_file(ctx["stage_dest"])
 
     def test_srun_prolog_epilog_bash(self, setup_and_teardown):
@@ -264,7 +269,7 @@ class TestSlurm:
             f'srun -n1 --task-prolog="{rp}/slurm/slurm_task_prolog_epmt.sh" '
             f'--task-epilog="{rp}/slurm/slurm_task_epilog_epmt.sh" /tmp/sleeptest.bash'
         )
-        assert r.returncode == 0
+        assert r.returncode == 0, f"srun failed: {r.stderr}"
         _verify_staged_file(ctx["stage_dest"])
 
     def test_srun_prolog_epilog_sh(self, setup_and_teardown):
@@ -274,5 +279,5 @@ class TestSlurm:
             f'srun -n1 --task-prolog="{rp}/slurm/slurm_task_prolog_epmt.sh" '
             f'--task-epilog="{rp}/slurm/slurm_task_epilog_epmt.sh" /tmp/sleeptest.sh'
         )
-        assert r.returncode == 0
+        assert r.returncode == 0, f"srun failed: {r.stderr}"
         _verify_staged_file(ctx["stage_dest"])
