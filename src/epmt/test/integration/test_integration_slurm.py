@@ -44,20 +44,25 @@ def _sbatch_wait(script, extra_args=""):
     on failure the test can display the actual error from inside the job
     (by default SLURM writes job output to ``slurm-<jobid>.out`` in the
     working directory which is hard to locate reliably).
+
+    Returns
+    -------
+    tuple of (subprocess.CompletedProcess, str)
+        The CompletedProcess from sbatch and the combined job output string.
     """
+    import re  # pylint: disable=import-outside-toplevel
     r = run_cmd(
         f"sbatch --wait --output=/tmp/slurm-%j.out --error=/tmp/slurm-%j.out "
         f"{extra_args} {script}"
     )
-    # Extract job ID from "Submitted batch job N"
+    # Extract job ID from "Submitted batch job <number>"
     job_id = ""
-    for word in r.stdout.strip().split():
-        if word.isdigit():
-            job_id = word
-            break
+    m = re.search(r"Submitted batch job (\d+)", r.stdout)
+    if m:
+        job_id = m.group(1)
     # Read job output (combined stdout+stderr)
     job_output = ""
-    if job_id:
+    if job_id and job_id.isdigit():
         out_file = f"/tmp/slurm-{job_id}.out"
         out_r = run_cmd(f"cat {out_file} 2>/dev/null")
         job_output = out_r.stdout
