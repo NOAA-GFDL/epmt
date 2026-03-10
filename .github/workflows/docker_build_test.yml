@@ -350,9 +350,8 @@ jobs:
       - name: test_submit
         run: docker exec ${{ env.CONTAINER_NAME }} bash -c 'cd $(python3 -c "import site; print(site.getsitepackages()[0])") && TZ=UTC pytest -x -vv epmt/test/test_submit.py'
 
-      - name: integration, basic (GUARDED)
-        continue-on-error: true
-        run: docker exec ${{ env.CONTAINER_NAME }} bash -c 'cd $(python3 -c "import site; print(site.getsitepackages()[0])") && TZ=UTC pytest -x -vv epmt/test/integration/test_integration_basic.py'
+      - name: integration, basic
+        run: docker exec ${{ env.CONTAINER_NAME }} bash -c 'cd /usr/lib/python3.9/site-packages && TZ=UTC pytest -x -vv epmt/test/integration/test_integration_basic.py'
 
       - name: integration, escape
         run: docker exec ${{ env.CONTAINER_NAME }} bash -c 'cd /usr/lib/python3.9/site-packages && TZ=UTC pytest -x -vv epmt/test/integration/test_integration_escape.py'
@@ -366,9 +365,8 @@ jobs:
       - name: integration, shell
         run: docker exec ${{ env.CONTAINER_NAME }} bash -c 'cd $(python3 -c "import site; print(site.getsitepackages()[0])") && TZ=UTC pytest -x -vv epmt/test/integration/test_integration_shell.py'
 
-      - name: integration, annotate (GUARDED)
-        continue-on-error: true
-        run: docker exec ${{ env.CONTAINER_NAME }} bash -c 'cd $(python3 -c "import site; print(site.getsitepackages()[0])") && TZ=UTC pytest -x -vv epmt/test/integration/test_integration_annotate.py'
+      - name: integration, annotate
+        run: docker exec ${{ env.CONTAINER_NAME }} bash -c 'cd /usr/lib/python3.9/site-packages && TZ=UTC pytest -x -vv epmt/test/integration/test_integration_annotate.py'
 
       - name: integration, explore
         run: docker exec ${{ env.CONTAINER_NAME }} bash -c 'cd /usr/lib/python3.9/site-packages && TZ=UTC pytest -x -vv epmt/test/integration/test_integration_explore.py'
