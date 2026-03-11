@@ -1,0 +1,101 @@
+name: conda_build_test
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+# Cancel in-flight runs for the same ref when a newer push arrives
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+
+  # ---------------------------------------------------------------------------
+  # Job 1: Create the conda environment from environment.yaml, install epmt
+  #         via editable pip install, and run smoke tests.
+  # ---------------------------------------------------------------------------
+  conda-env-test:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        # bash -l is required so that conda activate works inside run: steps
+        shell: bash -l {0}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up conda environment from environment.yaml
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          environment-file: environment.yaml
+          activate-environment: epmt
+          python-version: "3.9"
+          auto-activate-base: false
+
+      - name: Show installed packages
+        run: |
+          conda info
+          conda list
+
+      - name: Smoke test — epmt --help
+        run: epmt --help
+
+      - name: Smoke test — epmt -vv check
+        run: epmt -vv check
+
+  # ---------------------------------------------------------------------------
+  # Job 2: Build a conda package from meta.yaml and upload it as a workflow
+  #         artifact. Runs only on pull requests to main, after the env test
+  #         passes.
+  # ---------------------------------------------------------------------------
+  conda-build:
+    runs-on: ubuntu-latest
+    needs: conda-env-test
+
+    # Only build the package on pull requests, not on every push to main
+    if: github.event_name == 'pull_request'
+
+    defaults:
+      run:
+        shell: bash -l {0}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up base conda (miniconda)
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          auto-activate-base: true
+          python-version: "3.9"
+
+      - name: Configure conda channels
+        run: |
+          echo "Removing defaults channel, adding conda-forge with strict priority"
+          conda config --append channels conda-forge
+          conda config --remove channels defaults || true
+          conda config --set channel_priority strict
+          conda config --set anaconda_upload no
+          conda config --show
+
+      - name: Install conda-build
+        run: conda install -y conda-forge::conda-build
+
+      - name: Build epmt conda package
+        run: |
+          mkdir -p /tmp/epmt-tarball
+          conda build --package-format tar.bz2 --output-folder /tmp/epmt-tarball .
+
+      - name: Upload epmt tarball as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: epmt-tarball
+          path: /tmp/epmt-tarball/noarch/epmt-*.tar.bz2
+          if-no-files-found: error
