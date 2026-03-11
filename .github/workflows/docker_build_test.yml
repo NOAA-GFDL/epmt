@@ -299,6 +299,34 @@ jobs:
             -h slurmctl ${IMAGE_NAME} \
             bash -c 'echo 2 > /proc/sys/kernel/perf_event_paranoid && sleep infinity'
 
+      - name: Wait for PostgreSQL to be ready
+        run: |
+          echo "Waiting for PostgreSQL to accept connections..."
+          for i in $(seq 1 30); do
+            if docker exec postgres-test pg_isready -U postgres 2>/dev/null; then
+              echo "PostgreSQL is ready"
+              exit 0
+            fi
+            echo "Waiting for PostgreSQL... ($i/30)"
+            sleep 2
+          done
+          echo "ERROR: PostgreSQL did not become ready in time"
+          exit 1
+
+      - name: Configure epmt to use PostgreSQL
+        run: |
+          docker exec -i ${{ env.CONTAINER_NAME }} tee /usr/lib/python3.9/site-packages/epmt/settings.py > /dev/null << 'EOFSETTINGS'
+          def test_settings_import():
+              pass
+
+          orm = "sqlalchemy"
+          db_params = {"url": "postgresql://postgres:example@postgres-test:5432/EPMT-TEST", "echo": False}
+          bulk_insert = True
+          epmt_settings_kind = "test_pg_container"
+          EOFSETTINGS
+          echo "PostgreSQL settings installed:"
+          docker exec ${{ env.CONTAINER_NAME }} cat /usr/lib/python3.9/site-packages/epmt/settings.py
+
       - name: epmt version
         run: docker exec ${{ env.CONTAINER_NAME }} epmt -vv -V
 
