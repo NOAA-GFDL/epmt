@@ -18,6 +18,10 @@ permissions:
 jobs:
   docker-build-rocky8:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        db_backend: [sqlite, postgres]
     env:
       # Override docker run options for non-interactive CI
       # Papiex Makefile default is "--rm -it", but -it causes "not a TTY" error
@@ -269,7 +273,7 @@ jobs:
 
       - name: Set up check-release test infrastructure
         run: |
-          CONTAINER_NAME="${OS_TARGET}-epmt-${EPMT_VERSION}-test-release"
+          CONTAINER_NAME="${OS_TARGET}-epmt-${EPMT_VERSION}-test-release-${{ matrix.db_backend }}"
           IMAGE_NAME="${OS_TARGET}-epmt-test-release:${EPMT_VERSION}"
           echo "CONTAINER_NAME=${CONTAINER_NAME}" >> $GITHUB_ENV
 
@@ -280,11 +284,13 @@ jobs:
           # Create docker network
           docker network create epmt-test-net
 
-          # Start postgres container
-          docker run -d --rm --name postgres-test --network epmt-test-net --privileged \
-            -e POSTGRES_USER=postgres \
-            -e POSTGRES_PASSWORD=example \
-            -e POSTGRES_DB=EPMT-TEST postgres:latest
+          # Start postgres container (only for postgres backend)
+          if [ "${{ matrix.db_backend }}" = "postgres" ]; then
+            docker run -d --rm --name postgres-test --network epmt-test-net --privileged \
+              -e POSTGRES_USER=postgres \
+              -e POSTGRES_PASSWORD=example \
+              -e POSTGRES_DB=EPMT-TEST postgres:latest
+          fi
 
           # Remove any leftover test container (sleep allows Docker to finish cleanup)
           if docker container ls -a --filter "name=^${CONTAINER_NAME}$" --format '{{.Names}}' | grep -q .; then
@@ -300,6 +306,7 @@ jobs:
             bash -c 'echo 2 > /proc/sys/kernel/perf_event_paranoid && sleep infinity'
 
       - name: Wait for PostgreSQL to be ready
+        if: matrix.db_backend == 'postgres'
         run: |
           echo "Waiting for PostgreSQL to accept connections..."
           for i in $(seq 1 30); do
@@ -314,6 +321,7 @@ jobs:
           exit 1
 
       - name: Configure epmt to use PostgreSQL
+        if: matrix.db_backend == 'postgres'
         run: |
           docker exec -i ${{ env.CONTAINER_NAME }} tee /usr/lib/python3.9/site-packages/epmt/settings.py > /dev/null << 'EOFSETTINGS'
           def test_settings_import():
