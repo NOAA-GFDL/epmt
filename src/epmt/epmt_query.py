@@ -1263,6 +1263,8 @@ enabled: boolean, optional
 
     if isinstance(tag, str):
         tag = tag_from_string(tag)
+    else:
+      tag = {}
 
     methods = methods or uvod_classifiers()
 
