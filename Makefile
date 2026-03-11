@@ -2,7 +2,7 @@
 
 # OS / python / SQLITE_VERSION
 OS_TARGET=rocky-8
-PYTHON_VERSION=3.9.22
+PYTHON_VERSION=3.9.25   # updated from 3.9.22 (issue #153: use latest 3.9.x)
 SQLITE_YEAR=2025
 SQLITE_VERSION=3490100
 
