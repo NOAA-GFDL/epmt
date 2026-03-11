@@ -23,6 +23,6 @@ def epmt_delete_jobs(joblist):
     logger.info("deleting jobs %s", ' '.join(joblist))
     n_del_jobs = delete_jobs(joblist, force=True)
     if n_del_jobs != len(joblist):
-        logger.warning("Warning! Some jobs could not be delted.")
+        logger.warning("Warning! Some jobs could not be deleted.")
 
-    return delete_jobs(joblist, force=True) == len(joblist)
+    return n_del_jobs == len(joblist)

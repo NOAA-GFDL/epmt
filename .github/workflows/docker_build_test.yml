@@ -308,6 +308,114 @@ jobs:
       - name: pip install pytest
         run: docker exec ${{ env.CONTAINER_NAME }} pip3 install pytest
 
+      - name: Start SLURM daemons for integration tests
+        run: |
+          docker exec ${{ env.CONTAINER_NAME }} bash -c '
+            set -e
+            HOSTNAME=$(hostname)
+            CPUS=$(nproc)
+
+            # Override the multi-node docker-compose slurm.conf with a
+            # single-node configuration that runs inside this container.
+            cat > /etc/slurm/slurm.conf << EOFSLURM
+          ClusterName=linux
+          SlurmctldHost=${HOSTNAME}
+          MpiDefault=none
+          ProctrackType=proctrack/linuxproc
+          ReturnToService=2
+          SlurmctldPidFile=/var/run/slurmd/slurmctld.pid
+          SlurmctldPort=6817
+          SlurmdPidFile=/var/run/slurmd/slurmd.pid
+          SlurmdPort=6818
+          SlurmdSpoolDir=/var/spool/slurmd
+          SlurmUser=root
+          StateSaveLocation=/var/lib/slurmd
+          SwitchType=switch/none
+          TaskPlugin=task/none
+          InactiveLimit=0
+          KillWait=30
+          MinJobAge=300
+          SlurmctldTimeout=300
+          SlurmdTimeout=300
+          Waittime=0
+          SchedulerType=sched/backfill
+          SelectType=select/cons_tres
+          SelectTypeParameters=CR_Core
+          AccountingStorageType=accounting_storage/none
+          SlurmctldDebug=info
+          SlurmctldLogFile=/var/log/slurm/slurmctld.log
+          SlurmdDebug=info
+          SlurmdLogFile=/var/log/slurm/slurmd.log
+          NodeName=${HOSTNAME} CPUs=${CPUS} RealMemory=1000 State=UNKNOWN
+          PartitionName=normal Nodes=ALL Default=YES MaxTime=INFINITE State=UP
+          EOFSLURM
+
+            # Disable cgroup plugin — the Docker container lacks cgroup/v2
+            # support (the cgroup_v2.so plugin is not shipped in the
+            # slurm-cluster base image).  Per the official SLURM docs
+            # (https://slurm.schedmd.com/cgroup.conf.html), setting
+            # CgroupPlugin=disabled completely disables cgroup interaction.
+            # IgnoreSystemd=yes avoids dbus calls since the container has
+            # no running systemd.
+            cat > /etc/slurm/cgroup.conf << EOFCGROUP
+          CgroupPlugin=disabled
+          IgnoreSystemd=yes
+          EOFCGROUP
+
+            # Ensure required directories exist
+            mkdir -p /var/spool/slurmd /var/lib/slurmd /var/log/slurm /var/run/slurmd
+
+            # Start munge authentication daemon
+            gosu munge /usr/sbin/munged
+
+            # Start SLURM controller (with -i to ignore stale state files)
+            /usr/sbin/slurmctld -i
+
+            # Start SLURM compute node daemon
+            /usr/sbin/slurmd
+
+            # Wait for SLURM node to register and become idle.
+            # ReturnToService=2 in slurm.conf handles the UNKNOWN->IDLE
+            # transition automatically once slurmd registers with slurmctld.
+            for i in $(seq 1 60); do
+              STATE=$(sinfo -N --noheader -o "%T" 2>/dev/null | head -1)
+              if [ "$STATE" = "idle" ]; then
+                echo "SLURM is ready (node idle):"
+                sinfo
+                sinfo -N
+                exit 0
+              fi
+              sleep 1
+            done
+            echo "ERROR: SLURM node did not reach idle state"
+            sinfo -N 2>/dev/null || true
+            scontrol show node 2>/dev/null || true
+            cat /var/log/slurm/slurmctld.log 2>/dev/null | tail -30 || true
+            cat /var/log/slurm/slurmd.log 2>/dev/null | tail -30 || true
+            exit 1
+          '
+
+      - name: integration, slurm
+        run: docker exec ${{ env.CONTAINER_NAME }} bash -c 'cd /usr/lib/python3.9/site-packages && TZ=UTC pytest -x -vv epmt/test/integration/test_integration_slurm.py'
+
+      - name: SLURM diagnostics (on failure)
+        if: failure()
+        run: |
+          docker exec ${{ env.CONTAINER_NAME }} bash -c '
+            echo "=== SLURM job output files ==="
+            for f in /tmp/slurm-*.out; do
+              [ -f "$f" ] && echo "--- $f ---" && cat "$f" && echo
+            done
+            echo "=== slurmctld log (last 50 lines) ==="
+            tail -50 /var/log/slurm/slurmctld.log 2>/dev/null || true
+            echo "=== slurmd log (last 50 lines) ==="
+            tail -50 /var/log/slurm/slurmd.log 2>/dev/null || true
+            echo "=== squeue ==="
+            squeue -l 2>/dev/null || true
+            echo "=== sacct ==="
+            sacct -l 2>/dev/null || true
+          '
+
       - name: test_anysh
         run: docker exec ${{ env.CONTAINER_NAME }} bash -c 'cd /usr/lib/python3.9/site-packages && TZ=UTC pytest -x -vv epmt/test/test_anysh.py'
 
@@ -370,10 +478,6 @@ jobs:
 
       - name: integration, explore
         run: docker exec ${{ env.CONTAINER_NAME }} bash -c 'cd /usr/lib/python3.9/site-packages && TZ=UTC pytest -x -vv epmt/test/integration/test_integration_explore.py'
-
-      - name: integration, slurm (GUARDED)
-        continue-on-error: true
-        run: docker exec ${{ env.CONTAINER_NAME }} bash -c 'cd $(python3 -c "import site; print(site.getsitepackages()[0])") && TZ=UTC pytest -x -vv epmt/test/integration/test_integration_slurm.py'
 
       - name: integration, collate-tsv
         run: docker exec ${{ env.CONTAINER_NAME }} bash -c 'cd /usr/lib/python3.9/site-packages && TZ=UTC pytest -x -vv epmt/test/integration/test_integration_collate_tsv.py'
