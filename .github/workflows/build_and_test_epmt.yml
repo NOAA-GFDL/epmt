@@ -3,51 +3,61 @@ name: build_and_test_epmt
 on:
   push
 
-# cancel running jobs if theres a newer push
+# cancel running jobs if there's a newer push
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+
+# Minimal permissions for security
+permissions:
+  contents: read
 
 # ── Speed-up notes ────────────────────────────────────────────────────
 # • Python and SQLite source builds are cached via actions/cache so they
 #   are only compiled on the first run (or when versions change).
 #   The weekly_tarball_build workflow pre-warms this cache every Monday.
-# • Further ideas:
-#   1. Cache pip downloads: restore PIP_CACHE_DIR with actions/cache.
-#   2. Pre-build a Rocky 8 container image with all deps pre-installed.
-#   3. Combine individual pytest steps to reduce per-step overhead.
-
+# • pip packages are cached separately (keyed on requirements.txt.py3 hash)
+#   so parallel test jobs avoid redundant downloads.
+# • Unit tests, integration tests, and SLURM tests run in three parallel
+#   jobs (all dependent on the build job) to reduce total wall-clock time.
+# • Coverage is combined in a final job after all test jobs complete.
+#
+# ── Job graph ─────────────────────────────────────────────────────────
+#
+#   build ──┬─► unit-tests          ─┐
+#           ├─► integration-tests   ─┼─► coverage
+#           └─► slurm-tests         ─┘
+#
+# Build-environment versions — must match Makefile and weekly_tarball_build.yml.
+# Defined at the workflow level so all jobs inherit them automatically.
+env:
+  PYTHON_VERSION: "3.9.22"
+  SQLITE_VERSION: "3490100"
+  SQLITE_YEAR: "2025"
+  PAPIEX_VERSION: "2.3.15"
+  EPMT_DASH_SRC_BRANCH: "autopep8.poke"
+  OS_TARGET: "rocky-8"
+  SLURM_TAG: "slurm-25-05-3-1"
 
 jobs:
-  build-linux:
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # JOB 1 ── build
+  # Compiles Python/SQLite (or restores from cache), installs pip
+  # requirements, builds the EPMT pip package, verifies the installation
+  # with 'epmt check', runs pylint, and uploads the built package as an
+  # artifact for downstream test jobs to consume without rebuilding.
+  # ═══════════════════════════════════════════════════════════════════════
+  build:
     runs-on: ubuntu-latest
-
-    #service:
-    #  - postgres:latest
-
-    env:
-      # Build environment versions — must match Makefile and weekly_tarball_build.yml
-      PYTHON_VERSION: "3.9.22"
-      SQLITE_VERSION: "3490100"
-      SQLITE_YEAR: "2025"
-      # Tarball source identifiers — must match Makefile and weekly_tarball_build.yml
-      PAPIEX_VERSION: "2.3.15"
-      EPMT_DASH_SRC_BRANCH: "autopep8.poke"
-      OS_TARGET: "rocky-8"
-      # SLURM version — must match docker_build_test.yml
-      SLURM_TAG: "slurm-25-05-3-1"
 
     container:
       image: rockylinux:8
-      env:
-        POSTGRES_DB: 'EPMT'
-        POSTGRES_USER: 'postgres'
-        POSTGRES_PASSWORD: 'example'
-        PIP_CACHE_DIR: '$CI_PROJECT_DIR/.cache/pip'
       options: --privileged
 
     steps:
       - uses: actions/checkout@v4
+
       - name: yum install and update
         run: |
           yum update -y
@@ -104,7 +114,19 @@ jobs:
           python3 -V
           python3 -m pip install --upgrade pip
 
+      # ── pip packages: cached across runs ──────────────────────────────
+      # Cache key: hash of requirements file.  Update requirements.txt.py3
+      # to invalidate.  Parallel test jobs restore this same cache so they
+      # skip redundant downloads.
+      - name: Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: .cache/pip
+          key: pip-rocky8-${{ hashFiles('requirements.txt.py3') }}
+
       - name: install requirements
+        env:
+          PIP_CACHE_DIR: .cache/pip
         run: |
           python3 -m pip install -r requirements.txt.py3
 
@@ -167,7 +189,218 @@ jobs:
           echo 2 > /proc/sys/kernel/perf_event_paranoid
           epmt -vv check
 
-      - name: pip install pytest specifically
+      - name: install pylint
+        run: |
+          python3 -m pip install pylint
+
+      - name: run pylint on epmt module, ignoring ui (epmt-dash)
+        run: |
+          pylint --rcfile pylintrc --fail-under 7.1 --ignore-paths src/epmt/ui src/epmt
+
+      - name: run pylint on ui submodule (epmt-dash)
+        run: |
+          pylint --rcfile pylintrc --fail-under 5.5 src/epmt/ui
+
+      # Short-lived (1 day) CI-internal artifact: shared with the parallel
+      # unit-tests, integration-tests, and slurm-tests jobs so they can pip-
+      # install the package without repeating the full build.
+      - name: Upload EPMT package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: epmt-package
+          path: src/dist/epmt*.gz
+          retention-days: 1
+
+      # Long-lived user-facing artifact: the installable pip package that
+      # developers can download directly from the CI run summary page.
+      - name: upload pip installable
+        uses: actions/upload-artifact@v4
+        with:
+          name: epmt-pip-install-TEST
+          path: src/dist/epmt-4.11.0.tar.gz
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # JOB 2 ── unit-tests
+  # Runs in parallel with integration-tests and slurm-tests.
+  # Restores cached Python/SQLite and pip packages; installs the
+  # pre-built EPMT package from the build job's artifact; then runs all
+  # unit tests in a single pytest invocation (eliminating 13 extra
+  # GitHub Actions step-launch overheads while keeping test isolation).
+  # ═══════════════════════════════════════════════════════════════════════
+  unit-tests:
+    needs: build
+    runs-on: ubuntu-latest
+
+    container:
+      image: rockylinux:8
+      options: --privileged
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: yum install and update
+        run: |
+          yum update -y
+          yum install -y findutils unzip bash tcsh nc curl file \
+            make git gcc postgresql-devel zlib-devel bzip2 bzip2-devel \
+            readline-devel sqlite-devel openssl-devel xz xz-devel libffi-devel \
+            gcc-c++ gcc-gfortran tcl environment-modules perl bind-utils openssh-clients openssh-server
+
+      - name: Restore Python and SQLite from cache
+        uses: actions/cache/restore@v4
+        with:
+          path: .cache/python-sqlite
+          key: python-sqlite-${{ env.PYTHON_VERSION }}-${{ env.SQLITE_VERSION }}-rocky8-v1
+          fail-on-cache-miss: true
+
+      - name: Deploy Python and SQLite
+        run: |
+          cp -a .cache/python-sqlite/usr/* /usr/
+          ldconfig
+          python3 -V
+          python3 -m pip install --upgrade pip
+
+      - name: Restore pip packages from cache
+        uses: actions/cache/restore@v4
+        with:
+          path: .cache/pip
+          key: pip-rocky8-${{ hashFiles('requirements.txt.py3') }}
+
+      - name: install requirements
+        env:
+          PIP_CACHE_DIR: .cache/pip
+        run: |
+          python3 -m pip install -r requirements.txt.py3
+
+      - name: Download EPMT package
+        uses: actions/download-artifact@v4
+        with:
+          name: epmt-package
+          path: src/dist/
+
+      - name: pip install epmt pip-package
+        run: |
+          python3 -m pip install src/dist/epmt*.gz
+
+      - name: create links to papiex executables, adjust path
+        run: |
+          SITE_PACKAGES=$(python3 -c "import site; print(site.getsitepackages()[0])")
+          mkdir -p ${SITE_PACKAGES}/papiex-epmt-install
+          ln -s  ${SITE_PACKAGES}/epmt/lib ${SITE_PACKAGES}/papiex-epmt-install/
+          ln -s  ${SITE_PACKAGES}/epmt/bin ${SITE_PACKAGES}/papiex-epmt-install/
+          export PATH='/usr/bin:${PATH}:/usr/local/libexec:/usr/local/bin'
+
+      - name: pip install pytest and coverage
+        run: |
+          python3 -m pip install pytest pytest-cov coverage
+
+      - name: enable subprocess coverage
+        run: |
+          SITE_PACKAGES=$(python3 -c "import site; print(site.getsitepackages()[0])")
+          echo "import coverage; coverage.process_startup()" > ${SITE_PACKAGES}/coverage_subprocess.pth
+          echo "Installed coverage subprocess hook at ${SITE_PACKAGES}/coverage_subprocess.pth"
+
+      # All 14 unit tests in a single pytest run.
+      - name: unit tests
+        run: |
+          TZ=UTC pytest -x -vv \
+            --cov=epmt --cov-report=term --cov-config=coveragerc \
+            src/epmt/test/test_anysh.py \
+            src/epmt/test/test_check.py \
+            src/epmt/test/test_cmds.py \
+            src/epmt/test/test_db_migration.py \
+            src/epmt/test/test_db_schema.py \
+            src/epmt/test/test_explore.py \
+            src/epmt/test/test_lib.py \
+            src/epmt/test/test_outliers.py \
+            src/epmt/test/test_query.py \
+            src/epmt/test/test_run.py \
+            src/epmt/test/test_settings.py \
+            src/epmt/test/test_shell.py \
+            src/epmt/test/test_stat.py \
+            src/epmt/test/test_submit.py
+        env:
+          COVERAGE_FILE: .coverage.unit
+
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-unit
+          path: .coverage.unit
+          retention-days: 1
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # JOB 3 ── integration-tests
+  # Runs in parallel with unit-tests and slurm-tests.
+  # Same base setup as unit-tests; runs the full non-SLURM integration
+  # suite (basic → escape → concat → daemon → shell → annotate → explore
+  # → collate-tsv → kernel-compile).
+  # ═══════════════════════════════════════════════════════════════════════
+  integration-tests:
+    needs: build
+    runs-on: ubuntu-latest
+
+    container:
+      image: rockylinux:8
+      options: --privileged
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: yum install and update
+        run: |
+          yum update -y
+          yum install -y findutils unzip bash tcsh nc curl file \
+            make git gcc postgresql-devel zlib-devel bzip2 bzip2-devel \
+            readline-devel sqlite-devel openssl-devel xz xz-devel libffi-devel \
+            gcc-c++ gcc-gfortran tcl environment-modules perl bind-utils openssh-clients openssh-server
+
+      - name: Restore Python and SQLite from cache
+        uses: actions/cache/restore@v4
+        with:
+          path: .cache/python-sqlite
+          key: python-sqlite-${{ env.PYTHON_VERSION }}-${{ env.SQLITE_VERSION }}-rocky8-v1
+          fail-on-cache-miss: true
+
+      - name: Deploy Python and SQLite
+        run: |
+          cp -a .cache/python-sqlite/usr/* /usr/
+          ldconfig
+          python3 -V
+          python3 -m pip install --upgrade pip
+
+      - name: Restore pip packages from cache
+        uses: actions/cache/restore@v4
+        with:
+          path: .cache/pip
+          key: pip-rocky8-${{ hashFiles('requirements.txt.py3') }}
+
+      - name: install requirements
+        env:
+          PIP_CACHE_DIR: .cache/pip
+        run: |
+          python3 -m pip install -r requirements.txt.py3
+
+      - name: Download EPMT package
+        uses: actions/download-artifact@v4
+        with:
+          name: epmt-package
+          path: src/dist/
+
+      - name: pip install epmt pip-package
+        run: |
+          python3 -m pip install src/dist/epmt*.gz
+
+      - name: create links to papiex executables, adjust path
+        run: |
+          SITE_PACKAGES=$(python3 -c "import site; print(site.getsitepackages()[0])")
+          mkdir -p ${SITE_PACKAGES}/papiex-epmt-install
+          ln -s  ${SITE_PACKAGES}/epmt/lib ${SITE_PACKAGES}/papiex-epmt-install/
+          ln -s  ${SITE_PACKAGES}/epmt/bin ${SITE_PACKAGES}/papiex-epmt-install/
+          export PATH='/usr/bin:${PATH}:/usr/local/libexec:/usr/local/bin'
+
+      - name: pip install pytest and coverage
         run: |
           python3 -m pip install pytest pytest-cov coverage
 
@@ -176,90 +409,6 @@ jobs:
           SITE_PACKAGES=$(python3 -c "import site; print(site.getsitepackages()[0])")
           echo "import coverage; coverage.process_startup()" > ${SITE_PACKAGES}/coverage_subprocess.pth
           echo "Installed coverage subprocess hook at ${SITE_PACKAGES}/coverage_subprocess.pth"
-
-      - name: test_anysh
-        run: |
-          TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/test_anysh.py
-        env:
-          COVERAGE_FILE: .coverage.anysh
-
-      - name: test_check
-        run:  |
-          TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/test_check.py
-        env:
-          COVERAGE_FILE: .coverage.check
-
-      - name: test_cmds
-        run:  |
-          TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/test_cmds.py
-        env:
-          COVERAGE_FILE: .coverage.cmds
-
-      - name: test_db_migration
-        run: |
-          TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/test_db_migration.py
-        env:
-          COVERAGE_FILE: .coverage.db_migration
-
-      - name: test_db_schema
-        run: |
-          TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/test_db_schema.py
-        env:
-          COVERAGE_FILE: .coverage.db_schema
-
-      - name: test_explore
-        run: |
-          TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/test_explore.py
-        env:
-          COVERAGE_FILE: .coverage.explore
-
-      - name: test_lib
-        run: |
-          TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/test_lib.py
-        env:
-          COVERAGE_FILE: .coverage.lib
-
-      - name: test_outliers
-        run: |
-          TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/test_outliers.py
-        env:
-          COVERAGE_FILE: .coverage.outliers
-
-      - name: test_query
-        run: |
-          TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/test_query.py
-        env:
-          COVERAGE_FILE: .coverage.query
-
-      - name: test_run
-        run: |
-          TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/test_run.py
-        env:
-          COVERAGE_FILE: .coverage.run
-
-      - name: test_settings
-        run: |
-          TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/test_settings.py
-        env:
-          COVERAGE_FILE: .coverage.settings
-
-      - name: test_shell
-        run: |
-          TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/test_shell.py
-        env:
-          COVERAGE_FILE: .coverage.shell
-
-      - name: test_stat
-        run: |
-          TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/test_stat.py
-        env:
-          COVERAGE_FILE: .coverage.stat
-
-      - name: test_submit
-        run: |
-          TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/test_submit.py
-        env:
-          COVERAGE_FILE: .coverage.submit
 
       - name: integration, basic
         run: |
@@ -309,6 +458,108 @@ jobs:
         env:
           COVERAGE_FILE: .coverage.integration_explore
           COVERAGE_PROCESS_START: coveragerc
+
+      - name: integration, collate-tsv
+        run: |
+          TZ=UTC pytest -x -vv src/epmt/test/integration/test_integration_collate_tsv.py
+        env:
+          COVERAGE_FILE: .coverage.integration_collate_tsv
+          COVERAGE_PROCESS_START: coveragerc
+
+      - name: integration, kernel-compile
+        run: |
+          TZ=UTC pytest -x -vv src/epmt/test/integration/test_integration_kernel_compile.py
+        env:
+          COVERAGE_FILE: .coverage.integration_kernel_compile
+          COVERAGE_PROCESS_START: coveragerc
+
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-integration
+          path: .coverage.integration_*
+          retention-days: 1
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # JOB 4 ── slurm-tests
+  # Runs in parallel with unit-tests and integration-tests.
+  # Same base setup as the other test jobs; additionally builds/restores
+  # SLURM from cache, starts the SLURM daemons, and runs the SLURM
+  # integration suite.
+  # ═══════════════════════════════════════════════════════════════════════
+  slurm-tests:
+    needs: build
+    runs-on: ubuntu-latest
+
+    container:
+      image: rockylinux:8
+      options: --privileged
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: yum install and update
+        run: |
+          yum update -y
+          yum install -y findutils unzip bash tcsh nc curl file \
+            make git gcc postgresql-devel zlib-devel bzip2 bzip2-devel \
+            readline-devel sqlite-devel openssl-devel xz xz-devel libffi-devel \
+            gcc-c++ gcc-gfortran tcl environment-modules perl bind-utils openssh-clients openssh-server
+
+      - name: Restore Python and SQLite from cache
+        uses: actions/cache/restore@v4
+        with:
+          path: .cache/python-sqlite
+          key: python-sqlite-${{ env.PYTHON_VERSION }}-${{ env.SQLITE_VERSION }}-rocky8-v1
+          fail-on-cache-miss: true
+
+      - name: Deploy Python and SQLite
+        run: |
+          cp -a .cache/python-sqlite/usr/* /usr/
+          ldconfig
+          python3 -V
+          python3 -m pip install --upgrade pip
+
+      - name: Restore pip packages from cache
+        uses: actions/cache/restore@v4
+        with:
+          path: .cache/pip
+          key: pip-rocky8-${{ hashFiles('requirements.txt.py3') }}
+
+      - name: install requirements
+        env:
+          PIP_CACHE_DIR: .cache/pip
+        run: |
+          python3 -m pip install -r requirements.txt.py3
+
+      - name: Download EPMT package
+        uses: actions/download-artifact@v4
+        with:
+          name: epmt-package
+          path: src/dist/
+
+      - name: pip install epmt pip-package
+        run: |
+          python3 -m pip install src/dist/epmt*.gz
+
+      - name: create links to papiex executables, adjust path
+        run: |
+          SITE_PACKAGES=$(python3 -c "import site; print(site.getsitepackages()[0])")
+          mkdir -p ${SITE_PACKAGES}/papiex-epmt-install
+          ln -s  ${SITE_PACKAGES}/epmt/lib ${SITE_PACKAGES}/papiex-epmt-install/
+          ln -s  ${SITE_PACKAGES}/epmt/bin ${SITE_PACKAGES}/papiex-epmt-install/
+          export PATH='/usr/bin:${PATH}:/usr/local/libexec:/usr/local/bin'
+
+      - name: pip install pytest and coverage
+        run: |
+          python3 -m pip install pytest pytest-cov coverage
+
+      - name: enable subprocess coverage for integration tests
+        run: |
+          SITE_PACKAGES=$(python3 -c "import site; print(site.getsitepackages()[0])")
+          echo "import coverage; coverage.process_startup()" > ${SITE_PACKAGES}/coverage_subprocess.pth
+          echo "Installed coverage subprocess hook at ${SITE_PACKAGES}/coverage_subprocess.pth"
 
       # ── SLURM installation (built from source, cached) ────────────────
       - name: Check Cache for SLURM build
@@ -444,22 +695,58 @@ jobs:
           echo "=== sacct ==="
           sacct -l 2>/dev/null || true
 
-      - name: integration, collate-tsv
-        run: |
-          TZ=UTC pytest -x -vv src/epmt/test/integration/test_integration_collate_tsv.py
-        env:
-          COVERAGE_FILE: .coverage.integration_collate_tsv
-          COVERAGE_PROCESS_START: coveragerc
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-slurm
+          path: .coverage.integration_slurm
+          retention-days: 1
 
-      - name: integration, kernel-compile
-        run: |
-          TZ=UTC pytest -x -vv src/epmt/test/integration/test_integration_kernel_compile.py
-        env:
-          COVERAGE_FILE: .coverage.integration_kernel_compile
-          COVERAGE_PROCESS_START: coveragerc
+  # ═══════════════════════════════════════════════════════════════════════
+  # JOB 5 ── coverage
+  # Runs after all three test jobs (even if some failed, via if: always()).
+  # Downloads every coverage artifact, combines them into a single report,
+  # and uploads the result to Codecov.
+  # ═══════════════════════════════════════════════════════════════════════
+  coverage:
+    needs: [unit-tests, integration-tests, slurm-tests]
+    if: always()
+    runs-on: ubuntu-latest
 
-      - name:  Combine coverage data and generate report
-        continue-on-error:  true
+    container:
+      image: rockylinux:8
+      options: --privileged
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Restore Python and SQLite from cache
+        uses: actions/cache/restore@v4
+        with:
+          path: .cache/python-sqlite
+          key: python-sqlite-${{ env.PYTHON_VERSION }}-${{ env.SQLITE_VERSION }}-rocky8-v1
+          fail-on-cache-miss: true
+
+      - name: Deploy Python and SQLite
+        run: |
+          cp -a .cache/python-sqlite/usr/* /usr/
+          ldconfig
+          python3 -V
+          python3 -m pip install --upgrade pip
+
+      - name: Install coverage
+        run: |
+          python3 -m pip install coverage
+
+      - name: Download all coverage artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-*
+          merge-multiple: true
+
+      - name: Combine coverage data and generate report
+        continue-on-error: true
         run: |
           ls -la .coverage.*
           coverage combine --rcfile=coveragerc
@@ -477,21 +764,3 @@ jobs:
           fail_ci_if_error: false
           verbose: true
           use_pypi: true
-
-      - name: install pylint
-        run: |
-          python3 -m pip install pylint
-
-      - name: run pylint on epmt module, ignoring ui (epmt-dash)
-        run: |
-          pylint --rcfile pylintrc --fail-under 7.1 --ignore-paths src/epmt/ui src/epmt
-
-      - name: run pylint on ui submodule (epmt-dash)
-        run: |
-          pylint --rcfile pylintrc --fail-under 5.5 src/epmt/ui
-
-      - name: upload pip installable
-        uses: actions/upload-artifact@v4
-        with:
-          name: epmt-pip-install-TEST
-          path: src/dist/epmt-4.11.0.tar.gz
