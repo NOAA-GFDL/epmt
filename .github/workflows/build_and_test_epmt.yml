@@ -21,6 +21,10 @@ concurrency:
 jobs:
   build-linux:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        db_backend: [sqlite, postgres]
 
     services:
       postgres:
@@ -169,6 +173,7 @@ jobs:
           export PATH='/usr/bin:${PATH}:/usr/local/libexec:/usr/local/bin'
 
       - name: Configure epmt to use PostgreSQL
+        if: matrix.db_backend == 'postgres'
         run: |
           SITE_PACKAGES=$(python3 -c "import site; print(site.getsitepackages()[0])")
           cat > ${SITE_PACKAGES}/epmt/settings.py << 'EOFSETTINGS'
@@ -519,5 +524,5 @@ jobs:
       - name: upload pip installable
         uses: actions/upload-artifact@v4
         with:
-          name: epmt-pip-install-TEST
+          name: epmt-pip-install-TEST-${{ matrix.db_backend }}
           path: src/dist/epmt-4.11.0.tar.gz
