@@ -11,7 +11,7 @@ dynamic         = ["version"]
 authors         = [ { name = "Minimal Metrics, LLC", email = "some.where@over.there" } ]
 description     = "Experiment Performance Metrics Toolkit"
 readme          = "README.md"
-requires-python = "==3.9.22"
+requires-python = "==3.9.*"
 classifiers     = [ "Programming Language :: Python :: 3", ]
 # Runtime dependencies: only packages directly imported by epmt at runtime.
 # Transitive dependencies (e.g. Jinja2, Werkzeug, joblib) are resolved
