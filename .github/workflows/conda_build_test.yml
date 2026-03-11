@@ -150,22 +150,26 @@ jobs:
 
       # Not yet observed in CI (was skipped by -x after shell failure above);
       # expected to skip cleanly without SLURM, but guarded until confirmed
-      - name: Integration test — test_integration_slurm
+      - name: Integration test — test_integration_slurm (SKIPPED- NO SLURM FOR TESTS YET)
         run: TZ=UTC pytest -x -vv src/epmt/test/integration/test_integration_slurm.py
         continue-on-error: true
 
   # ---------------------------------------------------------------------------
-  # Job 2: Build a conda package from meta.yaml and upload it as a workflow
-  #         artifact. Runs only on pull requests to main. Uses always() so it
-  #         proceeds even if conda-env-test has failing steps.
+  # Job 2: Build a conda package from meta.yaml.
+  #
+  #   • pull_request → build only; upload tarball as a workflow artifact so
+  #                    the package can be inspected without publishing.
+  #   • push to main → build AND publish to the noaa-gfdl anaconda channel
+  #                    using ANACONDA_TOKEN (org-level secret).
+  #
+  # Uses always() so this job proceeds even when conda-env-test has
+  # known-failing (GUARDED) steps.
   # ---------------------------------------------------------------------------
   conda-build:
     runs-on: ubuntu-latest
     needs: conda-env-test
 
-    # Run on PRs to main regardless of whether conda-env-test steps passed,
-    # so we can see the build result even when tests are known-failing.
-    if: always() && github.event_name == 'pull_request'
+    if: always()
 
     defaults:
       run:
@@ -193,14 +197,39 @@ jobs:
       - name: Install conda-build
         run: conda install -y conda-forge::conda-build
 
-      - name: Build epmt conda package
+      # anaconda-client is only needed when publishing (push to main)
+      - name: Install anaconda-client
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: conda install -y conda-forge::anaconda-client
+
+      # ---------------------------------------------------------------------------
+      # PR: build to a local folder so the tarball can be uploaded as an artifact
+      # ---------------------------------------------------------------------------
+      - name: Build epmt conda package (PR — artifact only)
+        if: github.event_name == 'pull_request'
         run: |
           mkdir -p /tmp/epmt-tarball
           conda build --package-format tar.bz2 --output-folder /tmp/epmt-tarball .
 
       - name: Upload epmt tarball as artifact
+        if: github.event_name == 'pull_request'
         uses: actions/upload-artifact@v4
         with:
           name: epmt-tarball
           path: /tmp/epmt-tarball/noarch/epmt-*.tar.bz2
           if-no-files-found: error
+
+      # ---------------------------------------------------------------------------
+      # Push to main: enable auto-upload and publish to the noaa-gfdl channel.
+      # ANACONDA_TOKEN is an org-level secret associated with the noaa-gfdl
+      # anaconda.org account. conda-build picks it up via ANACONDA_API_TOKEN.
+      # ---------------------------------------------------------------------------
+      - name: Enable anaconda auto-upload
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: conda config --set anaconda_upload yes
+
+      - name: Build and publish epmt conda package to noaa-gfdl channel
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          ANACONDA_API_TOKEN: ${{ secrets.ANACONDA_TOKEN }}
+        run: conda build .
