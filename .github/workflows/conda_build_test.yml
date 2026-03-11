@@ -21,11 +21,17 @@ jobs:
   #         packages, no Anaconda ToS concerns), install epmt via editable pip
   #         install, run smoke tests, unit tests, and integration tests.
   #
-  # All test steps use continue-on-error: true so we can observe failures
-  # without blocking the conda-build job.
+  # Matrix: Python 3.9, 3.10, 3.11 (issue #145 — widening requires-python).
+  # 3.12 is excluded because pandas==1.5.3 and SQLAlchemy==1.4.54 both removed
+  # distutils support in 3.12; tracked in issue #105.
   # ---------------------------------------------------------------------------
   conda-env-test:
     runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.10", "3.11"]
+      fail-fast: false  # let all versions run even if one fails
 
     defaults:
       run:
@@ -40,13 +46,13 @@ jobs:
       # Miniforge ships with conda-forge as its only default channel (open-source,
       # community-maintained). This avoids any dependency on Anaconda-proprietary
       # channels or packages entirely.
-      - name: Set up Miniforge environment from environment.yaml
+      - name: Set up Miniforge environment from environment.yaml (Python ${{ matrix.python-version }})
         uses: conda-incubator/setup-miniconda@v3
         with:
           miniforge-version: latest
           environment-file: environment.yaml
           activate-environment: epmt
-          python-version: "3.9"
+          python-version: ${{ matrix.python-version }}
           auto-activate-base: false
 
       - name: Show installed packages
