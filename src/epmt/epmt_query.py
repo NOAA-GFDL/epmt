@@ -1099,8 +1099,6 @@ def get_refmodels(name=None, tag={}, fltr=None, limit=0, order=None, before=None
     # we assume the user wants the output in the form of a list of dicts
     return out_list
 
-
-
 # This function computes a dict such as:
 # for univariate classifiers:
 #
