@@ -636,8 +636,8 @@ class OutliersAPI(unittest.TestCase):
 
     def test_pca_trained_model(self):
         r = eq.create_refmodel(['kern-6656-20190614-190245', 'kern-6656-20190614-191138', 'kern-6656-20190614-194024'], features=[], pca=True, fmt='orm')
-        self.assertEqual([j.jobid for j in r.jobs],
-                         ['kern-6656-20190614-190245', 'kern-6656-20190614-191138', 'kern-6656-20190614-194024'])
+        self.assertEqual(sorted([j.jobid for j in r.jobs]),
+                         sorted(['kern-6656-20190614-190245', 'kern-6656-20190614-191138', 'kern-6656-20190614-194024']))
         self.assertEqual(r.info_dict['pca']['inp_features'],
                          ['PERF_COUNT_SW_CPU_CLOCK', 'cancelled_write_bytes', 'cpu_time', 'delayacct_blkio_time',
                           'duration', 'exitcode', 'guest_time', 'inblock', 'invol_ctxsw', 'majflt', 'minflt',

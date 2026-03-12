@@ -9,7 +9,7 @@ import pytest
 from conftest import run_cmd, epmt_setting
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture(autouse=True, scope="class")
 def setup_and_teardown():
     """Setup and teardown matching the original bats setup()/teardown()."""
     jobs_in_module = "12340"
