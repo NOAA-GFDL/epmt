@@ -1351,7 +1351,7 @@ enabled: boolean, optional
         info_dict['pca'] = {'inp_features': orig_features, 'out_features': pca_features}
 
     # now save the ref model
-    save_refmodel(ReferenceModel, jobs=jobs, computed=computed, info_dict = info_dict, enabled=enabled, name=name, tags=tag, op_tags=op_tags)
+    save_refmodel(ReferenceModel, jobs=jobs, computed=computed, info_dict = info_dict, enabled=enabled, name=name, tags=tag, op_tags=op_tags, fmt=fmt)
 '''
     r = orm_create(ReferenceModel, jobs=jobs, name=name, tags=tag, op_tags=op_tags, computed=computed, info_dict = info_dict, enabled=enabled)
     orm_commit()
@@ -1364,8 +1364,8 @@ enabled: boolean, optional
 '''
 # returns the number of models deleted.
 #jobs, computed, infodict, and emabled can all be retrieved from the ReferenceModel object
-def save_refmodel(ReferenceModel, jobs, computed, info_dict, enabled, name=None, tags={}, op_tags=[]):
-    r = orm_create(ReferenceModel, jobs=jobs, computed=computed, info_dict = info_dict, enabled=enabled, name=name, tags=tags, op_tags=op_tags)
+def save_refmodel(ReferenceModel, jobs, computed, info_dict, enabled, name=None, tags={}, op_tags=[], fmt='dict'):
+    r = orm_create(ReferenceModel, jobs=jobs, computed=computed, info_dict = info_dict, enabled=enabled, name=name, tags=tags, op_tags=op_tags, fmt=fmt)
     orm_commit()
     if fmt == 'orm':
         return r
