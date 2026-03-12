@@ -298,8 +298,8 @@ jobs:
           COVERAGE_FILE: .coverage.integration_basic
           COVERAGE_PROCESS_START: coveragerc
 
-      - name: integration, escape (GUARDED)
-        continue-on-error: true
+      - name: integration, escape (GUARDED if postgres)
+        continue-on-error: ${{ matrix.db_backend == 'postgres' }}
         run: |
           TZ=UTC pytest -x -vv src/epmt/test/integration/test_integration_escape.py
         env:
