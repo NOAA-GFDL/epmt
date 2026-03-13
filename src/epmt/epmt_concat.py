@@ -38,7 +38,7 @@ class InvalidFileFormat(RuntimeError):
 
 def rename_bad_files(outfile, errdir, badfiles):
     '''
-    outfile is argument to csv joiner
+    outfile is argument to csvjoiner
     errdir is place for output
     badfiles is possibly empty list of files that errored in parsing
     '''

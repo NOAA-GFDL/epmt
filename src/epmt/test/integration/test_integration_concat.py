@@ -6,7 +6,7 @@ import os
 import shutil
 import pytest
 
-from conftest import run_cmd
+from conftest import run_cmd, resource_path
 
 
 @pytest.fixture(autouse=True)
@@ -28,17 +28,19 @@ class TestConcat:
         assert r.returncode == 0
         assert "Concatenate CSV files" in r.stdout
 
-    def test_epmt_concat_with_valid_input_dir(self):
+    def test_epmt_concat_with_valid_input_dir(self, resource_path):
         """epmt concat with a directory of CSV files."""
-        r = run_cmd("epmt concat test/data/csv/")
+        concat_target = f'{resource_path}/test/data/csv/'
+        r = run_cmd(f"epmt concat {concat_target}")
         assert r.returncode == 0
         assert os.path.isfile("pp053-collated-papiex-csv-0.csv")
         checksum = run_cmd("sum pp053-collated-papiex-csv-0.csv")
         assert "13120" in checksum.stdout
 
-    def test_epmt_concat_with_valid_input_files(self):
+    def test_epmt_concat_with_valid_input_files(self, resource_path):
         """epmt concat with explicit CSV file arguments."""
-        r = run_cmd("epmt concat test/data/csv/*.csv")
+        concat_target = f'{resource_path}/test/data/csv/*.csv'
+        r = run_cmd(f"epmt concat {concat_target}")
         assert r.returncode == 0
         assert os.path.isfile("pp053-collated-papiex-csv-0.csv")
         checksum = run_cmd("sum pp053-collated-papiex-csv-0.csv")
@@ -56,12 +58,13 @@ class TestConcat:
         assert r.returncode != 0
         assert "does not exist or is not a file" in r.stdout + r.stderr
 
-    def test_epmt_concat_with_corrupted_csv(self):
+    def test_epmt_concat_with_corrupted_csv(self, resource_path):
         """epmt concat with corrupted CSV should fail with error message."""
-        r = run_cmd("epmt concat -e test/data/corrupted_csv/")
+        concat_target = f'{resource_path}/test/data/corrupted_csv/'
+        r = run_cmd(f"epmt concat -e {concat_target}")
         assert r.returncode != 0
         output = r.stdout + r.stderr
         assert (
-            "File: test/data/corrupted_csv/pp053-papiex-615503-0.csv, Header: 40 delimiters, but this row has 39 delimiters"
+            f"File: {resource_path}/test/data/corrupted_csv/pp053-papiex-615503-0.csv, Header: 40 delimiters, but this row has 39 delimiters"
             in output
         )

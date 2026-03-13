@@ -1783,11 +1783,12 @@ def epmt_entrypoint(args):
 
     if args.command == 'concat':
         from epmt.epmt_concat import csvjoiner
-        return csvjoiner(debug=args.verbose,
-                         indir=(args.files[0] if len(args.files) == 1 else args.files),
-                         outfile=args.output_file,
-                         keep_going=not args.error,
-                         errdir=args.error_dir)
+        csvjoin_result=csvjoiner(debug=args.verbose,
+                                  indir=(args.files[0] if len(args.files) == 1 else args.files),
+                                  outfile=args.output_file,
+                                  keep_going=not args.error,
+                                  errdir=args.error_dir)
+        return not csvjoin_result[0]
 
     if args.command == 'check':
         # fake a job id so that epmt_check doesn't fail because of a missing job id
