@@ -43,22 +43,20 @@ def is_daemon_running(pidf=PID_FILE):
     """
     from epmt.epmtlib import check_pid
 
-    current_logger = logging.getLogger(is_daemon_running.__name__)
-    current_logger.debug("Looking for file %s to fetch daemon pid", pidf)
+    logger.debug("Looking for file %s to fetch daemon pid", pidf)
     try:
         with open(pidf, 'r', encoding='utf-8') as f:
             pid = f.read().strip()
-        current_logger.debug(f'Found daemon lockfile with PID({pid})')
+        logger.debug(f'Found daemon lockfile with PID({pid})')
     except Exception as e:
-        current_logger.debug(str(e))
+        logger.debug(str(e))
         return False, -1
     if int(pid) < 0:
-        current_logger.error('PID %d for daemon is less than 0, this cant be true', int(pid))
+        logger.error('PID %d for daemon is less than 0, this cant be true', int(pid))
         return False, -1
     stat, msg = check_pid(int(pid))
     if not stat:
-        #current_logger.warning("PID %d for daemon doesn't seem alive: %s",int(pid),msg)
-        current_logger.error("You should check PID %d and consider removing the stale lock file %s.",
+        logger.error("You should check PID %d and consider removing the stale lock file %s.",
                             int(pid), pidf)
         return False, -1
     return True, int(pid)
@@ -68,10 +66,9 @@ def start_daemon(foreground=False, pidf=PID_FILE, **daemon_args):
     """
     Start the daemon process.
     """
-    current_logger = logging.getLogger(start_daemon.__name__)
     stat, pid = is_daemon_running(pidf)
     if stat:
-        current_logger.error(
+        logger.error(
             'Daemon may be still running at pid %d. If not, please remove the lock file %s and try again',
             pid, pidf)
         return -1
@@ -118,7 +115,6 @@ def stop_daemon(pidf=PID_FILE):
     """
     Stop the daemon process.
     """
-    logger = logging.getLogger(stop_daemon.__name__)
     stat, pid = is_daemon_running(pidf)
     if stat:
         logger.info('Sending SIGUSR1 signal to EPMT daemon PID {0}'.format(pid))
@@ -147,7 +143,6 @@ def print_daemon_status(pidf=PID_FILE):
     """
     Print status of daemon.
     """
-    current_logger = logging.getLogger(print_daemon_status.__name__)
     stat, pid = is_daemon_running(pidf)
     if not stat:
         print('EPMT daemon not running, start with "epmt daemon --start"')
@@ -197,7 +192,6 @@ def daemon_loop(context, maxiters=0, post_process=True, analyze=True, retire=Fal
     global sig_count
     sig_count = 0
 
-    logger = logging.getLogger(daemon_loop.__name__)
     logger.debug(
         '(context=%s,maxiters=%d,post_process=%s,analyze=%s,retire=%s,ingest=%s,recursive=%s,keep=%s,moveaway=%s,verbose=%d)',
         type(context),
