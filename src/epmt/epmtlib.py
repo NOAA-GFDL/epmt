@@ -39,7 +39,13 @@ def get_username():
 
 def epmt_logging_init(intlvl=0, check=False, log_pid=False):
     '''
-    if check is set, then we will bail if logging has already been initialized
+    Configure logging for the ``epmt`` package.
+
+    Handlers are attached to the ``epmt`` package logger (not the root
+    logger) so that third-party libraries are unaffected.
+
+    If *check* is set, then we will bail if logging has already been
+    initialized.
     '''
     import logging
     import epmt.epmt_settings as settings
@@ -61,43 +67,36 @@ def epmt_logging_init(intlvl=0, check=False, log_pid=False):
     else:  # intlvl >= 2:
         level = DEBUG  # 10
 
-    # Set level and remove all existing handlers
-    # rootLogger = getLogger(__name__) # thank you! @ ericzhou13
-    rootLogger = getLogger()
-    rootLogger.debug("epmt_logging_init(%d,%s,%s): %d handlers", intlvl, check, log_pid, len(rootLogger.handlers))
-    for handler in rootLogger.handlers:
-        rootLogger.removeHandler(handler)
-    rootLogger.setLevel(level)
+    # Configure the 'epmt' package logger instead of the root logger.
+    # All epmt.* module loggers inherit from this logger, and third-party
+    # loggers (matplotlib, numba, parso, etc.) are no longer affected.
+    epmt_logger = getLogger('epmt')
+    epmt_logger.debug("epmt_logging_init(%d,%s,%s): %d handlers", intlvl, check, log_pid, len(epmt_logger.handlers))
+    for handler in epmt_logger.handlers[:]:
+        epmt_logger.removeHandler(handler)
+    epmt_logger.setLevel(level)
+    # Prevent log messages from propagating to the root logger, which
+    # would cause duplicate output if the root has its own handlers.
+    epmt_logger.propagate = False
 
     # only log to file if stdout is not a tty
     from sys import stdout
     if not stdout.isatty():
-        # basicConfig(filename='epmt.log', filemode='a', level=level)
         logFormatter = logging.Formatter("[%(asctime)-19.19s, %(process)6d] %(levelname)-7.7s %(name)s:%(message)s")
         fileHandler = logging.FileHandler(settings.logfile)
         fileHandler.setFormatter(logFormatter)
         fileHandler.setLevel(level)
-        rootLogger.debug("epmt_logging_init(): not_a_tty: adding handler for settings.logfile=%s", settings.logfile)
-        rootLogger.addHandler(fileHandler)
+        epmt_logger.debug("epmt_logging_init(): not_a_tty: adding handler for settings.logfile=%s", settings.logfile)
+        epmt_logger.addHandler(fileHandler)
 
     consoleHandler = logging.StreamHandler()
     consoleFormatter = logging.Formatter(
         "[%(asctime)-19.19s, %(process)d] %(levelname)7.7s: %(name)s: %(message)s" if log_pid else "%(asctime)-19.19s %(levelname)7.7s: %(name)s: %(message)s")
     consoleHandler.setFormatter(consoleFormatter)
-    rootLogger.addHandler(consoleHandler)
+    epmt_logger.addHandler(consoleHandler)
 
-    # matplotlib generates a ton of debug messages
-    mpl_logger = logging.getLogger('matplotlib')
-    mpl_logger.setLevel(logging.WARNING)
-
-    # numba.byteflow generates a ton of debug messages
-    numba_logger = logging.getLogger('numba')
-    numba_logger.setLevel(logging.WARNING)
-
-    # ipython's parso logger has too many debug messages
-    parso_logger = logging.getLogger('parso')
-    parso_logger.setLevel(logging.WARNING)
-
+    # Alembic's logger lives outside the epmt hierarchy, so we still
+    # need to set its level explicitly.
     alembic_logger = logging.getLogger('alembic')
     alembic_logger.setLevel(level)
 
@@ -108,8 +107,6 @@ def epmt_logging_init(intlvl=0, check=False, log_pid=False):
     # to show the sqlalchemy's INFO level messages (but instead
     # a level higher).
     sqlalchemy_logger = logging.getLogger('sqlalchemy')
-    #sqlalchemy_logger.setLevel(level + 10)
-    #sqlalchemy_logger.setLevel(level + 20)
     sqlalchemy_logger.setLevel(level + 30)
 
 
@@ -118,7 +115,7 @@ def init_settings(settings):
         return
     init_settings.initialized = True
 
-    logger = getLogger('init_settings')
+    logger = getLogger(__name__)
     err_msg = ""
 
     if environ.get("PAPIEX_OUTPUT"):

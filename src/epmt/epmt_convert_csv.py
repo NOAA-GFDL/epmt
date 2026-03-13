@@ -109,7 +109,7 @@ def conv_csv_for_dbcopy(infile, outfile='', jobid='', input_fields=INPUT_CSV_FIE
     `convert_csv_in_tar` on a staged .tgz file.
     '''
 
-    logger = getLogger(__name__)  # you can use other name
+    logger = getLogger(__name__)
     outfile = outfile or infile   # empty outfile => overwrite infile
 
     if infile == outfile:
@@ -380,6 +380,6 @@ def extract_jobid_from_collated_csv(collated_csv):
 
 if __name__ == "__main__":
     import sys
-    logger = getLogger("epmt_convert_csv")
+    logger = getLogger(__name__)
     epmt_logging_init(intlvl=2)
     convert_csv_in_tar(sys.argv[1], sys.argv[2] if len(sys.argv) > 2 else '')
