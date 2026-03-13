@@ -1371,8 +1371,7 @@ def ETL_job_dict(raw_metadata, filedict, settings, tarfile=None):
                     _copy_ok = True
                 except Exception as e:
                     msg = 'copy_expert to processes_staging {}'.format(str(e))
-                    logger.warning(msg)
-                    logger.warning('Falling back to standard processing for file %s', f)
+                    logger.warning('%s; falling back to standard processing for file %s', msg, f)
                     conn.rollback()
 
                 if conn:
