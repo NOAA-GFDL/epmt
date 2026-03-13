@@ -301,6 +301,33 @@ def main():
         default = False, action = 'store_true',
         help = 'postprocess jobs in the DB that are unprocessed (i.e. not associated with entries in processes table)')
 
+    # Concat PARSER
+    concat_parser = subparser.add_parser(
+        'concat',
+        help='concatenate CSV files',
+        description="Concatenate CSV files. It returns 0 on success and < 0 on error")
+    concat_parser.add_argument(
+        'files', nargs='+', metavar='FILE',
+        help='Two or more CSV files to concatenate OR a directory containing CSV files')
+    concat_parser.add_argument(
+        '-v', '--verbose',
+        action="count",
+        default=0,
+        help="increase verbosity")
+    concat_parser.add_argument(
+        '-o', '--output-file',
+        help="Name of the output file, determined from input if not specified",
+        default='')
+    concat_parser.add_argument(
+        '-e', '--error',
+        action='store_true',
+        help="Exit at the first sign of trouble",
+        default=False)
+    concat_parser.add_argument(
+        '-E', '--error-dir',
+        help="Name of the directory to save files with errors, disabled if not specified",
+        default='')
+
     # Retire PARSER
     retire_parser = subparser.add_parser(
         'retire', help="Delete jobs/models, retention policy in settings.py")

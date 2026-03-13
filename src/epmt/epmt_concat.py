@@ -387,6 +387,7 @@ def csvjoiner(indir,
 
 
 if __name__ == '__main__':
+    # inl: remove this entry point?
     from argparse import ArgumentParser
     parser = ArgumentParser(description="Concatenate CSV files. It returns 0 on success and < 0 on error")
     parser.add_argument(
