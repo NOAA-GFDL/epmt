@@ -15,7 +15,12 @@ readme          = "README.md"
 # 3.12 requires upgrading pandas (1.5→2.x) and SQLAlchemy (1.4→2.x)
 # which dropped distutils; tracked in issue #105.
 requires-python = ">=3.9,<3.12"
-classifiers     = [ "Programming Language :: Python :: 3", ]
+classifiers     = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+]
 # Runtime dependencies: only packages directly imported by epmt at runtime.
 # Transitive dependencies (e.g. Jinja2, Werkzeug, joblib) are resolved
 # automatically by pip and should NOT be listed here.

@@ -26,17 +26,17 @@ channels:
 
 requirements:
   build:
-    # 3.9 supported; 3.10/3.11 in near-future will be supported (isse #152); 3.12+ needs pandas 2.x,SQLAlchemy 2.x (issues #148, #147)
-    - python>=3.9,<3.10
+    # 3.9/3.10/3.11 supported (issue #145); 3.12+ needs pandas 2.x, SQLAlchemy 2.x (issue #105)
+    - python>=3.9,<3.12
     - pip
     - setuptools>=61,<69
     - wheel>=0.29.0
   host:
-    - python>=3.9,<3.10
+    - python>=3.9,<3.12
     - pip
     - setuptools>=61,<69
   run:
-    - python>=3.9,<3.10
+    - python>=3.9,<3.12
     - sqlite>=3.49
     - conda-forge::alembic
     - conda-forge::flask
