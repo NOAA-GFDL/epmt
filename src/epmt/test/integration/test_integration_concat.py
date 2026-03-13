@@ -21,57 +21,44 @@ def setup_and_teardown():
             os.remove(f)
 
 
-def _skip_if_no_epmt_concat():
-    """Skip test if epmt_concat.py is not on PATH."""
-    r = run_cmd("which epmt_concat.py")
-    if r.returncode != 0:
-        pytest.skip("epmt_concat.py not found on PATH")
-
-
 class TestConcat:
     def test_epmt_concat_help(self):
-        """epmt_concat.py -h prints help."""
-        _skip_if_no_epmt_concat()
-        r = run_cmd("epmt_concat.py -h")
+        """epmt concat -h prints help."""
+        r = run_cmd("epmt concat -h")
         assert r.returncode == 0
         assert "Concatenate CSV files" in r.stdout
 
     def test_epmt_concat_with_valid_input_dir(self):
-        """epmt_concat.py with a directory of CSV files."""
-        _skip_if_no_epmt_concat()
-        r = run_cmd("epmt_concat.py test/data/csv/")
+        """epmt concat with a directory of CSV files."""
+        r = run_cmd("epmt concat test/data/csv/")
         assert r.returncode == 0
         assert os.path.isfile("pp053-collated-papiex-csv-0.csv")
         checksum = run_cmd("sum pp053-collated-papiex-csv-0.csv")
         assert "13120" in checksum.stdout
 
     def test_epmt_concat_with_valid_input_files(self):
-        """epmt_concat.py with explicit CSV file arguments."""
-        _skip_if_no_epmt_concat()
-        r = run_cmd("epmt_concat.py test/data/csv/*.csv")
+        """epmt concat with explicit CSV file arguments."""
+        r = run_cmd("epmt concat test/data/csv/*.csv")
         assert r.returncode == 0
         assert os.path.isfile("pp053-collated-papiex-csv-0.csv")
         checksum = run_cmd("sum pp053-collated-papiex-csv-0.csv")
         assert "13120" in checksum.stdout
 
     def test_epmt_concat_with_nonexistent_directory(self):
-        """epmt_concat.py with non-existent directory should fail."""
-        _skip_if_no_epmt_concat()
-        r = run_cmd("epmt_concat.py x/")
+        """epmt concat with non-existent directory should fail."""
+        r = run_cmd("epmt concat x/")
         assert r.returncode != 0
         assert "x/ does not exist or is not a directory" in r.stdout + r.stderr
 
     def test_epmt_concat_with_nonexistent_files(self):
-        """epmt_concat.py with non-existent files should fail."""
-        _skip_if_no_epmt_concat()
-        r = run_cmd("epmt_concat.py x.csv y.csv")
+        """epmt concat with non-existent files should fail."""
+        r = run_cmd("epmt concat x.csv y.csv")
         assert r.returncode != 0
         assert "does not exist or is not a file" in r.stdout + r.stderr
 
     def test_epmt_concat_with_corrupted_csv(self):
-        """epmt_concat.py with corrupted CSV should fail with error message."""
-        _skip_if_no_epmt_concat()
-        r = run_cmd("epmt_concat.py -e test/data/corrupted_csv/")
+        """epmt concat with corrupted CSV should fail with error message."""
+        r = run_cmd("epmt concat -e test/data/corrupted_csv/")
         assert r.returncode != 0
         output = r.stdout + r.stderr
         assert (
