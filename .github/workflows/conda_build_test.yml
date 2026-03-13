@@ -226,16 +226,22 @@ jobs:
           if-no-files-found: error
 
       # ---------------------------------------------------------------------------
-      # Push to main: enable auto-upload and publish to the noaa-gfdl channel.
-      # ANACONDA_TOKEN is an org-level secret associated with the noaa-gfdl
-      # anaconda.org account. conda-build picks it up via ANACONDA_API_TOKEN.
+      # Push to main: build the package, then explicitly upload to the noaa-gfdl
+      # anaconda.org channel.  We do NOT use conda-build's auto-upload
+      # (anaconda_upload yes) because it swallows upload errors — conda build
+      # exits 0 as long as the *build* succeeds, even when the upload fails.
+      # An explicit `anaconda upload` command will fail loudly if anything goes
+      # wrong, giving us a clear red CI signal.
       # ---------------------------------------------------------------------------
-      - name: Enable anaconda auto-upload
+      - name: Build epmt conda package
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: conda config --set anaconda_upload yes
+        run: conda build .
 
-      - name: Build and publish epmt conda package to noaa-gfdl channel
+      - name: Publish epmt conda package to noaa-gfdl channel
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           ANACONDA_API_TOKEN: ${{ secrets.ANACONDA_TOKEN }}
-        run: conda build .
+        run: |
+          pkg=$(conda build --output .)
+          echo "Uploading package: $pkg"
+          anaconda upload --user noaa-gfdl "$pkg"
