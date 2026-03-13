@@ -41,7 +41,7 @@ jobs:
 
     env:
       # Build environment versions — must match Makefile and weekly_tarball_build.yml
-      PYTHON_VERSION: "3.9.22"
+      PYTHON_VERSION: "3.9.25"  # updated from 3.9.22 (issue #153: use latest 3.9.x)
       SQLITE_VERSION: "3490100"
       SQLITE_YEAR: "2025"
       # Tarball source identifiers — must match Makefile and weekly_tarball_build.yml
@@ -298,8 +298,8 @@ jobs:
           COVERAGE_FILE: .coverage.integration_basic
           COVERAGE_PROCESS_START: coveragerc
 
-      - name: integration, escape (GUARDED)
-        continue-on-error: true
+      - name: integration, escape (GUARDED if postgres)
+        continue-on-error: ${{ matrix.db_backend == 'postgres' }}
         run: |
           TZ=UTC pytest -x -vv src/epmt/test/integration/test_integration_escape.py
         env:

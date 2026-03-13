@@ -11,7 +11,10 @@ dynamic         = ["version"]
 authors         = [ { name = "Minimal Metrics, LLC", email = "some.where@over.there" } ]
 description     = "Experiment Performance Metrics Toolkit"
 readme          = "README.md"
-requires-python = "==3.9.22"
+# Widened from ==3.9.* — supports 3.9/3.10/3.11.
+# 3.12 requires upgrading pandas (1.5→2.x) and SQLAlchemy (1.4→2.x)
+# which dropped distutils; tracked in issue #105.
+requires-python = ">=3.9,<3.12"
 classifiers     = [ "Programming Language :: Python :: 3", ]
 # Runtime dependencies: only packages directly imported by epmt at runtime.
 # Transitive dependencies (e.g. Jinja2, Werkzeug, joblib) are resolved

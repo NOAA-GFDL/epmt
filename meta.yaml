@@ -1,0 +1,74 @@
+# NOTE: This conda package is under active development.
+#       Do not use this recipe for production releases without
+#       first pinning a stable GIT_DESCRIBE_TAG and running
+#       the full test suite.
+
+package:
+  name: epmt
+  # Version is read from the git tag at build time.
+  # When building locally without a tag, the version will be "develop".
+  version: '{{ environ.get("GIT_DESCRIBE_TAG", "develop") }}'
+
+source:
+  path: .
+
+build:
+  # NOTE: Under development — build recipe may change as packaging matures.
+  script:
+    # Install from the src/ subdirectory, where pyproject.toml lives.
+    - {{ PYTHON }} -m pip install src/ -vv
+  noarch: python
+  number: 0
+
+channels:
+  - conda-forge
+  - defaults
+
+requirements:
+  build:
+    # 3.9 supported; 3.10/3.11 in near-future will be supported (isse #152); 3.12+ needs pandas 2.x,SQLAlchemy 2.x (issues #148, #147)
+    - python>=3.9,<3.10
+    - pip
+    - setuptools>=61,<69
+    - wheel>=0.29.0
+  host:
+    - python>=3.9,<3.10
+    - pip
+    - setuptools>=61,<69
+  run:
+    - python>=3.9,<3.10
+    - sqlite>=3.49
+    - conda-forge::alembic
+    - conda-forge::flask
+    - conda-forge::kneed
+    - conda-forge::numpy==1.26.4
+    - conda-forge::pandas==1.5.3
+    - conda-forge::plotly
+    - conda-forge::psycopg2
+    - conda-forge::py-cpuinfo
+    - conda-forge::pyod
+    - conda-forge::python-daemon
+    - conda-forge::pytz
+    - conda-forge::scikit-learn
+    - conda-forge::scipy
+    - conda-forge::six
+    - conda-forge::sqlalchemy==1.4.54
+
+test:
+  requires:
+    - conda-forge::pytest
+    - conda-forge::pylint
+  imports:
+    - epmt
+  commands:
+    - epmt --help
+    # epmt check verifies papiex/SLURM/perf_event which are unavailable in the
+    # conda build sandbox; allow it to fail so the build is not blocked.
+    - epmt -vv check || echo "epmt check predictably failed (no papiex/SLURM in conda build env)"
+
+about:
+  home: https://github.com/NOAA-GFDL/epmt
+  license: MIT
+  license_file: LICENSE
+  summary: Experiment Performance Metrics Toolkit (under development)
+  # NOTE: Under development — metadata fields will be updated before first release.
