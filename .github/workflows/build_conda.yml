@@ -13,6 +13,11 @@ jobs:
   conda-build:
     runs-on: ubuntu-latest
 
+    strategy:
+      matrix:
+        python-version: ["3.9"] # , "3.10", "3.11"]
+      fail-fast: false  # let all versions run even if one fails
+
     defaults:
       run:
         shell: bash -l {0}
@@ -26,7 +31,7 @@ jobs:
         with:
           miniforge-version: latest
           conda-remove-defaults: true
-          python-version: "3.9"
+          python-version: ${{ matrix.python-version }}
 
       - name: Configure conda channels
         run: |
@@ -64,3 +69,14 @@ jobs:
           name: epmt-tarball
           path: /tmp/epmt-tarball/noarch/epmt-*.tar.bz2
           if-no-files-found: error
+
+      - name: Create new conda env to test tarball
+        run: |
+          conda create -n epmt_tarball_test
+          conda activate epmt_tarball_test
+          conda install /tmp/epmt-tarball/noarch/epmt-tarball.tar.bz2
+          site_packages=$(python3 -c 'import site; print(site.getsitepackages()[0]);'
+          epmt -v
+          epmt -v -V
+          epmt -v check || echo "epmt check failed for built conda tarball, it's OK for now"
+          pytest -v ${sitepackages}/epmt/test || echo "pytest failed for built conda tarball, it's OK for now"

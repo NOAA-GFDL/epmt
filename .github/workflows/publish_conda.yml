@@ -5,13 +5,18 @@ on:
     branches:
       - main
 
-  # TODO: remove pull_request trigger before merging — temporary for testing
-  pull_request:
-    branches:
+#  # DEBUG ONLY: remove pull_request trigger before merging — only use if-needed for debugging the upload only
+#  pull_request:
+#    branches:
 
 jobs:
   conda-publish:
     runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        python-version: ["3.9"] # , "3.10", "3.11"]
+      fail-fast: false  # let all versions run even if one fails
 
     defaults:
       run:
@@ -26,7 +31,7 @@ jobs:
         with:
           miniforge-version: latest
           conda-remove-defaults: true
-          python-version: "3.9"
+          python-version: ${{ matrix.python-version }}
 
       - name: Configure conda channels
         run: |
