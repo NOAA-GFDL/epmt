@@ -49,10 +49,9 @@ EPMT_INSTALL_PATH=/opt/minimalmetrics
 EPMT_INSTALL_PREFIX=$(EPMT_INSTALL_PATH)/epmt-$(EPMT_VERSION)/epmt-install
 
 # <root>/src/epmt/ui submodule details
-#EPMT_DASH_SRC_BRANCH=main
-EPMT_DASH_SRC_BRANCH=autopep8.poke
-EPMT_DASH_SRC_TARBALL=$(EPMT_DASH_SRC_BRANCH).tar.gz
-EPMT_DASH_SRC_URL=$(NOAAGFDL_SRC_URL_BASE)/epmt-dash/archive/$(EPMT_DASH_SRC_TARBALL)
+EPMT_DASH_SRC_BRANCH=main
+EPMT_DASH_SRC_TARBALL=epmt-dash-$(EPMT_DASH_SRC_BRANCH).tar.gz
+EPMT_DASH_SRC_URL=$(NOAAGFDL_SRC_URL_BASE)/epmt-dash/archive/$(EPMT_DASH_SRC_BRANCH).tar.gz
 EPMT_DASH_SRC=src/epmt/ui
 
 ## other details
@@ -258,7 +257,7 @@ $(EPMT_DASH_SRC): $(EPMT_DASH_SRC_TARBALL)
 $(EPMT_DASH_SRC_TARBALL):
 	@echo "(EPMT_DASH_SRC_TARBALL) whoami: $(shell whoami)"
 	echo "grabbing epmt-dash via curl" ; \
-	curl -L --fail --retry 3 --retry-delay 5 -O $(EPMT_DASH_SRC_URL) ; \
+	curl -L --fail --retry 3 --retry-delay 5 -o $(EPMT_DASH_SRC_TARBALL) $(EPMT_DASH_SRC_URL) ; \
 	ls $(EPMT_DASH_SRC_TARBALL) ; \
 # ----------- \end EPMT_DASH THINGS ---------- #
 
