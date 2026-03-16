@@ -97,6 +97,7 @@ jobs:
 
       - name: Smoke test(s)
         run: |
+          conda activate epmt-verify
           epmt --help
           epmt -V
           epmt -v check || echo "fails but we know this- see test_check step"
