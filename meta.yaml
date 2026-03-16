@@ -58,8 +58,6 @@ test:
   requires:
     - conda-forge::pytest
     - conda-forge::pylint
-  files:
-    - src/epmt/tests/**
   imports:
     - epmt
   commands:
@@ -68,30 +66,31 @@ test:
     - epmt -V
     - epmt -vv check || echo "epmt check predictably failed (no papiex/SLURM in conda build env)"
     - ls src/epmt/tests || echo "no test files found, it's OK for now"
-    - pytest -v src/epmt/test/test_anysh.py           || echo "unit test test_anysh.py           failed, ok for now"
-    - pytest -v src/epmt/test/test_check.py           || echo "unit test test_check.py           failed, ok for now"
-    - pytest -v src/epmt/test/test_cmds.py            || echo "unit test test_cmds.py            failed, ok for now"
-    - pytest -v src/epmt/test/test_db_migration.py    || echo "unit test test_db_migration.py    failed, ok for now"
-    - pytest -v src/epmt/test/test_db_schema.py       || echo "unit test test_db_schema.py       failed, ok for now"
-    - pytest -v src/epmt/test/test_explore.py         || echo "unit test test_explore.py         failed, ok for now"
-    - pytest -v src/epmt/test/test_lib.py             || echo "unit test test_lib.py             failed, ok for now"
-    - pytest -v src/epmt/test/test_outliers.py        || echo "unit test test_outliers.py        failed, ok for now"
-    - pytest -v src/epmt/test/test_query.py           || echo "unit test test_query.py           failed, ok for now"
-    - pytest -v src/epmt/test/test_run.py             || echo "unit test test_run.py             failed, ok for now"
-    - pytest -v src/epmt/test/test_settings.py        || echo "unit test test_settings.py        failed, ok for now"
-    - pytest -v src/epmt/test/test_shell.py           || echo "unit test test_shell.py           failed, ok for now"
-    - pytest -v src/epmt/test/test_stat.py            || echo "unit test test_stat.py            failed, ok for now"
-    - pytest -v src/epmt/test/test_submit.py          || echo "unit test test_submit.py          failed, ok for now"
-    - pytest -v src/epmt/test/integration/test_integration_annotate.py        || echo "integration test test_integration_annotate.py         failedm ok for now"
-    - pytest -v src/epmt/test/integration/test_integration_basic.py           || echo "integration test test_integration_basic.py            failedm ok for now"
-    - pytest -v src/epmt/test/integration/test_integration_collate_tsv.py     || echo "integration test test_integration_collate_tsv.py      failedm ok for now"
-    - pytest -v src/epmt/test/integration/test_integration_concat.py          || echo "integration test test_integration_concat.py           failedm ok for now"
-    - pytest -v src/epmt/test/integration/test_integration_daemon.py          || echo "integration test test_integration_daemon.py           failedm ok for now"
-    - pytest -v src/epmt/test/integration/test_integration_escape.py          || echo "integration test test_integration_escape.py           failedm ok for now"
-    - pytest -v src/epmt/test/integration/test_integration_explore.py         || echo "integration test test_integration_explore.py          failedm ok for now"
-    - pytest -v src/epmt/test/integration/test_integration_kernel_compile.py  || echo "integration test test_integration_kernel_compile.py   failedm ok for now"
-    - pytest -v src/epmt/test/integration/test_integration_shell.py           || echo "integration test test_integration_shell.py            failedm ok for now"
-    - pytest -v src/epmt/test/integration/test_integration_slurm.py           || echo "integration test test_integration_slurm.py            failedm ok for now"
+    - export site_pkgs=$(python3 -c 'import site; print(site.getsitepackages()[0]);')
+    - pytest -v ${site_pkgs}/src/epmt/test/test_anysh.py           || echo "unit test test_anysh.py           failed, ok for now"
+    - pytest -v ${site_pkgs}/src/epmt/test/test_check.py           || echo "unit test test_check.py           failed, ok for now"
+    - pytest -v ${site_pkgs}/src/epmt/test/test_cmds.py            || echo "unit test test_cmds.py            failed, ok for now"
+    - pytest -v ${site_pkgs}/src/epmt/test/test_db_migration.py    || echo "unit test test_db_migration.py    failed, ok for now"
+    - pytest -v ${site_pkgs}/src/epmt/test/test_db_schema.py       || echo "unit test test_db_schema.py       failed, ok for now"
+    - pytest -v ${site_pkgs}/src/epmt/test/test_explore.py         || echo "unit test test_explore.py         failed, ok for now"
+    - pytest -v ${site_pkgs}/src/epmt/test/test_lib.py             || echo "unit test test_lib.py             failed, ok for now"
+    - pytest -v ${site_pkgs}/src/epmt/test/test_outliers.py        || echo "unit test test_outliers.py        failed, ok for now"
+    - pytest -v ${site_pkgs}/src/epmt/test/test_query.py           || echo "unit test test_query.py           failed, ok for now"
+    - pytest -v ${site_pkgs}/src/epmt/test/test_run.py             || echo "unit test test_run.py             failed, ok for now"
+    - pytest -v ${site_pkgs}/src/epmt/test/test_settings.py        || echo "unit test test_settings.py        failed, ok for now"
+    - pytest -v ${site_pkgs}/src/epmt/test/test_shell.py           || echo "unit test test_shell.py           failed, ok for now"
+    - pytest -v ${site_pkgs}/src/epmt/test/test_stat.py            || echo "unit test test_stat.py            failed, ok for now"
+    - pytest -v ${site_pkgs}/src/epmt/test/test_submit.py          || echo "unit test test_submit.py          failed, ok for now"
+    - pytest -v ${site_pkgs}/src/epmt/test/integration/test_integration_annotate.py        || echo "integration test test_integration_annotate.py         failedm ok for now"
+    - pytest -v ${site_pkgs}/src/epmt/test/integration/test_integration_basic.py           || echo "integration test test_integration_basic.py            failedm ok for now"
+    - pytest -v ${site_pkgs}/src/epmt/test/integration/test_integration_collate_tsv.py     || echo "integration test test_integration_collate_tsv.py      failedm ok for now"
+    - pytest -v ${site_pkgs}/src/epmt/test/integration/test_integration_concat.py          || echo "integration test test_integration_concat.py           failedm ok for now"
+    - pytest -v ${site_pkgs}/src/epmt/test/integration/test_integration_daemon.py          || echo "integration test test_integration_daemon.py           failedm ok for now"
+    - pytest -v ${site_pkgs}/src/epmt/test/integration/test_integration_escape.py          || echo "integration test test_integration_escape.py           failedm ok for now"
+    - pytest -v ${site_pkgs}/src/epmt/test/integration/test_integration_explore.py         || echo "integration test test_integration_explore.py          failedm ok for now"
+    - pytest -v ${site_pkgs}/src/epmt/test/integration/test_integration_kernel_compile.py  || echo "integration test test_integration_kernel_compile.py   failedm ok for now"
+    - pytest -v ${site_pkgs}/src/epmt/test/integration/test_integration_shell.py           || echo "integration test test_integration_shell.py            failedm ok for now"
+    - pytest -v ${site_pkgs}/src/epmt/test/integration/test_integration_slurm.py           || echo "integration test test_integration_slurm.py            failedm ok for now"
 
 about:
   home: https://github.com/NOAA-GFDL/epmt
