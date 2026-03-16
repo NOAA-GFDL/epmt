@@ -1,30 +1,19 @@
-name: conda_build_test
+name: create_test_conda_env
 
 on:
   pull_request:
     branches:
-      - main
+
   push:
     branches:
       - main
 
-# Cancel in-flight runs for the same ref when a newer push arrives
+# cancel running jobs if theres a newer push
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-
-  # ---------------------------------------------------------------------------
-  # Job 1: Create the conda environment from environment.yaml (using Miniforge
-  #         so we only touch conda-forge packages — no Anaconda proprietary
-  #         packages, no Anaconda ToS concerns), install epmt via editable pip
-  #         install, run smoke tests, unit tests, and integration tests.
-  #
-  # Matrix: Python 3.9, 3.10, 3.11 (issue #145 — widening requires-python).
-  # 3.12 is excluded because pandas==1.5.3 and SQLAlchemy==1.4.54 both removed
-  # distutils support in 3.12; tracked in issue #105.
-  # ---------------------------------------------------------------------------
   conda-env-test:
     runs-on: ubuntu-latest
 
@@ -50,24 +39,33 @@ jobs:
         uses: conda-incubator/setup-miniconda@v3
         with:
           miniforge-version: latest
+          conda-remove-defaults: true
           environment-file: environment.yaml
           activate-environment: epmt
           python-version: ${{ matrix.python-version }}
-          auto-activate-base: false
 
       - name: Show installed packages
         run: |
+          echo "conda info is:"
           conda info
+
+          echo "printing installed packages"
           conda list
 
+          echo "printing conda config just in case"
+          conda config --show
+
+
       - name: Smoke test — epmt --help
-        run: epmt --help
+        run: |
+          epmt --help
 
       # epmt check verifies: DB params, install/output prefixes, stage command,
       # and papiex binary. All of these are expected to fail in a bare conda CI
       # environment (no DB, no SLURM, no papiex). This is not a packaging bug.
       - name: Smoke test — epmt -vv check (GUARDED)
-        run: epmt -vv check
+        run: |
+          epmt -vv check
         continue-on-error: true
 
       # -----------------------------------------------------------------------
@@ -155,89 +153,3 @@ jobs:
       # Skips when SLURM is not available (exit 0)
       - name: Integration test — test_integration_slurm
         run: TZ=UTC pytest -x -vv src/epmt/test/integration/test_integration_slurm.py
-
-  # ---------------------------------------------------------------------------
-  # Job 2: Build a conda package from meta.yaml.
-  #
-  #   • pull_request → build only; upload tarball as a workflow artifact so
-  #                    the package can be inspected without publishing.
-  #   • push to main → build AND publish to the noaa-gfdl anaconda channel
-  #                    using ANACONDA_TOKEN (org-level secret).
-  #
-  # Uses always() so this job proceeds even when conda-env-test has
-  # known-failing (GUARDED) steps.
-  # ---------------------------------------------------------------------------
-  conda-build:
-    runs-on: ubuntu-latest
-    needs: conda-env-test
-
-    if: always()
-
-    defaults:
-      run:
-        shell: bash -l {0}
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      # Use Miniforge here too — conda-forge only, no Anaconda proprietary packages.
-      - name: Set up base Miniforge
-        uses: conda-incubator/setup-miniconda@v3
-        with:
-          miniforge-version: latest
-          auto-activate-base: true
-          python-version: "3.9"
-
-      - name: Configure conda channels
-        run: |
-          echo "Miniforge already uses conda-forge as sole default channel"
-          conda config --set channel_priority strict
-          conda config --set anaconda_upload no
-          conda config --show
-
-      - name: Install conda-build
-        run: conda install -y conda-forge::conda-build
-
-      # anaconda-client is only needed when publishing (push to main)
-      - name: Install anaconda-client
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: conda install -y conda-forge::anaconda-client
-
-      # ---------------------------------------------------------------------------
-      # PR: build to a local folder so the tarball can be uploaded as an artifact
-      # ---------------------------------------------------------------------------
-      - name: Build epmt conda package (PR — artifact only)
-        if: github.event_name == 'pull_request'
-        run: |
-          mkdir -p /tmp/epmt-tarball
-          conda build --package-format tar.bz2 --output-folder /tmp/epmt-tarball .
-
-      - name: Upload epmt tarball as artifact
-        if: github.event_name == 'pull_request'
-        uses: actions/upload-artifact@v4
-        with:
-          name: epmt-tarball
-          path: /tmp/epmt-tarball/noarch/epmt-*.tar.bz2
-          if-no-files-found: error
-
-      # ---------------------------------------------------------------------------
-      # Push to main: build the package, then explicitly upload to the noaa-gfdl
-      # anaconda.org channel.  We do NOT use conda-build's auto-upload
-      # (anaconda_upload yes) because it swallows upload errors — conda build
-      # exits 0 as long as the *build* succeeds, even when the upload fails.
-      # An explicit `anaconda upload` command will fail loudly if anything goes
-      # wrong, giving us a clear red CI signal.
-      # ---------------------------------------------------------------------------
-      - name: Build epmt conda package
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: conda build .
-
-      - name: Publish epmt conda package to noaa-gfdl channel
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        env:
-          ANACONDA_API_TOKEN: ${{ secrets.ANACONDA_TOKEN }}
-        run: |
-          pkg=$(conda build --output .)
-          echo "Uploading package: $pkg"
-          anaconda upload --user noaa-gfdl "$pkg"
