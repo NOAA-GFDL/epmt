@@ -29,12 +29,29 @@ jobs:
 
       - name: Configure conda channels
         run: |
+          echo "removing conda default channels, appending open-source ones"
+          conda config --append channels conda-forge
+          conda config --append channels noaa-gfdl
+
+          echo "setting strict channel priority"
           conda config --set channel_priority strict
+
+          echo "setting anaconda_upload to yes"
           conda config --set anaconda_upload no
+
+          echo "printing conda config just in case"
           conda config --show
 
+      - name: Update Conda and Conda Package Indices
+        run: |
+          echo "updating conda and package channel indices for conda-forge, noaa-gfdl"
+          conda update -y conda
+          conda update -y --all --override-channels -c conda-forge
+          conda update -y --all --override-channels -c noaa-gfdl
+
       - name: Install conda-build
-        run: conda install -y conda-forge::conda-build
+        run: |
+          conda install -y conda-forge::conda-build
 
       - name: Build epmt conda package
         run: |
