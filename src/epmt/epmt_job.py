@@ -77,7 +77,6 @@ created_hosts = {}
 
 
 def lookup_or_create_host(hostname):
-    logger = getLogger(__name__)  # you can use other name
     host = created_hosts.get(hostname)
     if host:
         # sometimes we may have cached a host entry that's been invalidated
@@ -119,7 +118,6 @@ def lookup_or_create_host_safe(hostname):
 
 
 def lookup_or_create_user(username):
-    logger = getLogger(__name__)
     user = orm_get_or_create(User, name=username)
     logger.debug('orm_get_or_create output for user is %s',user)
     # user = orm_get(User, username)
@@ -243,7 +241,6 @@ def load_process_from_dictlist(proc, host, j, u, settings, profile):
     process such as 'exename', 'args', etc. The other threads may not have process fields set.
     '''
     from pandas import Timestamp
-    logger = getLogger(__name__)
 
     hostname = proc[0].get('hostname', '')
     if hostname:
@@ -497,7 +494,6 @@ def _disambiguate_parent(entries, proc):
 
 
 def _create_process_tree(pid_map):
-    logger = getLogger(__name__)
     logger.info("  creating process tree..")
     for (_, procs) in pid_map.items(): # _ is pid
 
@@ -618,7 +614,6 @@ def post_process_job( j,
     _create_process_tree to create process tree. The function is tolerant to missing datastructures for all_tags,
     all_procs and pid_map. If any of them are missing, it will Build them by using the data in the database/ORM.
     '''
-    logger = getLogger(__name__)  # you can use other name
     if isinstance(j, str):
         jobid = j
         j = Job[jobid]
@@ -888,7 +883,6 @@ def populate_process_table_from_staging(j):
     '''
     import datetime as dt
     import psycopg2
-    logger = getLogger(__name__)  # you can use other name
     jobid = j.jobid
     job_info_dict = j.info_dict
     logger.info('  moving job {} processes from staging -> process table..'.format(jobid))
@@ -1084,7 +1078,6 @@ def populate_process_table_from_staging(j):
 
 @db_session
 def ETL_job_dict(raw_metadata, filedict, settings, tarfile=None):
-    logger = getLogger(__name__)  # you can use other name
     job_init_start_time = time.time()
     # Synthesize what we need
     # it's safe and fast to call the check_fix_metadata

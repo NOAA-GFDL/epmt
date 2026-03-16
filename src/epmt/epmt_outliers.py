@@ -27,7 +27,7 @@ from epmt.epmt_stat import ( thresholds, rca, get_classifier_name,
                              partition_classifiers_uv_mv, mvod_scores_using_model,
                              uvod_classifiers, modified_z_score )
 
-logger = getLogger(__name__)  # you can use other name
+logger = getLogger(__name__)
 
 FEATURES = settings.outlier_features
 

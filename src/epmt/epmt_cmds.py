@@ -1711,8 +1711,6 @@ def epmt_entrypoint(args):
                       check=True,
                       log_pid=(hasattr(args, 'num_cpus') and (args.num_cpus > 1)))
 
-    # initialize logger ... inl: after epmt_logging_init? shouldnt that one function call do it?
-    logger = getLogger(__name__)
     init_settings(settings)
 
     # Here it's up to each command to validate what it is looking for
