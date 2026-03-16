@@ -20,7 +20,7 @@ from numbers import Number
 import epmt.epmt_settings as settings
 from epmt.epmtlib import logfn
 
-logger = getLogger(__name__)  # you can use other name
+logger = getLogger(__name__)
 
 # this sets the defaults to be used when a trained model is not provided
 thresholds = settings.outlier_thresholds
@@ -107,7 +107,6 @@ def z_score(ys, params=()):
     # issue by using np.nan_to_num
     import warnings
     warnings.filterwarnings("ignore", category=RuntimeWarning)
-    logger = getLogger(__name__)  # you can use other name
     logger.debug('scoring using {}'.format('z_score'))
     ys = np.array(ys)
     if params:
@@ -171,7 +170,6 @@ def iqr(ys, params=()):
     >>> outliers
         array([0, 0, 0, 0, 0, 0, 1])
     '''
-    logger = getLogger(__name__)  # you can use other name
     logger.debug('scoring using {}'.format('iqr'))
     ys = np.array(ys)
     span = [25, 75]
@@ -209,7 +207,6 @@ def modified_z_score(ys, params=()):
     params if passed in, is of the form (max, median, median_abs_dev)
     We will ignore params(0) as that's the max z_score in the ref_model
     '''
-    logger = getLogger(__name__)  # you can use other name
     logger.debug('scoring using {}'.format('modified_z_score'))
     median_y = params[1] if params else np.median(ys)
     if params:
@@ -274,7 +271,6 @@ def outliers_uv(ys, methods=[outliers_iqr, outliers_z_score, outliers_modified_z
              value. So, use the outliers_* wrappers instead of methods
              such as iqr, z_score, modified_z_score
     '''
-    logger = getLogger(__name__)  # you can use other name
     ys = np.array(ys)
     logger.debug('input vector: {}'.format(ys))
     out_vec = np.zeros_like(ys)
@@ -313,7 +309,6 @@ def mvod_classifiers(contamination=0.1, warnopts='ignore'):
     if warnopts:
         from warnings import simplefilter
         simplefilter(warnopts)
-    logger = getLogger(__name__)  # you can use other name
 
     from pyod.models.abod import ABOD
     from pyod.models.knn import KNN
@@ -389,7 +384,6 @@ def mvod_scores(X=None, classifiers=[], warnopts='ignore'):
         # simplefilter(action='ignore', category=FutureWarning)
         simplefilter(warnopts)
 
-    logger = getLogger(__name__)  # you can use other name
 
     # the contamination below, is *ONLY* used in the model
     # for preditiction of outliers and used for random data
@@ -516,7 +510,6 @@ def mvod_scores_using_model(inp, model_inp, classifier, threshold=None):
              row score is higher than the given threshold
              and 0 if its lower.
     """
-    logger = getLogger(__name__)  # you can use other name
     inp_nrows = inp.shape[0]
     logger.debug('--- input to classify ---')
     logger.debug(inp)
@@ -691,7 +684,6 @@ def pca_stat(inp_features, desired=2):
     from sklearn.preprocessing import StandardScaler
     from sklearn.decomposition import PCA
 
-    logger = getLogger(__name__)  # you can use other name
     logger.debug('input feature array shape: {}'.format(inp_features.shape))
     if np.isnan(inp_features).any():
         raise ValueError('input contains at-least one non-numeric (nan) element')

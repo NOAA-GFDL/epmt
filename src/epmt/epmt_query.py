@@ -2850,7 +2850,6 @@ def procs_histogram(jobs, attr='exename', metric=''):
      ...
     }
     '''
-    logger = getLogger(__name__)
     procs_hist = {}
     procs = get_procs(jobs, fmt='orm')
     logger.debug('{} processes found'.format(procs.count()))
@@ -2978,7 +2977,6 @@ added_fetaures: list of strings
     8  {'mv': 118, 'perl': 101, 'globus-url-copy': 76...  [TAVG.exe, arch, basename, bash, cat, chmod, c...
 
     '''
-    logger = getLogger(__name__)
     out_df = jobs_df.copy()
     keys = list(jobs_df[key].values)
     added_features = []

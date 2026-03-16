@@ -21,6 +21,8 @@ import tarfile
 from glob import glob
 import atexit
 
+logger = getLogger(__name__)
+
 # While it may seem like a good idea to put these constants in a
 # settings file, it probably isn't because these are not user-tweakable
 # settings, and modifying them can have unexpected ramifications
@@ -109,7 +111,6 @@ def conv_csv_for_dbcopy(infile, outfile='', jobid='', input_fields=INPUT_CSV_FIE
     `convert_csv_in_tar` on a staged .tgz file.
     '''
 
-    logger = getLogger(__name__)
     outfile = outfile or infile   # empty outfile => overwrite infile
 
     if infile == outfile:
@@ -268,7 +269,6 @@ def convert_csv_in_tar(in_tar, out_tar=''):
     format conversion. This method will also add a header file
     in the newly-created tar.
     '''
-    logger = getLogger(__name__)
     if not any( [ in_tar.endswith('.tgz'), in_tar.endswith('.tar.gz'), in_tar.endswith('.tar') ] ):
         raise ValueError('input file must have a .tar, .tgz or .tar.gz suffix')
 
@@ -380,6 +380,5 @@ def extract_jobid_from_collated_csv(collated_csv):
 
 if __name__ == "__main__":
     import sys
-    logger = getLogger(__name__)
     epmt_logging_init(intlvl=2)
     convert_csv_in_tar(sys.argv[1], sys.argv[2] if len(sys.argv) > 2 else '')

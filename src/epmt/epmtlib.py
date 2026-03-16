@@ -15,6 +15,8 @@ from pwd import getpwuid
 from subprocess import call
 from time import time
 
+logger = getLogger(__name__)
+
 # semantic version
 # first element is the major version number
 # second element is the minor version number
@@ -115,7 +117,6 @@ def init_settings(settings):
         return
     init_settings.initialized = True
 
-    logger = getLogger(__name__)
     err_msg = ""
 
     if environ.get("PAPIEX_OUTPUT"):
@@ -253,7 +254,6 @@ def safe_rm(f):
 
 
 def timing(f):
-    logger = getLogger(__name__)
 
     @wraps(f)
     def wrap(*args, **kw):
@@ -311,7 +311,6 @@ def tag_from_string(s, delim=';', sep=':', tag_default_value='1'):
     if not s:
         return (None if s is None else {})
 
-    logger = getLogger(__name__)
     tag = {}
     for t in s.split(delim):
         t = t.strip()
@@ -645,7 +644,6 @@ def compare_dicts(d1, d2):
 
 
 def get_batch_envvar(var, where):
-    logger = getLogger(__name__)
     key2slurm = {
         "JOB_NAME": "SLURM_JOB_NAME",
         "JOB_USER": "SLURM_JOB_USER"
@@ -663,7 +661,6 @@ def get_batch_envvar(var, where):
 
 
 def get_metadata_env_changes(metadata):
-    logger = getLogger(__name__)
     start_env = metadata['job_pl_env']
     stop_env = metadata['job_el_env']
     (added, removed, modified, same) = compare_dicts(stop_env, start_env)
@@ -694,7 +691,6 @@ def check_fix_metadata(raw_metadata):
         return raw_metadata
 
     import epmt.epmt_settings as settings
-    logger = getLogger(__name__)
 
     # First check what should be here
     try:
@@ -807,7 +803,6 @@ def conv_to_datetime(t):
         try:
             retval = datetime.strptime(t, '%m/%d/%Y %H:%M')
         except Exception as e:
-            logger = getLogger(__name__)
             logger.error('could not convert string to datetime: %s' % str(e))
             return None
     elif type(t) in (int, float):
@@ -919,7 +914,6 @@ def dframe_encode_features(df, features=[], reversible=False):
 
     NOTE: If encoded_features is empty, no features were encoded.
     '''
-    logger = getLogger(__name__)
     if not features:
         import epmt.epmt_settings as settings
         logger.debug('Selecting non-numeric columns from dataframe and then pruning out blacklisted features')
@@ -969,7 +963,6 @@ def dframe_decode_features(df, features):
               calling dframe_encode_features, as otherwise the strings
               are hashed and not encoded (hashed strings cannot be decoded).
     '''
-    logger = getLogger(__name__)
     decoded_df = df.copy()
     decoded_features = []
     for c in features:
@@ -1125,7 +1118,6 @@ def get_install_root():
     >>> '/abc/def/ghi.py'.rsplit('/',1)
     ['/abc/def', 'ghi.py']
     '''
-    # logger = getLogger(__name__)
     install_root = __file__.rsplit('/', 2)[0]
     # handle pip packaging here -- even when "manually" installed ala 4.9.6, our install_dir should always end in /epmt.
     # XXX THIS IS STILL HOKEY and i'm not sure how to make it work for all possible installations.
@@ -1217,7 +1209,6 @@ def set_signal_handlers(signals=[], handler=None):
     to the default)
     '''
     from signal import SIGHUP, SIGTERM, SIGINT, signal, SIG_DFL
-    logger = getLogger(__name__)
 
     # set defaults
     signals = signals or [SIGHUP, SIGTERM, SIGINT]
