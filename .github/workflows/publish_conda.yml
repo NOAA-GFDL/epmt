@@ -1,0 +1,60 @@
+name: publish_conda
+
+on:
+  push:
+    branches:
+      - main
+
+  # TODO: remove pull_request trigger before merging — temporary for testing
+  pull_request:
+    branches:
+
+jobs:
+  conda-publish:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        shell: bash -l {0}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up base Miniforge
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          miniforge-version: latest
+          python-version: "3.9"
+
+      - name: Configure conda channels
+        run: |
+          echo "removing conda default channels, appending open-source ones"
+          conda config --append channels conda-forge
+          conda config --append channels noaa-gfdl
+          conda config --remove channels defaults
+
+          echo "setting strict channel priority"
+          conda config --set channel_priority strict
+
+          echo "setting anaconda_upload to yes"
+          conda config --set anaconda_upload yes
+
+          echo "printing conda config just in case"
+          conda config --show
+
+      - name: Update Conda and Conda Package Indices
+        run: |
+          echo "updating conda and package channel indices for conda-forge, noaa-gfdl"
+          conda update -y conda
+          conda update -y --all --override-channels -c conda-forge
+          conda update -y --all --override-channels -c noaa-gfdl
+
+      - name: Install conda-build and anaconda-client
+        run: |
+          conda install -y conda-forge::conda-build conda-forge::anaconda-client
+
+      - name: Build and publish epmt conda package to noaa-gfdl channel
+        run: |
+          export ANACONDA_API_TOKEN=${{ secrets.ANACONDA_TOKEN }}
+          conda build .
