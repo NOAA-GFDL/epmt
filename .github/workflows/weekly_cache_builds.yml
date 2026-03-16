@@ -1,4 +1,4 @@
-name: weekly_tarball_build
+name: weekly_cache_builds
 
 on:
   schedule:
