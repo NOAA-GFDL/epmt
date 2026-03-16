@@ -13,6 +13,12 @@ from epmt.orm.sqlalchemy.models import Job
 
 install_root=get_install_root()
 
+# MCD (Minimum Covariance Determinant) scores are version-dependent: NaN on
+# Python 3.9, valid but varying values on 3.10/3.11.  Filter it out of result
+# dicts so assertions are stable across all supported Python versions.
+def _exclude_mcd(d):
+    return {k: v for k, v in d.items() if k != 'pyod.models.mcd'}
+
 def do_cleanup():
     eq.delete_jobs(['kern-6656-20190614-190245', 'kern-6656-20190614-191138',
                     'kern-6656-20190614-192044-outlier', 'kern-6656-20190614-194024'],
@@ -324,8 +330,7 @@ class OutliersAPI(unittest.TestCase):
                           '{"op": "extract", "op_instance": "2", "op_sequence": "2"}'})
         # MCD scores are version-dependent (NaN on 3.9, valid on 3.10+);
         # strip it from each op_tag entry so the assertion is portable.
-        _no_mcd = lambda d: {k: v for k, v in d.items() if k != 'pyod.models.mcd'}
-        part_stable = {tag: _no_mcd(clfs) for tag, clfs in part.items()}
+        part_stable = {tag: _exclude_mcd(clfs) for tag, clfs in part.items()}
         self.assertEqual(part_stable,
                          {'{"op": "build", "op_instance": "4", "op_sequence": "4"}':
                           {'pyod.models.cof': [0, 0, 1, 0], 'pyod.models.hbos': [0, 0, 1, 0], 'pyod.models.ocsvm': [0, 0, 0, 0]},
@@ -397,14 +402,13 @@ class OutliersAPI(unittest.TestCase):
         # MCD scores are version-dependent: NaN on Python 3.9, valid but
         # varying values on 3.10/3.11.  Filter it out so the assertion is
         # stable across all supported Python versions.
-        _no_mcd = lambda d: {k: v for k, v in d.items() if k != 'pyod.models.mcd'}
-        scores = { k: v['cpu_time,duration,num_procs'][0] for (k,v) in _no_mcd(r.computed['{"op": "configure"}']).items() }
+        scores = { k: v['cpu_time,duration,num_procs'][0] for (k,v) in _exclude_mcd(r.computed['{"op": "configure"}']).items() }
         self.assertEqual( scores,
                           {'pyod.models.cof': 1.3176, 'pyod.models.hbos': 9.9656, 'pyod.models.ocsvm': -0.0})
-        scores = { k: v['cpu_time,duration,num_procs'][0] for (k,v) in _no_mcd(r.computed['{"op": "build"}']).items() }
+        scores = { k: v['cpu_time,duration,num_procs'][0] for (k,v) in _exclude_mcd(r.computed['{"op": "build"}']).items() }
         self.assertEqual(scores,
                          {'pyod.models.cof': 1.0355, 'pyod.models.hbos': 9.9657, 'pyod.models.ocsvm': -0.0})
-        self.assertEqual( _no_mcd(r.computed['{"op": "build"}']),
+        self.assertEqual( _exclude_mcd(r.computed['{"op": "build"}']),
                           {
                            'pyod.models.cof': {'cpu_time,duration,num_procs': [1.0355,
                                                                                [[380807266.0, 2158730624.0, 9549.0],
@@ -418,7 +422,7 @@ class OutliersAPI(unittest.TestCase):
                                                                                  [[380807266.0, 2158730624.0, 9549.0],
                                                                                   [381619141.0, 2203839312.0, 9549.0],
                                                                                   [381227732.0, 2253935203.0, 9549.0]]]}})
-        self.assertEqual(_no_mcd(r.computed['{"op": "configure"}']),
+        self.assertEqual(_exclude_mcd(r.computed['{"op": "configure"}']),
                          {
                           'pyod.models.cof': {'cpu_time,duration,num_procs': [1.3176,
                                                                               [[20735346.0, 249388754.0, 1044.0],
