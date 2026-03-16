@@ -45,17 +45,26 @@ jobs:
 
       - name: Show installed packages
         run: |
+          echo "conda info is:"
           conda info
+
+          echo "printing installed packages"
           conda list
 
+          echo "printing conda config just in case"
+          conda config --show
+
+
       - name: Smoke test — epmt --help
-        run: epmt --help
+        run: |
+          epmt --help
 
       # epmt check verifies: DB params, install/output prefixes, stage command,
       # and papiex binary. All of these are expected to fail in a bare conda CI
       # environment (no DB, no SLURM, no papiex). This is not a packaging bug.
       - name: Smoke test — epmt -vv check (GUARDED)
-        run: epmt -vv check
+        run: |
+          epmt -vv check
         continue-on-error: true
 
       # -----------------------------------------------------------------------
