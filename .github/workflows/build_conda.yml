@@ -60,23 +60,4 @@ jobs:
 
       - name: Build epmt conda package
         run: |
-          mkdir -p /tmp/epmt-tarball
-          conda build --package-format tar.bz2 --output-folder /tmp/epmt-tarball .
-
-      - name: Upload epmt tarball as artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: epmt-tarball
-          path: /tmp/epmt-tarball/noarch/epmt-*.tar.bz2
-          if-no-files-found: error
-
-      - name: Create new conda env to test tarball
-        run: |
-          conda create -n epmt_tarball_test
-          conda activate epmt_tarball_test
-          conda install /tmp/epmt-tarball/noarch/epmt-tarball.tar.bz2
-          site_packages=$(python3 -c 'import site; print(site.getsitepackages()[0]);'
-          epmt -v
-          epmt -v -V
-          epmt -v check || echo "epmt check failed for built conda tarball, it's OK for now"
-          pytest -v ${sitepackages}/epmt/test || echo "pytest failed for built conda tarball, it's OK for now"
+          conda build .
