@@ -39,6 +39,7 @@ jobs:
         uses: conda-incubator/setup-miniconda@v3
         with:
           miniforge-version: latest
+          conda-remove-defaults: true
           environment-file: environment.yaml
           activate-environment: epmt
           python-version: ${{ matrix.python-version }}
