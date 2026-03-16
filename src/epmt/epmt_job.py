@@ -941,6 +941,15 @@ def populate_process_table_from_staging(j):
         args = psycopg2.extensions.adapt(args)
         # logger.debug('after psycopg2.extensions.adapt(args) % with %% and : with \\:, args is now \n %s, str(args) )
 
+        # escape exename and path the same way as args to handle
+        # backslashes and special characters in PostgreSQL
+        if exename is None:
+            exename = ''
+        exename = psycopg2.extensions.adapt(exename)
+        if path is None:
+            path = ''
+        path = psycopg2.extensions.adapt(path)
+
         threads_sums = {metric_names[i]: int(threads_df[i]) for i in range(len(metric_names))}
         for t in range(1, numtids):
             for i in range(len(metric_names)):
@@ -962,7 +971,7 @@ def populate_process_table_from_staging(j):
         # threads_df is to be saved as JSON
         threads_df = dumps(_thr_dict_list)
 
-        insert_sql += prefix_insert_sql + """('{jobid}',{duration},{tags},'{host_id}','{threads_df}','{threads_sums}',{numtids},{cpu_time},'{exename}','{path}',{args},{pid},{ppid},{pgid},{sid},{gen},{exitcode},'{start}','{end}');\n""".format(
+        insert_sql += prefix_insert_sql + """('{jobid}',{duration},{tags},'{host_id}','{threads_df}','{threads_sums}',{numtids},{cpu_time},{exename},{path},{args},{pid},{ppid},{pgid},{sid},{gen},{exitcode},'{start}','{end}');\n""".format(
             jobid=jobid,
             start=start,
             end=end,
@@ -1330,6 +1339,7 @@ def ETL_job_dict(raw_metadata, filedict, settings, tarfile=None):
                 import psycopg2
                 logger.info('Doing a fast ingest of {}'.format(flo.name))
                 _conn_start_ts = time.time()
+                _copy_ok = False
                 try:
                     conn = psycopg2.connect(settings.db_params['url'])
                 except Exception as e:
@@ -1358,26 +1368,35 @@ def ETL_job_dict(raw_metadata, filedict, settings, tarfile=None):
                     cur.execute('SELECT LASTVAL()')
                     lastid = cur.fetchone()[0]
                     conn.commit()
+                    _copy_ok = True
                 except Exception as e:
                     msg = 'copy_expert to processes_staging {}'.format(str(e))
-                    logger.error(msg)
+                    logger.warning('%s; falling back to standard processing for file %s', msg, f)
                     conn.rollback()
-                    continue
 
                 if conn:
                     conn.close()
-                copy_processes_time = time.time() - _copy_start_ts
-                flo.close()
-                logger.info('direct CSV copy of %d processes took: %2.5f sec, at %2.5f procs/sec',
-                            num_procs_copied, copy_processes_time, num_procs_copied / copy_processes_time)
-                didsomething = num_procs_copied > 0
-                copy_csv_direct = True
-                total_procs += num_procs_copied
-                # save the staging table row id range for the job
-                info_dict['procs_staging_ids'] = (lastid - num_procs_copied + 1, lastid)
-                logger.debug('job process_staging ID range: {}'.format(
-                    lastid if num_procs_copied == 1 else info_dict['procs_staging_ids']))
-                continue
+
+                if _copy_ok:
+                    copy_processes_time = time.time() - _copy_start_ts
+                    flo.close()
+                    logger.info('direct CSV copy of %d processes took: %2.5f sec, at %2.5f procs/sec',
+                                num_procs_copied, copy_processes_time, num_procs_copied / copy_processes_time)
+                    didsomething = num_procs_copied > 0
+                    copy_csv_direct = True
+                    total_procs += num_procs_copied
+                    # save the staging table row id range for the job
+                    info_dict['procs_staging_ids'] = (lastid - num_procs_copied + 1, lastid)
+                    logger.debug('job process_staging ID range: {}'.format(
+                        lastid if num_procs_copied == 1 else info_dict['procs_staging_ids']))
+                    continue
+                else:
+                    # Re-open the file for standard processing since
+                    # copy_expert consumed the file stream
+                    if tarfile:
+                        flo = tarfile.extractfile(tarfile.getmember(f))
+                    else:
+                        flo.seek(0)
 
             csv_file = StringIO(flo.read().decode('utf8'))
 
