@@ -1,0 +1,49 @@
+name: build_conda
+
+on:
+  pull_request:
+    branches:
+
+# cancel running jobs if theres a newer push
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  conda-build:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        shell: bash -l {0}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up base Miniforge
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          miniforge-version: latest
+          python-version: "3.9"
+
+      - name: Configure conda channels
+        run: |
+          conda config --set channel_priority strict
+          conda config --set anaconda_upload no
+          conda config --show
+
+      - name: Install conda-build
+        run: conda install -y conda-forge::conda-build
+
+      - name: Build epmt conda package
+        run: |
+          mkdir -p /tmp/epmt-tarball
+          conda build --package-format tar.bz2 --output-folder /tmp/epmt-tarball .
+
+      - name: Upload epmt tarball as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: epmt-tarball
+          path: /tmp/epmt-tarball/noarch/epmt-*.tar.bz2
+          if-no-files-found: error
