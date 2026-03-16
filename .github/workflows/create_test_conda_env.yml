@@ -146,14 +146,10 @@ jobs:
       - name: Integration test — test_integration_kernel_compile
         run: TZ=UTC pytest -x -vv src/epmt/test/integration/test_integration_kernel_compile.py
 
-      # FAILED in CI: ModuleNotFoundError: No module named 'IPython'
-      # IPython is in the notebook optional extra but not in environment.yaml
-      - name: Integration test — test_integration_shell (GUARDED)
+      # Skips when IPython is not installed (exit 0)
+      - name: Integration test — test_integration_shell
         run: TZ=UTC pytest -x -vv src/epmt/test/integration/test_integration_shell.py
-        continue-on-error: true
 
-      # Not yet observed in CI (was skipped by -x after shell failure above);
-      # expected to skip cleanly without SLURM, but guarded until confirmed
-      - name: Integration test — test_integration_slurm (SKIPPED- NO SLURM FOR TESTS YET)
+      # Skips when SLURM is not available (exit 0)
+      - name: Integration test — test_integration_slurm
         run: TZ=UTC pytest -x -vv src/epmt/test/integration/test_integration_slurm.py
-        continue-on-error: true

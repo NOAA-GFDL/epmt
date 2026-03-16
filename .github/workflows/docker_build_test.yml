@@ -461,12 +461,10 @@ jobs:
       - name: test_cmds
         run: docker exec ${{ env.CONTAINER_NAME }} bash -c 'cd $(python3 -c "import site; print(site.getsitepackages()[0])") && TZ=UTC pytest -x -vv epmt/test/test_cmds.py'
 
-      - name: test_db_migration (GUARDED if postgres)
-        continue-on-error: ${{ matrix.db_backend == 'postgres' }}
+      - name: test_db_migration
         run: docker exec ${{ env.CONTAINER_NAME }} bash -c 'cd $(python3 -c "import site; print(site.getsitepackages()[0])") && TZ=UTC pytest -x -vv epmt/test/test_db_migration.py'
 
-      - name: test_db_schema (GUARDED if postgres)
-        continue-on-error: ${{ matrix.db_backend == 'postgres' }}
+      - name: test_db_schema
         run: docker exec ${{ env.CONTAINER_NAME }} bash -c 'cd $(python3 -c "import site; print(site.getsitepackages()[0])") && TZ=UTC pytest -x -vv epmt/test/test_db_schema.py'
 
       - name: test_explore
@@ -475,8 +473,7 @@ jobs:
       - name: test_lib
         run: docker exec ${{ env.CONTAINER_NAME }} bash -c 'cd $(python3 -c "import site; print(site.getsitepackages()[0])") && TZ=UTC pytest -x -vv epmt/test/test_lib.py'
 
-      - name: test_outliers (GUARDED if postgres)
-        continue-on-error: ${{ matrix.db_backend == 'postgres' }}
+      - name: test_outliers
         run: docker exec ${{ env.CONTAINER_NAME }} bash -c 'cd $(python3 -c "import site; print(site.getsitepackages()[0])") && TZ=UTC pytest -x -vv epmt/test/test_outliers.py'
 
       - name: test_query
@@ -500,8 +497,7 @@ jobs:
       - name: integration, basic
         run: docker exec ${{ env.CONTAINER_NAME }} bash -c 'cd $(python3 -c "import site; print(site.getsitepackages()[0])") && TZ=UTC pytest -x -vv epmt/test/integration/test_integration_basic.py'
 
-      - name: integration, escape (GUARDED if postgres)
-        continue-on-error: ${{ matrix.db_backend == 'postgres' }}
+      - name: integration, escape
         run: docker exec ${{ env.CONTAINER_NAME }} bash -c 'cd $(python3 -c "import site; print(site.getsitepackages()[0])") && TZ=UTC pytest -x -vv epmt/test/integration/test_integration_escape.py'
 
       - name: integration, concat
