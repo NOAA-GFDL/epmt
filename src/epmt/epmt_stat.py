@@ -107,7 +107,7 @@ def z_score(ys, params=()):
     # issue by using np.nan_to_num
     import warnings
     warnings.filterwarnings("ignore", category=RuntimeWarning)
-    logger.debug('scoring using {}'.format('z_score'))
+    logger.debug('scoring using %s', 'z_score')
     ys = np.array(ys)
     if params:
         # if params is set, we use it to get the mean and stdev
@@ -170,7 +170,7 @@ def iqr(ys, params=()):
     >>> outliers
         array([0, 0, 0, 0, 0, 0, 1])
     '''
-    logger.debug('scoring using {}'.format('iqr'))
+    logger.debug('scoring using %s', 'iqr')
     ys = np.array(ys)
     span = [25, 75]
     if not params:
@@ -180,13 +180,13 @@ def iqr(ys, params=()):
         # we have the lower and upper quartiles from a model
         _, quartile_1, quartile_3 = params
     iqr = quartile_3 - quartile_1
-    logger.debug('Q1, Q3, IQR: {}, {}, {}'.format(quartile_1, quartile_3, iqr))
+    logger.debug('Q1, Q3, IQR: %s, %s, %s', quartile_1, quartile_3, iqr)
     lower_bound = quartile_1 - (iqr * 1.5)
     upper_bound = quartile_3 + (iqr * 1.5)
-    logger.debug('lower_bound, upper_bound: {}, {}'.format(lower_bound, upper_bound))
+    logger.debug('lower_bound, upper_bound: %s, %s', lower_bound, upper_bound)
     # the + 0 below makes boolean array a numeric array of 0s and 1s
     outliers = ((ys > upper_bound) | (ys < lower_bound)) + 0
-    logger.debug('outliers vec: {}'.format(outliers))
+    logger.debug('outliers vec: %s', outliers)
 
     # If this vector were to be fitted, we can compute artifical
     # values of Q1 and Q3 based on the equation (see NOTES in the
@@ -207,7 +207,7 @@ def modified_z_score(ys, params=()):
     params if passed in, is of the form (max, median, median_abs_dev)
     We will ignore params(0) as that's the max z_score in the ref_model
     '''
-    logger.debug('scoring using {}'.format('modified_z_score'))
+    logger.debug('scoring using %s', 'modified_z_score')
     median_y = params[1] if params else np.median(ys)
     if params:
         median_absolute_deviation_y = params[2]
@@ -221,10 +221,10 @@ def modified_z_score(ys, params=()):
         madz = [round(0.6745 * abs(y - median_y) / median_absolute_deviation_y, 4) for y in ys]
     else:
         madz = [float('inf') if abs((y - median_y)) > 0 else 0 for y in ys]
-    logger.debug('original vector: {}'.format(list(ys)))
+    logger.debug('original vector: %s', list(ys))
     if params:
-        logger.debug('model params: {}'.format(params))
-    logger.debug('madz scores: {}'.format(madz))
+        logger.debug('model params: %s', params)
+    logger.debug('madz scores: %s', madz)
     return (madz, round(max(madz), 4), round(median_y, 4), round(median_absolute_deviation_y, 4))
 
 
@@ -272,16 +272,16 @@ def outliers_uv(ys, methods=[outliers_iqr, outliers_z_score, outliers_modified_z
              such as iqr, z_score, modified_z_score
     '''
     ys = np.array(ys)
-    logger.debug('input vector: {}'.format(ys))
+    logger.debug('input vector: %s', ys)
     out_vec = np.zeros_like(ys)
     if not methods:
         raise ValueError("'methods' needs to contain one or more univariate classifiers")
-    logger.debug('outlier detection using {} methods'.format(len(methods)))
+    logger.debug('outlier detection using %s methods', len(methods))
     for m in methods:
         outliers = m(ys)
-        logger.debug('outliers using {}: {}'.format(m.__name__, outliers))
+        logger.debug('outliers using %s: %s', m.__name__, outliers)
         out_vec += outliers
-    logger.info('outliers using {} classifiers: {}'.format(len(methods), out_vec))
+    logger.info('outliers using %s classifiers: %s', len(methods), out_vec)
     return out_vec
 
 
@@ -396,13 +396,13 @@ def mvod_scores(X=None, classifiers=[], warnopts='ignore'):
     if not classifiers:
         classifiers = mvod_classifiers(contamination, warnopts)
 
-    logger.debug('using classifiers: {}'.format([get_classifier_name(c) for c in classifiers]))
+    logger.debug('using classifiers: %s', [get_classifier_name(c) for c in classifiers])
 
     Y = None  # Y is only used to test predictor with random data
     if X is None:
         n_pts = 100
         n_features = 16
-        logger.warning('No input data for MVOD. Random data will be used with contamination {}'.format(contamination))
+        logger.warning('No input data for MVOD. Random data will be used with contamination %s', contamination)
         from pyod.utils.data import generate_data, get_outliers_inliers
         from scipy import stats
         # generate random data with two features
@@ -420,7 +420,7 @@ def mvod_scores(X=None, classifiers=[], warnopts='ignore'):
         n_outliers = len(x_outliers)
 
     (npts, ndim) = X.shape
-    logger.debug('mvod: input length {0}, dimensions {1}'.format(npts, ndim))
+    logger.debug('mvod: input length %s, dimensions %s', npts, ndim)
     logger.debug(X)
 
     scores = {}
@@ -438,11 +438,11 @@ def mvod_scores(X=None, classifiers=[], warnopts='ignore'):
             # predict raw anomaly score
             _clf_scores = clf.decision_function(X).round(4)
         except Exception as e:
-            logger.warning('Could not score using classifier {}: {}'.format(clf_name, e))
+            logger.warning('Could not score using classifier %s: %s', clf_name, e)
             # logger.warning(e, exc_info=True)
             continue
         if not check_finite(_clf_scores):
-            logger.warning('Could not score using classifier {}: got NaN or Inf'.format(clf_name))
+            logger.warning('Could not score using classifier %s: got NaN or Inf', clf_name)
             continue
         scores[clf_name] = _clf_scores
         max_score_for_cf[clf_name] = _clf_scores.max()
@@ -460,7 +460,7 @@ def mvod_scores(X=None, classifiers=[], warnopts='ignore'):
             # threshold value to consider a datapoint inlier or outlier
             # 0.1 is the default outlier fraction in the generated data
             threshold = stats.scoreatpercentile(scores[clf_name], 100 * (1 - contamination))
-            logger.debug('{0} threshold: {1}'.format(clf_name, threshold))
+            logger.debug('%s threshold: %s', clf_name, threshold)
     # print(scores)
     if not scores:
         # some error occured and we didn't generate scores at all
@@ -524,18 +524,18 @@ def mvod_scores_using_model(inp, model_inp, classifier, threshold=None):
     c_name = get_classifier_name(classifier)
     retval = mvod_scores(model_inp, [classifier])
     if not retval:
-        logger.warning('could not score using {}'.format(c_name))
+        logger.warning('could not score using %s', c_name)
         return False
     (model_scores, model_score_max) = retval
     model_score_max = model_score_max[c_name]
-    logger.debug('MVOD {0} (threshold={1})'.format(c_name, threshold))
+    logger.debug('MVOD %s (threshold=%s)', c_name, threshold)
     from math import isclose
     if not isclose(model_score_max, threshold, rel_tol=1e-2):
         logger.warning(
-            'MVOD {} is not stable. We computed a threshold {}, while the passed threshold from the saved model was {}'.format(
+            'MVOD %s is not stable. We computed a threshold %s, while the passed threshold from the saved model was %s',
                 c_name,
                 model_score_max,
-                threshold))
+                threshold)
     for i in range(inp_nrows):
         # pick the ith row
         row = inp[i]
@@ -544,7 +544,7 @@ def mvod_scores_using_model(inp, model_inp, classifier, threshold=None):
         # now run the mvod scoring
         retval = mvod_scores(X, [classifier])
         if not retval:
-            logger.warning('could not score using {}'.format(c_name))
+            logger.warning('could not score using %s', c_name)
             return False
         (_scores, _) = retval
         # mvod_scores returns a dict indexed by classifier name
@@ -552,7 +552,7 @@ def mvod_scores_using_model(inp, model_inp, classifier, threshold=None):
         _scores = list(_scores.values())[0]
         # pick the score of the appended row (last element) and save it
         score = _scores[-1]
-        logger.debug('MVOD {0} score for input index #{1}: {2}'.format(c_name, i, score))
+        logger.debug('MVOD %s score for input index #%s: %s', c_name, i, score)
         scores.append(_scores[-1])
 
     # make list into a numpy array
@@ -561,7 +561,7 @@ def mvod_scores_using_model(inp, model_inp, classifier, threshold=None):
     # return scores if threshold is not set. Else return
     # a 0/1 vector of inlier / outliers
     # multiply by 1 to convert to a 0/1 vector
-    logger.debug('*** input scores (model threshold={}) ***'.format(threshold))
+    logger.debug('*** input scores (model threshold=%s) ***', threshold)
     logger.debug(scores)
 
     return scores if (threshold is None) else (scores > threshold) * 1
@@ -594,7 +594,7 @@ def rca(ref, inp, features, methods=[modified_z_score]):
         # pick all the common numeric columns in the dataframe
         ref_cols_set = set(ref.columns.values)
         features = [f for f in list(inp.columns.values) if (isinstance(inp[f][0], Number) and (f in ref_cols_set))]
-        logger.debug('using following features for RCA analysis: ' + str(features))
+        logger.debug('using following features for RCA analysis: %s', features)
 
     ref_computed = ref[features].describe()
     ref_computed.loc['input'] = inp.iloc[0]
@@ -651,9 +651,9 @@ def check_finite(values):
         if isinf(v):
             n_infs += 1
     if n_nans:
-        logger.debug('found {} NaN'.format(n_nans))
+        logger.debug('found %s NaN', n_nans)
     if n_infs:
-        logger.debug('found {} Inf'.format(n_infs))
+        logger.debug('found %s Inf', n_infs)
     return ((n_infs == 0) and (n_nans == 0))
 
 
@@ -684,37 +684,37 @@ def pca_stat(inp_features, desired=2):
     from sklearn.preprocessing import StandardScaler
     from sklearn.decomposition import PCA
 
-    logger.debug('input feature array shape: {}'.format(inp_features.shape))
+    logger.debug('input feature array shape: %s', inp_features.shape)
     if np.isnan(inp_features).any():
         raise ValueError('input contains at-least one non-numeric (nan) element')
 
-    logger.debug('input:\n{}'.format(inp_features))
+    logger.debug('input:\n%s', inp_features)
 
     # the second paramer denotes the number of components usually
     # however if it is less than 1, then it denotes the desired variance.
     # In the latter case the number of components is automatically chosen
     # to achieve the desired variance.
     if desired >= 1:
-        logger.debug('desired num. PCA components: {}'.format(desired))
+        logger.debug('desired num. PCA components: %s', desired)
     else:
-        logger.debug('desired variance ratio: {}'.format(desired))
+        logger.debug('desired variance ratio: %s', desired)
 
     n_samples, n_dim = inp_features.shape
     assert n_dim > 1
 
     x = StandardScaler().fit_transform(inp_features)
-    logger.debug('input after standard scaling:\n{}'.format(x))
+    logger.debug('input after standard scaling:\n%s', x)
 
     pca = PCA(n_components=desired) if (desired >= 1) else PCA(desired)
     pc_array = pca.fit_transform(x)
     if desired < 1:
-        logger.debug('number of PCA components: {}'.format(pc_array.shape[1]))
-    logger.debug('PCA array:\n{}'.format(pc_array))
-    logger.debug('PCA feature weights:\n{}'.format(abs(pca.components_)))
+        logger.debug('number of PCA components: %s', pc_array.shape[1])
+    logger.debug('PCA array:\n%s', pc_array)
+    logger.debug('PCA feature weights:\n%s', abs(pca.components_))
     sum_variance = sum(pca.explained_variance_ratio_)
-    logger.debug('PCA explained variance ratio: {}, sum({})'.format(pca.explained_variance_ratio_, sum_variance))
+    logger.debug('PCA explained variance ratio: %s, sum(%s)', pca.explained_variance_ratio_, sum_variance)
     if sum_variance < 0.80:
-        logger.warning('cumulative variance for PCA ({}) < 0.80'.format(sum_variance))
+        logger.warning('cumulative variance for PCA (%s) < 0.80', sum_variance)
     return (pc_array, pca)
 
 
@@ -797,10 +797,10 @@ def check_dist(data=[], dist='norm', alpha=0.05):
             data = 5 * randn(100) + 50
     else:
         data = np.asarray(data)
-    logger.debug('data array shape: {}'.format(data.shape))
+    logger.debug('data array shape: %s', data.shape)
     (_min, _max, _mean, _std) = np.min(data), np.max(data), np.mean(data), np.std(data)
-    logger.debug('min=%.3f max=%.3f mean=%.3f std=%.3f' % (_min, _max, _mean, _std))
-    logger.debug('alpha=%.2f' % alpha)
+    logger.debug('min=%.3f max=%.3f mean=%.3f std=%.3f', _min, _max, _mean, _std)
+    logger.debug('alpha=%.2f', alpha)
     passed = 0
     failed = 0
 
@@ -818,21 +818,21 @@ def check_dist(data=[], dist='norm', alpha=0.05):
         tests['norm'].append(('D\'Agostino', normaltest))
     if dist not in tests:
         raise ValueError('We only support the following distributions: {}'.format(tests.keys()))
-    logger.debug('Testing for {} distribution'.format(dist))
+    logger.debug('Testing for %s distribution', dist)
 
     for (test, f) in tests[dist]:
         # normality test
-        logger.debug('Doing {} test..'.format(test))
+        logger.debug('Doing %s test..', test)
         stat, p = f(data)
-        logger.debug('  statistics=%.3f, p=%.3f' % (stat, p))
+        logger.debug('  statistics=%.3f, p=%.3f', stat, p)
         if p > alpha:
             passed += 1
-            logger.debug('  {} test: PASSED'.format(test))
+            logger.debug('  %s test: PASSED', test)
         else:
             failed += 1
-            logger.debug('  {} test: FAILED'.format(test))
+            logger.debug('  %s test: FAILED', test)
 
-    logger.debug('check_dist: {} tests PASSED, {} tests FAILED'.format(passed, failed))
+    logger.debug('check_dist: %s tests PASSED, %s tests FAILED', passed, failed)
     return (passed, failed)
 
 
@@ -878,33 +878,33 @@ def get_modes(X, max_modes=10):
         km = KMeans(n_clusters=i, random_state=0).fit(X_scaled)
         preds = km.predict(X_scaled)
 
-        logger.debug("Score for number of cluster(s) {}: {}".format(i, km.score(X_scaled)))
+        logger.debug("Score for number of cluster(s) %s: %s", i, km.score(X_scaled))
         km_scores.append(-km.score(X_scaled))
 
         if i > 1:
             # silhouette method only works for n_clusters >= 2
             silhouette = silhouette_score(X_scaled, preds)
             km_silhouette.append(silhouette)
-            logger.debug("Silhouette score for number of cluster(s) {}: {}".format(i, silhouette))
+            logger.debug("Silhouette score for number of cluster(s) %s: %s", i, silhouette)
 
     # find optimal value according to elbow method
     diffs = np.abs(np.diff(km_scores))
-    logger.debug('diffs of km_scores: {}'.format(diffs))
+    logger.debug('diffs of km_scores: %s', diffs)
     from kneed import KneeLocator
     kneedle = KneeLocator(range(len(km_scores)), km_scores, S=1.0, curve='convex', direction='decreasing')
     modes_by_elbow_method = kneedle.elbow + 1
-    logger.debug('optimal clustering according to elbow method: {}'.format(modes_by_elbow_method))
+    logger.debug('optimal clustering according to elbow method: %s', modes_by_elbow_method)
     num_modes = modes_by_elbow_method
     if modes_by_elbow_method != 1:
         # the index of the peak value fo km_silhouette + 2 (since we start
         # from 2 to max_modes represents the number of modes
         modes_by_silhouette_method = np.argmax(km_silhouette) + 2
-        logger.debug('optimal clustering according to silhouette method: {}'.format(modes_by_silhouette_method))
+        logger.debug('optimal clustering according to silhouette method: %s', modes_by_silhouette_method)
         if modes_by_elbow_method != modes_by_silhouette_method:
             logger.warning(
-                'Elbow and silhouette methods gave different mode counts -- {} and {}. Usually this means you might have a single mode or your data was not drawn from normal distributions'.format(
+                'Elbow and silhouette methods gave different mode counts -- %s and %s. Usually this means you might have a single mode or your data was not drawn from normal distributions',
                     modes_by_elbow_method,
-                    modes_by_silhouette_method))
+                    modes_by_silhouette_method)
             num_modes = 1
 
     km = KMeans(n_clusters=num_modes, random_state=0).fit(X_scaled)
