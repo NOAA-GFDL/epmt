@@ -514,7 +514,7 @@ jobs:
 
       - name: run pylint on epmt module, ignoring ui (epmt-dash)
         run: |
-          pylint --rcfile pylintrc --fail-under 7.1 --ignore-paths src/epmt/ui src/epmt
+          pylint --rcfile pylintrc --fail-under 7.4 --ignore-paths src/epmt/ui src/epmt
 
       - name: run pylint on ui submodule (epmt-dash)
         run: |
