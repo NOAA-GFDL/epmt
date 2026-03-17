@@ -278,7 +278,7 @@ def daemon_loop(context, maxiters=0, post_process=True, analyze=True, retire=Fal
                 logger.debug('checking dir %s for jobs (*.tgz) to ingest', ingest)
                 tgz_files = find_files_in_dir(ingest, '*.tgz', recursive=recursive)
                 if tgz_files:
-                    logger.info('%d .tgz files found to ingest', len(tgz_files))
+                    logger.info('%s .tgz files found to ingest', len(tgz_files))
                     epmt_submit(
                         tgz_files,
                         ncpus=ncpus,
@@ -303,7 +303,7 @@ def daemon_loop(context, maxiters=0, post_process=True, analyze=True, retire=Fal
                 # unpdj - ppd_jobs should be 0 in size, let's check
                 err_ppd_jobs = list(filter(lambda i: i not in ppd_jobs, unpdj))
                 tot_pp_jobs += len(ppd_jobs)
-                logger.info('%d jobs post-processed, %d errors', len(ppd_jobs), len(err_ppd_jobs))
+                logger.info('%s jobs post-processed, %s errors', len(ppd_jobs), len(err_ppd_jobs))
 
                 #
                 # Handle unprocessed jobs, remove from unprocessed and log
@@ -316,7 +316,7 @@ def daemon_loop(context, maxiters=0, post_process=True, analyze=True, retire=Fal
                     # ppd_jobs - ana_jobs should be 0, let's check
                     err_ana_jobs = list(filter(lambda i: i not in ana_jobs, ppd_jobs))
                     tot_ua_jobs += len(ana_jobs)
-                    logger.info('%d jobs analyzed, %d errors', len(ana_jobs), len(err_ana_jobs))
+                    logger.info('%s jobs analyzed, %s errors', len(ana_jobs), len(err_ana_jobs))
 
                     #
                     # Handle unanalyzed jobs, log (don't remove)
