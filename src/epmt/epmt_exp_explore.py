@@ -95,18 +95,18 @@ def exp_component_outliers(exp_name, metric='duration', op=np.sum, limit=10):
     # sorted jobids
     exp_jobids = sorted([j.jobid for j in exp_jobs], key=natural_keys)
     if not exp_jobids:
-        logger.warning('Could not find any jobs with an "exp_name" tag matching {}'.format(exp_name))
+        logger.warning('Could not find any jobs with an "exp_name" tag matching %s', exp_name)
         return False
 
     # get a compact string of jobids if possible for logs
     try:
         job_ranges_str = ",".join(["{}..{}".format(a, b) if (a != b) else "{}".format(a)
                                   for (a, b) in ranges([int(x) for x in exp_jobids])])
-        logger.info('Experiment {} contains {} jobs: {}'.format(exp_name, exp_jobs.count(), job_ranges_str))
+        logger.info('Experiment %s contains %s jobs: %s', exp_name, exp_jobs.count(), job_ranges_str)
     except BaseException:
         # the ranges function can fail for non-integer jobids, so here
         # we simply print the job count, and not actually list the jobids
-        logger.info('Experiment {} contains {} jobs'.format(exp_name, exp_jobs.count()))
+        logger.info('Experiment %s contains %s jobs', exp_name, exp_jobs.count())
 
     # we create a dict of dicts. The top-level dict is indexed by component name
     # Effectively we get to know for each component, the jobs and the time-segment
@@ -318,13 +318,13 @@ def find_missing_time_segments(exp_name, jobs=[], components=[], time_segments=r
     '''
     tag_filter = {'exp_name': exp_name}
     jobs = eq.get_jobs(jobs, fmt='orm', tags=[tag_filter])
-    logger.debug('Looking for time segments: {}'.format(sorted(time_segments)))
-    logger.debug('{} matching jobs from the experiment'.format(jobs.count()))
+    logger.debug('Looking for time segments: %s', sorted(time_segments))
+    logger.debug('%s matching jobs from the experiment', jobs.count())
     jobs_tags = eq.get_job_tags(jobs, tag_filter=tag_filter, fold=True)
     matched_comp = jobs_tags['exp_component']
     if components:
         matched_comp &= set(components)
-    logger.debug('{} components matched'.format(len(matched_comp)))
+    logger.debug('%d components matched', len(matched_comp))
     ret = {}
     for c in sorted(matched_comp):
         comp_tags = eq.get_job_tags(jobs, tag_filter='exp_name:{};exp_component:{}'.format(exp_name, c))

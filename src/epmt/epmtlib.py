@@ -261,7 +261,7 @@ def timing(f):
         result = f(*args, **kw)
         te = time()
         if result:
-            logger.debug('%r took: %2.5f sec' % (f.__name__, te - ts))
+            logger.debug('%r took: %2.5f sec', f.__name__, te - ts)
         return result
     return wrap
 
@@ -321,7 +321,7 @@ def tag_from_string(s, delim=';', sep=':', tag_default_value='1'):
                 v = v.strip()
                 tag[k] = v
             except Exception as e:
-                logger.warning('ignoring key/value pair as it has an invalid format: {0}'.format(t))
+                logger.warning('ignoring key/value pair as it has an invalid format: %s', t)
                 logger.warning("%s", e)
                 continue
         else:
@@ -737,7 +737,7 @@ def check_fix_metadata(raw_metadata):
         # we can ignore all the fields returned except the first
         env_changes = get_metadata_env_changes(raw_metadata)[0]
         if env_changes:
-            logger.debug('start/stop environment changed: {0}'.format(env_changes))
+            logger.debug('start/stop environment changed: %s', env_changes)
         metadata['job_env_changes'] = env_changes
 
     # mark the metadata as checked so we don't check it again unnecessarily
@@ -803,7 +803,7 @@ def conv_to_datetime(t):
         try:
             retval = datetime.strptime(t, '%m/%d/%Y %H:%M')
         except Exception as e:
-            logger.error('could not convert string to datetime: %s' % str(e))
+            logger.error('could not convert string to datetime: %s', e)
             return None
     elif type(t) in (int, float):
         if t > 0:
@@ -918,8 +918,8 @@ def dframe_encode_features(df, features=[], reversible=False):
         import epmt.epmt_settings as settings
         logger.debug('Selecting non-numeric columns from dataframe and then pruning out blacklisted features')
         obj_features = list(df.select_dtypes(include='object').columns.values)
-        logger.debug('Non-numeric features in dataframe: {}'.format(obj_features))
-        logger.debug('Blacklisted features to prune: {}'.format(settings.outlier_features_blacklist))
+        logger.debug('Non-numeric features in dataframe: %s', obj_features)
+        logger.debug('Blacklisted features to prune: %s', settings.outlier_features_blacklist)
         features = list(set(df.select_dtypes(include='object').columns.values) -
                         set(settings.outlier_features_blacklist))
 
@@ -932,14 +932,14 @@ def dframe_encode_features(df, features=[], reversible=False):
             'You have enabled "reversible". Be warned that the encoded feature columns can contain some very large integers')
     encoded_df = df.copy()
     encoded_features = []
-    logger.debug('encoding feature columns: {}'.format(features))
+    logger.debug('encoding feature columns: %s', features)
     for c in features:
         str_vec = df[c].to_numpy()
         int_vec = encode2ints(str_vec) if reversible else hash_strings(str_vec)
         encoded_df[c] = int_vec
-        logger.debug('mapped feature {}: {} -> {}'.format(c, str_vec, int_vec))
+        logger.debug('mapped feature %s: %s -> %s', c, str_vec, int_vec)
         encoded_features.append(c)
-    logger.info('Encoded features: {}'.format(encoded_features))
+    logger.info('Encoded features: %s', encoded_features)
     return (encoded_df, encoded_features)
 
 
@@ -969,14 +969,14 @@ def dframe_decode_features(df, features):
         int_vec = df[c].to_numpy()
         str_vec = decode2strings(int_vec)
         decoded_df[c] = str_vec
-        logger.debug('decoded {}: {} -> {}'.format(c, int_vec, str_vec))
+        logger.debug('decoded %s: %s -> %s', c, int_vec, str_vec)
         decoded_features.append(c)
     if decoded_features != features:
         logger.warning('decoded features list is not identical to requested features')
     if not decoded_features:
         logger.warning('No features were decoded')
     else:
-        logger.info('Decoded features: {}'.format(decoded_features))
+        logger.info('Decoded features: %s', decoded_features)
     return (decoded_df, decoded_features)
 
 
@@ -1145,10 +1145,10 @@ def logfn(func):
         # the module is prepended automatically by our logging format
         # as we use getLogger with the module name
         # logger.info('{}({}{}{})'.format(func.__name__,
-        logger.debug('{}({}{}{})'.format(func.__name__,
-                                         ", ".join([str(x) for x in func_args]),
-                                         "," if func_kwargs else "",
-                                         ",".join(["{}={}".format(k, v) for (k, v) in func_kwargs.items()])))
+        args_str = ", ".join([str(x) for x in func_args])
+        kwargs_str = ",".join(["%s=%s" % (k, v) for (k, v) in func_kwargs.items()])
+        sep = "," if func_kwargs else ""
+        logger.debug('%s(%s%s%s)', func.__name__, args_str, sep, kwargs_str)
         # now call the actual function with its arguments (if any)
         return func(*func_args, **func_kwargs)
     return log_func
