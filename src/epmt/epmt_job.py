@@ -245,7 +245,7 @@ def load_process_from_dictlist(proc, host, j, u, settings, profile):
     hostname = proc[0].get('hostname', '')
     if hostname:
         if (host is None) or (host.name != hostname):
-            logger.warning('using hostname as set in papiex data: {}'.format(hostname))
+            logger.warning('using hostname as set in papiex data: %s', hostname)
             host = lookup_or_create_host_safe(hostname)
 
     _t = time.time()
@@ -622,7 +622,7 @@ def post_process_job( j,
     if not force:
         #if is_job_post_processed(j):
         if _is_job_post_processed_internal(j):
-            logger.warning('skipped processing jobid {0} as it has been already processed'.format(j.jobid))
+            logger.warning('skipped processing jobid %s as it has been already processed', j.jobid)
             return False
 
     # we need to set up signal handlers so the user doesn't
@@ -657,7 +657,7 @@ def post_process_job( j,
     _t0 = time.time()
     if not j.processes:
         logger.warning(
-            'Job {} contains no processes, perhaps an error in collation or populating the staging data?'.format(jobid))
+            'Job %s contains no processes, perhaps an error in collation or populating the staging data?', jobid)
 
     if all_tags is None:
         logger.debug("  recreating all_tags..")
@@ -885,7 +885,7 @@ def populate_process_table_from_staging(j):
     import psycopg2
     jobid = j.jobid
     job_info_dict = j.info_dict
-    logger.info('  moving job {} processes from staging -> process table..'.format(jobid))
+    logger.info('  moving job %s processes from staging -> process table..', jobid)
     metric_names = j.info_dict['metric_names'].split(',')
     logger.debug('metric_names are: %s', metric_names)
     # get the row IDs of the starting and ending row for the job
@@ -1014,11 +1014,11 @@ def populate_process_table_from_staging(j):
             logger.error('You do not have sufficient privileges for this operation')
         else:
             logger.error(
-                f'INSERT aka insert_sql[:{settings.max_log_statement_length}] = \n {insert_sql[:settings.max_log_statement_length]}')
+                'INSERT aka insert_sql[:%s] = \n %s', settings.max_log_statement_length, insert_sql[:settings.max_log_statement_length])
             ## Only log the first 100 entries in the error string- it will largely be SQL statements
             if len(err_str) > settings.max_log_statement_length:
-                logger.error(f'error (type is {type(err_str)}) too long to show ({len(err_str)})...')
-                logger.error(f'first {settings.max_log_statement_length} errors in err_str list are...')
+                logger.error('error (type is %s) too long to show (%s)...', type(err_str), len(err_str))
+                logger.error('first %s errors in err_str list are...', settings.max_log_statement_length)
                 logger.error(''.join(err_str[:settings.max_log_statement_length]))
             else:
                 # some bugs require this line get uncommented
@@ -1037,11 +1037,11 @@ def populate_process_table_from_staging(j):
         if 'permission denied' in err_str:
             logger.error('You do not have sufficient privileges for this operation')
         else:
-            logger.error(f'DELETE aka delete_sql = \n {delete_sql}')
+            logger.error('DELETE aka delete_sql = \n %s', delete_sql)
             # Only log the first 100 or so of errors
             if len(err_str) > settings.max_log_statement_length:
-                logger.error(f'error (type is {type(err_str)}) too long to show ({len(err_str)})... ')
-                logger.error(f'first {settings.max_log_statement_length} errors in err_str list are...')
+                logger.error('error (type is %s) too long to show (%s)... ', type(err_str), len(err_str))
+                logger.error('first %s errors in err_str list are...', settings.max_log_statement_length)
                 logger.error(''.join(err_str[:settings.max_log_statement_length]))
             else:
                 logger.error(err_str)
@@ -1060,11 +1060,11 @@ def populate_process_table_from_staging(j):
             logger.error('You do not have sufficient privileges for this operation')
         else:
 
-            logger.error(f'UPDATE aka update_job_sql = \n {update_job_sql}')
+            logger.error('UPDATE aka update_job_sql = \n %s', update_job_sql)
             # Only log the first 100 or so of errors
             if len(err_str) > settings.max_log_statement_length:
-                logger.error(f'error (type is {type(err_str)}) too long to show ({len(err_str)})... ')
-                logger.error(f'first {settings.max_log_statement_length} errors in err_str list are...')
+                logger.error('error (type is %s) too long to show (%s)... ', type(err_str), len(err_str))
+                logger.error('first %s errors in err_str list are...', settings.max_log_statement_length)
                 logger.error(''.join(err_str[:settings.max_log_statement_length]))
             else:
                 logger.error(err_str)
@@ -1114,16 +1114,16 @@ def ETL_job_dict(raw_metadata, filedict, settings, tarfile=None):
         tz_str = get_first_key_match(
             env_dict, 'TZ', 'TIMEZONE') or get_first_key_match(
             environ, 'EPMT_TZ') or 'US/Eastern'
-        logger.debug('timezone could not be auto-detected, assuming {0}'.format(tz_str))
+        logger.debug('timezone could not be auto-detected, assuming %s', tz_str)
         tz_default = pytz.timezone(tz_str)
         start_ts = tz_default.localize(start_ts)
         stop_ts = tz_default.localize(stop_ts)
         submit_ts = tz_default.localize(submit_ts)
     else:
         tz_default = start_ts.tzinfo
-        logger.debug('timezone auto-detected: {0}'.format(tz_default))
-    logger.info('Job start: {0}'.format(start_ts))
-    logger.info('Job finish: {0}'.format(stop_ts))
+        logger.debug('timezone auto-detected: %s', tz_default)
+    logger.info('Job start: %s', start_ts)
+    logger.info('Job finish: %s', stop_ts)
 
     jobname = metadata['job_jobname']
     exitcode = metadata['job_el_exitcode']
@@ -1132,7 +1132,7 @@ def ETL_job_dict(raw_metadata, filedict, settings, tarfile=None):
 
     annotations = metadata.get('annotations', {})
     if annotations:
-        logger.info('Job annotations: {0}'.format(annotations))
+        logger.info('Job annotations: %s', annotations)
 
         if settings.job_tags_env in annotations:
             job_tag_from_ann = tag_from_string(annotations[settings.job_tags_env])
@@ -1150,8 +1150,8 @@ def ETL_job_dict(raw_metadata, filedict, settings, tarfile=None):
         from epmt.epmtlib import tag_dict_to_string
         tag_str = tag_dict_to_string(job_tags)
         logger.debug(
-            'updating {} in annotations to {} based on metadata job tags'.format(
-                settings.job_tags_env, tag_str))
+            'updating %s in annotations to %s based on metadata job tags',
+                settings.job_tags_env, tag_str)
         annotations[settings.job_tags_env] = tag_str
 
     # sometimes script name is to be found in the job tags
@@ -1196,7 +1196,7 @@ def ETL_job_dict(raw_metadata, filedict, settings, tarfile=None):
     j.env_dict = env_dict
     j.env_changes_dict = env_changes_dict
     if job_tags:
-        logger.info('Job tags: {}'.format(job_tags))
+        logger.info('Job tags: %s', job_tags)
     j.tags = job_tags if job_tags else {}
     job_init_fini_time = time.time()
     logger.debug('job init took: %2.5f sec', job_init_fini_time - job_init_start_time)
@@ -1278,7 +1278,7 @@ def ETL_job_dict(raw_metadata, filedict, settings, tarfile=None):
                     logger.error(msg)
                     return (False, msg, ())
 
-        logger.info('CSV v{} files detected in tar: {}'.format(fmt, ",".join(files)))
+        logger.info('CSV v%s files detected in tar: %s', fmt, ",".join(files))
 
         # get the metric names from the CSV header file if we have csv v2
         # for v1 they will be determined automatically from the headers in
@@ -1300,10 +1300,10 @@ def ETL_job_dict(raw_metadata, filedict, settings, tarfile=None):
                 csv_headers = "".join(map(chr, csv_headers)).split(OUTPUT_CSV_SEP)
             # remove leading/trailing whitespace in column names
             csv_headers = [h.strip() for h in csv_headers]
-            logger.debug('papiex headers: {}'.format(csv_headers))
+            logger.debug('papiex headers: %s', csv_headers)
             metric_names = csv_headers[OUTPUT_CSV_FIELDS.index('threads_df')]
             metric_names = metric_names.replace('{', '').replace('}', '')
-            logger.debug('per-thread metric names: {}'.format(metric_names))
+            logger.debug('per-thread metric names: %s', metric_names)
             # save the metric_names in job info_dict for future use (such as when creating
             # threads_df from a flattened array
             info_dict['metric_names'] = metric_names
@@ -1322,7 +1322,7 @@ def ETL_job_dict(raw_metadata, filedict, settings, tarfile=None):
             logger.debug("%s had %d comment rows, oldproctags %s", f, skiprows, oldproctag)
 
             if tarfile:
-                logger.debug('extracting {} from tar'.format(f))
+                logger.debug('extracting %s from tar', f)
                 info = tarfile.getmember(f)
                 flo = tarfile.extractfile(info)
             else:
@@ -1330,7 +1330,7 @@ def ETL_job_dict(raw_metadata, filedict, settings, tarfile=None):
 
             if all( [ fmt == '2', orm_db_provider() == 'postgres', settings.orm == 'sqlalchemy' ] ):
                 import psycopg2
-                logger.info('Doing a fast ingest of {}'.format(flo.name))
+                logger.info('Doing a fast ingest of %s', flo.name)
                 _conn_start_ts = time.time()
                 _copy_ok = False
                 try:
@@ -1380,8 +1380,8 @@ def ETL_job_dict(raw_metadata, filedict, settings, tarfile=None):
                     total_procs += num_procs_copied
                     # save the staging table row id range for the job
                     info_dict['procs_staging_ids'] = (lastid - num_procs_copied + 1, lastid)
-                    logger.debug('job process_staging ID range: {}'.format(
-                        lastid if num_procs_copied == 1 else info_dict['procs_staging_ids']))
+                    logger.debug('job process_staging ID range: %s',
+                        lastid if num_procs_copied == 1 else info_dict['procs_staging_ids'])
                     continue
                 else:
                     # Re-open the file for standard processing since
@@ -1497,7 +1497,7 @@ def ETL_job_dict(raw_metadata, filedict, settings, tarfile=None):
         logger.debug('file I/O time took: %2.5f sec', file_io_time)
         logger.debug('process load ops took: %2.5f sec', df_process_time)
         logger.debug('  - load process from dictlist took: %2.5f sec', load_process_from_df_time)
-        logger.debug('    - {0}'.format(["%s: %2.5f sec" % (k, v) for (k, v) in profile.load_process.items()]))
+        logger.debug('    - %s', ["%s: %2.5f sec" % (k, v) for (k, v) in profile.load_process.items()])
         logger.debug('  - tag processing took: %2.5f sec', proc_tag_process_time)
         logger.debug('  - proc misc. processing took: %2.5f sec', proc_misc_time)
         logger.debug(
@@ -1529,12 +1529,12 @@ def ETL_job_dict(raw_metadata, filedict, settings, tarfile=None):
             #     logger.warning('metadata shows the job exit code is {0}, but root process exit code is {1}'.format(
             #                                                                           j.exitcode, root_proc.exitcode))
             j.exitcode = root_proc.exitcode
-            logger.info('job exit code (using exit code of root process): {0}'.format(j.exitcode))
+            logger.info('job exit code (using exit code of root process): %s', j.exitcode)
         if j.exitcode != 0:
-            logger.warning('Job failed with a non-zero exit code({})'.format(j.exitcode))
+            logger.warning('Job failed with a non-zero exit code(%s)', j.exitcode)
 
         if settings.bulk_insert and all_procs:
-            logger.info('doing a bulk insert of {0} processes'.format(len(all_procs)))
+            logger.info('doing a bulk insert of %s processes', len(all_procs))
             _b0 = time.time()
             # thr_data.engine.execute(Process.__table__.insert(), all_procs)
             Session.bulk_insert_mappings(Process, all_procs)
@@ -1597,7 +1597,7 @@ def post_process_pending_jobs():
     for u in unproc_jobs:
         jobid = u.jobid
         #j = u.job
-        logger.debug('post-processing {0}'.format(jobid))
+        logger.debug('post-processing %s', jobid)
         if post_process_job(jobid):
             did_process.append(jobid)
     return did_process
