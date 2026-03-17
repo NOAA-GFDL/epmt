@@ -372,19 +372,19 @@ def detect_outlier_jobs(jobs, trained_model=None, features=FEATURES, methods=[],
     # skip over methods that do not exist in trained model
     methods = methods or uvod_classifiers()
     _methods = []
-    logger.info('outlier detection provided {} classifiers'.format(len(methods)))
+    logger.info('outlier detection provided %s classifiers', len(methods))
     for m in methods:
         c_name = get_classifier_name(m)
         if trained_model:
             if c_name not in trained_model.computed:
-                logger.warning("Skipping classifier {} -- could not find it in trained model".format(c_name))
+                logger.warning("Skipping classifier %s -- could not find it in trained model", c_name)
                 continue
             model_params[m] = trained_model.computed[c_name]
         else:
             model_params[m] = {}
         _methods.append(m)
     methods = _methods
-    logger.info('{} classifiers eligible'.format(len(methods)))
+    logger.info('%s classifiers eligible', len(methods))
     if not methods:
         logger.error('No eligible classifiers available')
         return False
@@ -406,9 +406,9 @@ def detect_outlier_jobs(jobs, trained_model=None, features=FEATURES, methods=[],
         raise ValueError(err_msg)
 
     logger.info(
-        'outlier detection will be performed using {} univariate and {} multivariate classifiers'.format(
+        'outlier detection will be performed using %s univariate and %s multivariate classifiers', 
             len(uv_methods),
-            len(mv_methods)))
+            len(mv_methods))
 
     # sanitize features list
     if pca and features and (features != '*'):
@@ -416,7 +416,7 @@ def detect_outlier_jobs(jobs, trained_model=None, features=FEATURES, methods=[],
     features = sanitize_features(features, jobs, trained_model)
 
     if pca is not False:
-        logger.info("request to do PCA (pca={}). Input features: {}".format(pca, features))
+        logger.info("request to do PCA (pca=%s). Input features: %s", pca, features)
         if len(features) < 5:
             logger.warning(
                 'Too few input features for PCA. Are you sure you did not want to set features=[] '
@@ -436,7 +436,7 @@ def detect_outlier_jobs(jobs, trained_model=None, features=FEATURES, methods=[],
                 if mjob.jobid not in jobids_set:
                     added_model_jobs.append(mjob.jobid)
             if added_model_jobs:
-                logger.debug('appending model jobs {} prior to PCA'.format(added_model_jobs))
+                logger.debug('appending model jobs %s prior to PCA', added_model_jobs)
                 added_model_jobs_df = eq.get_jobs(added_model_jobs, fmt='pandas')[['jobid'] + features]
                 jobs = pd.concat([jobs[['jobid'] + features], added_model_jobs_df], axis=0, ignore_index=True)
         (jobs_pca_df, pca_variances, pca_features, _) = pca_feature_combine(
@@ -446,22 +446,22 @@ def detect_outlier_jobs(jobs, trained_model=None, features=FEATURES, methods=[],
         # if trained_model and added_model_jobs:
         #     jobs_pca_df = jobs_pca_df[~jobs_pca_df.jobid.isin(added_model_jobs)].reset_index(drop=True)
 
-        logger.info('{} PCA components obtained: {}'.format(len(pca_features), pca_features))
-        logger.info('PCA variances: {} (sum={})'.format(pca_variances, np.sum(pca_variances)))
+        logger.info('%s PCA components obtained: %s', len(pca_features), pca_features)
+        logger.info('PCA variances: %s (sum=%s)', pca_variances, np.sum(pca_variances))
         jobs = jobs_pca_df
         features = pca_features
 
     # list of stuff to return from this fn
     retlist = []
 
-    logger.debug('doing outlier detection on:\n{}'.format(jobs[['jobid'] + features]))
+    logger.debug('doing outlier detection on:\n%s', jobs[['jobid'] + features])
     # unfortunately we cannot leverage the same code for
     # univariate and multivariate classifiers, since the
     # univariate code needs to iterate over the features
     # while the multivariate code takes them in one go
     if uv_methods:
         # initialize a df with all values set to False
-        logger.debug('OD using UV classifiers: {}'.format([m.__name__ for m in uv_methods]))
+        logger.debug('OD using UV classifiers: %s', [m.__name__ for m in uv_methods])
         retval = pd.DataFrame(0, columns=features, index=jobs.index)
         for c in features:
             # print('data-type for feature column {0} is {1}'.format(c, jobs[c].dtype))
@@ -470,17 +470,17 @@ def detect_outlier_jobs(jobs, trained_model=None, features=FEATURES, methods=[],
                 # We ignore params for PCA, as the underlying PCA vector is not stable
                 params = model_params[m].get(c, ()) if not pca else ()
                 if params:
-                    logger.debug('params[{0}][{1}]: {2}'.format(m_name, c, params))
+                    logger.debug('params[%s][%s]: %s', m_name, c, params)
                 scores = m(jobs[c], params)[0]
-                logger.debug('scores: {}'.format(scores))
+                logger.debug('scores: %s', scores)
                 if pca and trained_model:
                     # when using PCA with trained model, we need to figure the threshold
                     # from the rows comprising of the model jobs
                     model_indices = jobs[jobs.jobid.isin(trained_model_jobs)].index.values
-                    logger.debug('trained model job indices: {}'.format(list(model_indices)))
+                    logger.debug('trained model job indices: %s', list(model_indices))
                     trained_model_scores = np.asarray(scores).take(model_indices)
                     threshold = trained_model_scores.max()
-                    logger.debug('trained model scores: {}, max: {}'.format(trained_model_scores, threshold))
+                    logger.debug('trained model scores: %s, max: %s', trained_model_scores, threshold)
                 else:
                     # use the max score in the refmodel if we have a trained model
                     # otherwise use the default threshold for the method
@@ -488,9 +488,9 @@ def detect_outlier_jobs(jobs, trained_model=None, features=FEATURES, methods=[],
                     # have thresholds, instead those methods return a mask.
                     # So for such methods that return a mask we use a threshold of 0
                     threshold = params[0] if params else thresholds.get(m_name, 0)
-                logger.debug('threshold: {}'.format(threshold))
+                logger.debug('threshold: %s', threshold)
                 outlier_rows = np.where(np.abs(scores) > threshold)[0]
-                logger.debug('outliers for [{}][{}] -> {}'.format(m_name, c, outlier_rows))
+                logger.debug('outliers for [%s][%s] -> %s', m_name, c, outlier_rows)
                 retval.loc[outlier_rows, c] += 1
 
         # add a jobid column to the output dataframe
@@ -507,7 +507,7 @@ def detect_outlier_jobs(jobs, trained_model=None, features=FEATURES, methods=[],
         retlist.append(parts)
 
     if mv_methods:
-        logger.debug('OD using UV classifiers: {}'.format(mv_methods))
+        logger.debug('OD using UV classifiers: %s', mv_methods)
         # initialize a df with all values set to False
         features_str = ",".join(sorted(features))
         mvod_outliers = None
@@ -516,16 +516,16 @@ def detect_outlier_jobs(jobs, trained_model=None, features=FEATURES, methods=[],
             m_name = get_classifier_name(m)
             if features_str not in model_params[m]:
                 logger.warning(
-                    'Skipping classifier {}, as could not find model threshold for the feature set'.format(m_name))
+                    'Skipping classifier %s, as could not find model threshold for the feature set', m_name)
                 continue
             (model_score, model_inp) = model_params[m].get(features_str)
             model_ndarray = np.asarray(model_inp)
-            logger.info('classifier {0} model threshold: {1}'.format(m_name, model_score))
+            logger.info('classifier %s model threshold: %s', m_name, model_score)
             outliers_vec = mvod_scores_using_model(jobs[features].to_numpy(), model_ndarray, m, model_score)
             if outliers_vec is False:
-                logger.warning('Could not score using {}, skipping it'.format(m_name))
+                logger.warning('Could not score using %s, skipping it', m_name)
                 continue
-            logger.info('outliers vector using {0}: {1}'.format(m_name, outliers_vec))
+            logger.info('outliers vector using %s: %s', m_name, outliers_vec)
             classfiers_od_dict[m_name] = list(outliers_vec)
             # sum the bitmap vectors - the value for the ith row in the result
             # shows the number of mvod classifiers that considered the row (job) to
@@ -796,7 +796,7 @@ ime', 'time_oncpu', 'time_waiting', 'timeslices', 'usertime', 'vol_ctxsw', 'wcha
                 "Trained model is disabled. You will need to enable it using 'refmodel_set_enabled' and try again")
         # logger.debug('Ref. model scores: {0}'.format(trained_model.computed))
         # logger.debug('Ref. model op_tags: {0}'.format(trained_model.op_tags))
-        logger.debug('Ref model contains {0} op_tags'.format(len(trained_model.op_tags)))
+        logger.debug('Ref model contains %s op_tags', len(trained_model.op_tags))
         for t in trained_model.op_tags:
             model_tags_set.add(dumps(t, sort_keys=True))
         if not tags:
@@ -805,12 +805,12 @@ ime', 'time_oncpu', 'time_waiting', 'timeslices', 'usertime', 'vol_ctxsw', 'wcha
             logger.warning('Set of unique tags are different from the model')
             if jobs_tags_set - model_tags_set:
                 logger.warning(
-                    'Jobs have the following tags, not found in the model: {0}'.format(
-                        jobs_tags_set - model_tags_set))
+                    'Jobs have the following tags, not found in the model: %s', 
+                        jobs_tags_set - model_tags_set)
             if model_tags_set - jobs_tags_set:
                 logger.warning(
-                    'Model has the following tags, not found in the jobs: {0}'.format(
-                        model_tags_set - jobs_tags_set))
+                    'Model has the following tags, not found in the jobs: %s', 
+                        model_tags_set - jobs_tags_set)
     else:
         _err_col_len(jobs, 4, 'Too few jobs to do outlier detection. Need at least 4!')
     if not tags:
@@ -842,7 +842,7 @@ ime', 'time_oncpu', 'time_waiting', 'timeslices', 'usertime', 'vol_ctxsw', 'wcha
             _methods.add(m)
 
     methods = list(_methods)
-    logger.info('{} classifiers eligible'.format(len(methods)))
+    logger.info('%s classifiers eligible', len(methods))
     if not methods:
         logger.error('No eligible classifiers available')
         return False
@@ -878,7 +878,7 @@ ime', 'time_oncpu', 'time_waiting', 'timeslices', 'usertime', 'vol_ctxsw', 'wcha
             if mjob.jobid not in jobids_set:
                 added_model_jobs.append(mjob.jobid)
         if added_model_jobs:
-            logger.debug('appending model jobs {} prior to PCA'.format(added_model_jobs))
+            logger.debug('appending model jobs %s prior to PCA', added_model_jobs)
             jobs = jobids + added_model_jobs
 
     # get the dataframe of aggregate metrics, where each row
@@ -886,29 +886,29 @@ ime', 'time_oncpu', 'time_waiting', 'timeslices', 'usertime', 'vol_ctxsw', 'wcha
     # jobid and tag
     ops = eq.get_op_metrics(jobs=jobs, tags=tags_to_use)
     if len(ops) == 0:
-        logger.warning('no matching tags found in the tag set: {0}'.format(tags_to_use))
+        logger.warning('no matching tags found in the tag set: %s', tags_to_use)
         return False
     if pca and features and (features != '*'):
         logger.warning('It is strongly recommended to set features=[] when doing PCA')
     features = sanitize_features(features, ops, trained_model)
 
     if pca:
-        logger.info("request to do PCA (pca={}). Input features: {}".format(pca, features))
+        logger.info("request to do PCA (pca=%s). Input features: %s", pca, features)
         if len(features) < 5:
             logger.warning('Too few input features for PCA. Are you sure you did not want to set '
                            'features=[] to enable selecting all available features?' )
-        logger.debug('jobid,tags:\n{}'.format(ops[['jobid', 'tags']]))
+        logger.debug('jobid,tags:\n%s', ops[['jobid', 'tags']])
         (ops_pca_df, pca_variances, pca_features, _) = pca_feature_combine(
             ops, features, desired=0.85 if pca is True else pca)
 
-        logger.info('{} PCA components obtained: {}'.format(len(pca_features), pca_features))
-        logger.info('PCA variances: {} (sum={})'.format(pca_variances, np.sum(pca_variances)))
+        logger.info('%s PCA components obtained: %s', len(pca_features), pca_features)
+        logger.info('PCA variances: %s (sum=%s)', pca_variances, np.sum(pca_variances))
         ops = ops_pca_df
         features = pca_features
 
-    logger.debug('jobid,tags:\n{}'.format(ops[['jobid', 'tags']]))
+    logger.debug('jobid,tags:\n%s', ops[['jobid', 'tags']])
     if uv_methods:
-        logger.debug('OD using UV classifiers: {}'.format(uv_methods))
+        logger.debug('OD using UV classifiers: %s', uv_methods)
         retval = pd.DataFrame(0, columns=features, index=ops.index)
 
         # the dict below will be indexed by tag, and will store
@@ -931,8 +931,8 @@ ime', 'time_oncpu', 'time_waiting', 'timeslices', 'usertime', 'vol_ctxsw', 'wcha
             t = dumps(tag, sort_keys=True)
             # select only those rows with matching tag
             rows = ops[ops.tags == tag]  # pylint: disable=no-member
-            logger.debug('Processing tag: {}, rows index: {}'.format(tag, rows.index.values))
-            logger.debug('\n:{}'.format(rows[['jobid', 'tags']]))
+            logger.debug('Processing tag: %s, rows index: %s', tag, rows.index.values)
+            logger.debug('\n:%s', rows[['jobid', 'tags']])
             # logger.debug('input: \n{0}\n'.format(rows[['tags']+features]))
             tags_max[t] = []
             for c in features:
@@ -943,26 +943,26 @@ ime', 'time_oncpu', 'time_waiting', 'timeslices', 'usertime', 'vol_ctxsw', 'wcha
                     m_name = get_classifier_name(m)
                     logger.debug(rows[c])
                     scores = m(rows[c], params)[0]
-                    logger.debug('scores: {}'.format(scores))
+                    logger.debug('scores: %s', scores)
                     if pca and trained_model:
                         # when using PCA with trained model, we need to figure the threshold
                         # from the rows comprising of the model jobs
                         _r = rows.reset_index(drop=True)
                         model_indices = _r[_r.jobid.isin(trained_model_jobs)].index.values
-                        logger.debug('trained model job indices: {}'.format(list(model_indices)))
+                        logger.debug('trained model job indices: %s', list(model_indices))
                         trained_model_scores = np.asarray(scores).take(model_indices)
                         threshold = trained_model_scores.max()
-                        logger.debug('trained model scores: {}, max: {}'.format(trained_model_scores, threshold))
+                        logger.debug('trained model scores: %s, max: %s', trained_model_scores, threshold)
                     else:
                         # use the max score in the refmodel if we have a trained model
                         # otherwise use the default threshold for the method
                         threshold = params[0] if params else thresholds.get(m_name, 0)
-                    logger.debug('threshold: {}'.format(threshold))
+                    logger.debug('threshold: %s', threshold)
                     outlier_rows = np.where(np.abs(scores) > threshold)[0]
                     score_diff += max(max(scores) - threshold, 0)
                     # map to the outlier rows indices to the indices in the original df
                     outlier_rows = rows.index[outlier_rows].values
-                    logger.debug('outliers for [{}][{}][{}] -> {}'.format(t, m_name, c, outlier_rows))
+                    logger.debug('outliers for [%s][%s][%s] -> %s', t, m_name, c, outlier_rows)
                     retval.loc[outlier_rows, c] += 1
                 tags_max[t].append(round(score_diff, 3))
         retval['jobid'] = ops['job']
@@ -1019,7 +1019,7 @@ ime', 'time_oncpu', 'time_waiting', 'timeslices', 'usertime', 'vol_ctxsw', 'wcha
         return (final_df, parts, final_scores_df, sorted_tags, sorted_features)
     else:
         # MVOD
-        logger.debug('OD using UV classifiers: {}'.format(mv_methods))
+        logger.debug('OD using UV classifiers: %s', mv_methods)
         # initialize a df with all values set to False
         features_str = ",".join(sorted(features))
         classfiers_od_dict = {}  # will store outlier vectors indexed by tag and then by classifier
@@ -1030,33 +1030,33 @@ ime', 'time_oncpu', 'time_waiting', 'timeslices', 'usertime', 'vol_ctxsw', 'wcha
             classfiers_od_dict[t] = {}
             # select only those rows with matching tag
             rows = ops[ops.tags == tag]  # pylint: disable=no-member
-            logger.debug('Processing tag: {}, rows index: {}'.format(tag, rows.index.values))
-            logger.debug('\n:{}'.format(rows[['jobid', 'tags']]))
+            logger.debug('Processing tag: %s, rows index: %s', tag, rows.index.values)
+            logger.debug('\n:%s', rows[['jobid', 'tags']])
             for m in mv_methods:
                 m_name = get_classifier_name(m)
                 if features_str not in model_params[t][m]:
                     logger.warning(
-                        'Skipping classifier {}, could not find model threshold for the feature set for tag {}'.format(
-                            m_name, t))
+                        'Skipping classifier %s, could not find model threshold for the feature set for tag %s', 
+                            m_name, t)
                     continue
                 (model_score, model_inp) = model_params[t][m].get(features_str)
                 model_ndarray = np.asarray(model_inp)
-                logger.debug('classifier {} model threshold for tag [{}]: {}'.format(m_name, t, model_score))
+                logger.debug('classifier %s model threshold for tag [%s]: %s', m_name, t, model_score)
                 outliers_vec = mvod_scores_using_model(rows[features].to_numpy(), model_ndarray, m, model_score)
                 if outliers_vec is False:
-                    logger.warning('Could not score using {}, skipping it'.format(m_name))
+                    logger.warning('Could not score using %s, skipping it', m_name)
                     continue
-                logger.debug('outliers vector using {} for tag [{}]: {}'.format(m_name, t, outliers_vec))
+                logger.debug('outliers vector using %s for tag [%s]: %s', m_name, t, outliers_vec)
                 classfiers_od_dict[t][m_name] = list(outliers_vec)
                 # sum the bitmap vectors - the value for the ith row in the result
                 # shows the number of mvod classifiers that considered the row (job) to
                 # be an outlier
                 mvod_outliers = outliers_vec if (mvod_outliers is None) else mvod_outliers + outliers_vec
-            logger.info('Outlier vector for tag [{}]: {}'.format(t, mvod_outliers))
+            logger.info('Outlier vector for tag [%s]: %s', t, mvod_outliers)
             outlier_indices = np.where(mvod_outliers > 0)[0]
             # map to the outlier rows indices to the indices in the original df
             outlier_rows = rows.index[outlier_indices].values
-            logger.debug('Outlier indices (in original df) for tag [{}] -> {}'.format(t, outlier_rows))
+            logger.debug('Outlier indices (in original df) for tag [%s] -> %s', t, outlier_rows)
             mvod_df.loc[outlier_rows, 'outlier'] = mvod_outliers[mvod_outliers > 0]
         # add a jobid column to the output dataframe
         mvod_df['jobid'] = ops['jobid']
@@ -1097,17 +1097,17 @@ def detect_outliers(df, features=[], methods=[]):
     features = features or list(df.columns.values)
     retval = pd.DataFrame(0, columns=features, index=df.index)
     methods = methods or uvod_classifiers()
-    logger.debug("Doing outlier detection using: {}".format(features))
-    logger.debug("Using the following classifiers: {}".format([f.__name__ for f in methods]))
+    logger.debug("Doing outlier detection using: %s", features)
+    logger.debug("Using the following classifiers: %s", [f.__name__ for f in methods])
     for c in features:
         for m in methods:
             m_name = get_classifier_name(m)
             scores = m(df[c])[0]
-            logger.debug('classifier[{}], feature[{}], scores: {}'.format(m_name, c, scores))
+            logger.debug('classifier[%s], feature[%s], scores: %s', m_name, c, scores)
             threshold = thresholds.get(m_name, 0)
-            logger.debug('threshold: {}'.format(threshold))
+            logger.debug('threshold: %s', threshold)
             outlier_rows = np.where(np.abs(scores) > threshold)[0]
-            logger.debug('outliers for [{}][{}] -> {}'.format(m_name, c, outlier_rows))
+            logger.debug('outliers for [%s][%s] -> %s', m_name, c, outlier_rows)
             retval.loc[outlier_rows, c] += 1
     return retval
 
@@ -1456,7 +1456,7 @@ pca_variance_ratios_list: List of variance ratios. You should
         return False
 
     features = sanitize_features(inp_features, inp_df)
-    logger.debug('PCA input features: {}'.format(features))
+    logger.debug('PCA input features: %s', features)
     # check if df contains nans, if so print out the columns
     nan_cols = inp_df.columns[inp_df.isnull().any()].tolist()
     if nan_cols:
@@ -1614,7 +1614,7 @@ def pca_feature_rank(jobs, inp_features=[]):
     jobs_df = eq.get_jobs(jobs, fmt='pandas')
     (_, variances, _, features_df) = pca_feature_combine(jobs_df, inp_features)
     weights = variances / variances.sum()
-    logger.debug('normalized weights: {}'.format(list(weights)))
+    logger.debug('normalized weights: %s', list(weights))
     # sort dataframe returned by dframe_append_weighted_row based on the values
     # in the last row, breaking ties by column name for deterministic ordering
     df_with_weights = dframe_append_weighted_row(
@@ -1665,14 +1665,14 @@ def feature_scatter_plot(jobs, features=[], outfile='', annotate=False):
     features = sanitize_features(features, jobs_df)
     pca_variances = None
     if len(features) > 2:
-        logger.info('Performing 2-component PCA as input features({}) more than 2'.format(features))
+        logger.info('Performing 2-component PCA as input features(%s) more than 2', features)
         (jobs_pca_df, pca_variances, pca_features, _) = pca_feature_combine(jobs_df, features, desired=2)
-        logger.info('{} PCA components obtained: {}'.format(len(pca_features), pca_features))
-        logger.info('PCA variances: {}, sum={})'.format(pca_variances, np.sum(pca_variances)))
+        logger.info('%s PCA components obtained: %s', len(pca_features), pca_features)
+        logger.info('PCA variances: %s, sum=%s)', pca_variances, np.sum(pca_variances))
         jobs_df = jobs_pca_df
         features = pca_features
     if len(features) != 2:
-        logger.error('Cannot generate scatter plot as requested features ({}) < 2'.format(features))
+        logger.error('Cannot generate scatter plot as requested features (%s) < 2', features)
         return False
 
     import plotly.express as px
@@ -1728,20 +1728,20 @@ def sanitize_features(f, df, model=None):
         logger.debug('using all available features in dataframe')
         f = set(df.columns.values)
     else:
-        logger.debug('Choosing common features between: {} and {}'.format(f, df.columns.values))
+        logger.debug('Choosing common features between: %s and %s', f, df.columns.values)
         f = set(f) & set(df.columns.values)
 
     if model is not None:
         model_id = model.id if (not isinstance(model, int)) else model
         model_metrics = eq.refmodel_get_metrics(model_id, active_only=True)
         # take the intersection set
-        logger.debug('Choosing intersection of features with model metrics ({})'.format(model_metrics))
+        logger.debug('Choosing intersection of features with model metrics (%s)', model_metrics)
         f &= model_metrics
 
     # remove blacklisted features
     _blacklisted_features = f & set(settings.outlier_features_blacklist)
     if _blacklisted_features:
-        logger.debug('Pruning blacklisted features: {}'.format(_blacklisted_features))
+        logger.debug('Pruning blacklisted features: %s', _blacklisted_features)
         f -= set(settings.outlier_features_blacklist)
 
     features = []
@@ -1750,12 +1750,12 @@ def sanitize_features(f, df, model=None):
         if df[c].dtype in ('int64', 'float64'):
             features.append(c)
         else:
-            logger.debug('skipping feature({0}) as type is not int/float'.format(c))
+            logger.debug('skipping feature(%s) as type is not int/float', c)
     if not features:
         raise RuntimeError("Need a non-empty list of features for outlier detection")
 
     features = sorted(features)
-    logger.debug('input features: {0}'.format(features))
+    logger.debug('input features: %s', features)
 
     return features
 
@@ -1807,9 +1807,9 @@ def get_feature_distributions(jobs, features=[]):
     dist_dict = {}
     from epmt.epmt_stat import check_dist
     for c in features:
-        logger.debug('determining distribution of feature {}'.format(c))
+        logger.debug('determining distribution of feature %s', c)
         v = jobs[c].to_numpy()
-        logger.debug('feature vector: {}'.format(v))
+        logger.debug('feature vector: %s', v)
         v_dist = 'unknown'
         for dist in ['norm', 'uniform']:
             (passed, failed) = check_dist(v, dist)
@@ -1817,7 +1817,7 @@ def get_feature_distributions(jobs, features=[]):
                 v_dist = dist
                 break
         dist_dict[c] = v_dist
-        logger.debug('{} -> {}'.format(c, v_dist))
+        logger.debug('%s -> %s', c, v_dist)
     return dist_dict
 
 
