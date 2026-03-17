@@ -324,7 +324,7 @@ def find_missing_time_segments(exp_name, jobs=[], components=[], time_segments=r
     matched_comp = jobs_tags['exp_component']
     if components:
         matched_comp &= set(components)
-    logger.debug('%d components matched', len(matched_comp))
+    logger.debug('%s components matched', len(matched_comp))
     ret = {}
     for c in sorted(matched_comp):
         comp_tags = eq.get_job_tags(jobs, tag_filter='exp_name:{};exp_component:{}'.format(exp_name, c))
