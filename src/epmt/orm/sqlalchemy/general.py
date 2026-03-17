@@ -53,7 +53,7 @@ def db_session(func):
             completed = True
         except Exception as e:
             logger.debug(str(e), exc_info=True)
-            logger.warning('Rolling back due to exception: {}'.format(e))
+            logger.warning('Rolling back due to exception: %s', e)
             # , exc_info=True)
             # import traceback, sys
             # print('-'*60)
@@ -236,7 +236,7 @@ def orm_delete_jobs(jobs, use_orm=False):
             logger.warning(
                 'process job is in staging- removing process rows corresponding to the job in the staging table')
             (first_proc_id, last_proc_id) = j.info_dict['procs_staging_ids']
-            logger.warning(f'first and last proc_ids pulled are: {first_proc_id} and {last_proc_id}')
+            logger.warning('first and last proc_ids pulled are: %s and %s', first_proc_id, last_proc_id)
             stmts.append( "DELETE FROM processes_staging WHERE id BETWEEN {} AND {};\n".format( first_proc_id,
                                                                                                 last_proc_id  ) )
         else:
@@ -722,7 +722,7 @@ def orm_raw_sql(sql, commit=False):
     # As we may get really long queries when moving processes from staging,
     # only log the first 100 or so of long queries
     if len(sql) > settings.max_log_statement_length:
-        logger.debug(f'Executing very long (length={len(sql)} SQL statement(s): ... ')
+        logger.debug('Executing very long (length=%d) SQL statement(s): ... ', len(sql))
         logger.debug(
             ''.join(
                 map(str,
@@ -731,7 +731,7 @@ def orm_raw_sql(sql, commit=False):
             )
         )
     else:
-        logger.debug('Executing: {0}'.format((sql)))
+        logger.debug('Executing: %s', sql)
 
     connection = engine.connect()
     trans = connection.begin()
@@ -786,7 +786,7 @@ def chdir_for_alembic_and_restore_cwd(function):
         try:
             chdir(install_dir)
         except BaseException:
-            logger.error('Could not change directory to {} for migrations'.format(install_dir))
+            logger.error('Could not change directory to %s for migrations', install_dir)
             raise
         result = function(*args, **kwargs)
         # restore directory to cwd
@@ -803,11 +803,11 @@ def check_and_apply_migrations():
     script_ = script.ScriptDirectory.from_config(alembic_cfg)
     epmt_schema_head = script_.get_current_head()
     if database_schema_version != epmt_schema_head:
-        logger.debug('database schema version: {}'.format(database_schema_version))
-        logger.debug('EPMT schema HEAD: {}'.format(epmt_schema_head))
+        logger.debug('database schema version: %s', database_schema_version)
+        logger.debug('EPMT schema HEAD: %s', epmt_schema_head)
         logger.info('Database needs to be upgraded..')
         return migrate_db()
-    logger.info('database schema up-to-date (version {})'.format(epmt_schema_head))
+    logger.info('database schema up-to-date (version %s)', epmt_schema_head)
     return True
 
 
@@ -829,7 +829,7 @@ def migrate_db():
     alembic_cfg = config.Config('alembic.ini')
     script_ = script.ScriptDirectory.from_config(alembic_cfg)
     epmt_schema_head = script_.get_current_head()
-    logger.info('Migrating database to HEAD: {}'.format(epmt_schema_head))
+    logger.info('Migrating database to HEAD: %s', epmt_schema_head)
     try:
         config.main(argv=['--raiseerr', 'upgrade', 'head',])
     except Exception as e:
@@ -840,10 +840,10 @@ def migrate_db():
     updated_version = get_db_schema_version()
     if updated_version != epmt_schema_head:
         logger.warning(
-            'Database migration failed. Current schema version is {}, while head is {}'.format(
-                updated_version, epmt_schema_head))
+            'Database migration failed. Current schema version is %s, while head is %s',
+                updated_version, epmt_schema_head)
     else:
-        logger.info('Database successfully migrated to: {}'.format(epmt_schema_head))
+        logger.info('Database successfully migrated to: %s', epmt_schema_head)
     return epmt_schema_head == updated_version
 
 
@@ -857,7 +857,7 @@ def alembic_dump_schema(version=''):
     from alembic import config
     if not version:
         version = get_db_schema_version()
-    logger.info('Dumping schema upto version: {}'.format(version))
+    logger.info('Dumping schema upto version: %s', version)
     try:
         config.main(argv=['upgrade', '--sql', version,])
     except BaseException:

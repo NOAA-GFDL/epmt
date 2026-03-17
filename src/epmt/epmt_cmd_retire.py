@@ -45,7 +45,7 @@ def epmt_retire(skip_unprocessed=False, dry_run=False):
 
     logger.info('%d jobs retired, %d models retired', num_jobs_retired, num_models_retired)
     if dry_run:
-        logger.info(f'(dry_run=True) {num_jobs_retired} jobs and {num_models_retired} models will be retired')
+        logger.info('(dry_run=True) %d jobs and %d models will be retired', num_jobs_retired, num_models_retired)
 
     # end memory tracing
     tm.stop()
