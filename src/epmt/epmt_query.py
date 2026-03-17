@@ -98,7 +98,7 @@ def conv_jobs(jobs, fmt='dict', merge_sums=True, trigger_post_process=True):
             common_fields = list(set(j) & set(j[PROC_SUMS_FIELD_IN_JOB]))
             if common_fields:
                 logger.warning(
-                    'while hoisting proc_sums to job-level, found {0} common fields: {1}'.format(len(common_fields), common_fields))
+                    'while hoisting proc_sums to job-level, found %s common fields: %s', len(common_fields), common_fields)
             j.update(j[PROC_SUMS_FIELD_IN_JOB])
             del j[PROC_SUMS_FIELD_IN_JOB]
 
@@ -126,7 +126,7 @@ def __conv_procs_orm(procs, merge_sums=True, fmt='dict'):
             common_fields = list(set(p) & set(p[THREAD_SUMS_FIELD_IN_PROC]))
             if common_fields:
                 logger.warning(
-                    'while hoisting thread_sums to process-level, found {0} common fields: {1}'.format(len(common_fields), common_fields))
+                    'while hoisting thread_sums to process-level, found %s common fields: %s', len(common_fields), common_fields)
             p.update(p[THREAD_SUMS_FIELD_IN_PROC])
             # add an alias for a consistent user experience
             p['jobid'] = p['job']
@@ -541,7 +541,7 @@ def get_jobs(
             try:
                 when = datetime.strptime(when, '%m/%d/%Y %H:%M')
             except Exception as e:
-                logger.error('could not convert "when" string to datetime: %s' % str(e))
+                logger.error('could not convert "when" string to datetime: %s', e)
                 return None
 
     if before is not None:
@@ -729,7 +729,7 @@ def get_procs(jobs=[], tags=None, fltr=None, order=None, offset=0, limit=None, w
             try:
                 when = datetime.strptime(when, '%m/%d/%Y %H:%M')
             except Exception as e:
-                logger.error('could not convert "when" string to datetime: %s' % str(e))
+                logger.error('could not convert "when" string to datetime: %s', e)
                 return None
 
     if hosts:
@@ -926,7 +926,7 @@ tag_filter : dict or string
 
     '''
     jobs = get_jobs(jobs, tags=[tag_filter], fmt='orm') if tag_filter else orm_jobs_col(jobs)
-    logger.debug('{} jobs matched'.format(jobs.count()))
+    logger.debug('%s jobs matched', jobs.count())
     tags = []
     for j in jobs:
         tags.extend([j.tags])
@@ -1084,8 +1084,8 @@ def get_refmodels(name=None, tag={}, fltr=None, limit=0, order=None, before=None
             common_fields = list(set(r) & set(r['computed']))
             if common_fields:
                 logger.warning(
-                    'while hoisting nested fields in "computed" to reference model, found {0} common fields: {1}'.format(
-                        len(common_fields), common_fields))
+                    'while hoisting nested fields in "computed" to reference model, found %s common fields: %s',
+                        len(common_fields), common_fields)
             r.update(r['computed'])
             del r['computed']
 
@@ -1109,25 +1109,25 @@ def _refmodel_scores(col, methods, features):
     '''
     df = conv_jobs(col, fmt='pandas') if col.__class__.__name__ != 'DataFrame' else col
     ret = {}
-    logger.info('creating trained model using {0} for features {1}'.format(
-        [get_classifier_name(c) for c in methods], features))
-    logger.info('jobids: {}'.format(df['jobid'].values))
+    logger.info('creating trained model using %s for features %s',
+        [get_classifier_name(c) for c in methods], features)
+    logger.info('jobids: %s', df['jobid'].values)
     for m in methods:
         m_name = get_classifier_name(m)
         ret[m_name] = {}
         if is_classifier_mv(m):
-            logger.info('mvod {0}; features ({1})'.format(m_name, features))
+            logger.info('mvod %s; features (%s)', m_name, features)
             _f = sorted(features)
             nd_array = df[_f].to_numpy()
             # the second element return is a dict indexed by classifier
             # and containing the max anomaly score using the classifier
             retval = mvod_scores(nd_array, classifiers=[m])
             if not retval:
-                logger.warning('Skipped mvod classifier {} as could not score using it'.format(m_name))
+                logger.warning('Skipped mvod classifier %s as could not score using it', m_name)
                 del ret[m_name]
                 continue
             (full_scores, max_score) = retval
-            logger.debug('{0} scores:\n{1}'.format(m_name, full_scores[m_name]))
+            logger.debug('%s scores:\n%s', m_name, full_scores[m_name])
 
             # we save the max score and also we need the input nd_array for
             # future reference. We will need the nd_array for outlier detection
@@ -1135,12 +1135,12 @@ def _refmodel_scores(col, methods, features):
             ret[m_name][",".join(_f)] = [float(max_score[m_name]), nd_array.tolist()]
         else:
             # univariate classifiers can only handle
-            logger.debug('univariate classifier {0}; features {1}'.format(m_name, features))
+            logger.debug('univariate classifier %s; features %s', m_name, features)
             for c in features:
                 # we save everything returned by the function
                 # except the first element, which is a list of scores
                 # We really only need the max, median etc
-                logger.debug('scoring feature {}'.format(c))
+                logger.debug('scoring feature %s', c)
                 ret[m_name][c] = m(df[c])[1:]
     # print(ret)
     return ret
@@ -1274,7 +1274,7 @@ enabled: boolean, optional
     jobs = jobs_orm[:]
     from epmt.epmt_outliers import sanitize_features
     if len(jobs) < 3:
-        logger.error('You cannot create a model with less than 3 jobs. Your chosen jobs: {}'.format(jobs))
+        logger.error('You cannot create a model with less than 3 jobs. Your chosen jobs: %s', jobs)
         return False
 
     if sanity_check:
@@ -1285,7 +1285,7 @@ enabled: boolean, optional
     features = sanitize_features(features, jobs_df)
     orig_features = features  # keep a copy as features might be reassigned below
     if pca:
-        logger.info("request to do PCA (pca={}). Input features: {}".format(pca, features))
+        logger.info("request to do PCA (pca=%s). Input features: %s", pca, features)
         if len(features) < 5:
             logger.warning(
                 'Too few input features for PCA. Are you sure you did not want to set features=[] to enable selecting all available features?')
@@ -1306,12 +1306,12 @@ enabled: boolean, optional
             op_tags = tags_list(op_tags)
         # let's get the dataframe of metrics aggregated by op_tags
         ops_df = get_op_metrics(jobs=jobs_orm, tags=op_tags, exact_tags_only=exact_tag_only, fmt='pandas')
-        logger.debug('jobid,tags:\n{}'.format(ops_df[['jobid', 'tags']]))
+        logger.debug('jobid,tags:\n%s', ops_df[['jobid', 'tags']])
         if pca:
             (ops_pca_df, pca_variances, pca_features, _) = pca_feature_combine(
                 ops_df, features, desired=0.85 if pca is True else pca)
-            logger.info('{} PCA components obtained: {}'.format(len(pca_features), pca_features))
-            logger.info('PCA variances: {} (sum={})'.format(pca_variances, np.sum(pca_variances)))
+            logger.info('%s PCA components obtained: %s', len(pca_features), pca_features)
+            logger.info('PCA variances: %s (sum=%s)', pca_variances, np.sum(pca_variances))
             ops_df = ops_pca_df
             features = pca_features
 
@@ -1320,21 +1320,21 @@ enabled: boolean, optional
             # serialize the tag so we can use it as a key
             stag = dumps(t, sort_keys=True)
             # pylint: disable=no-member
-            logger.debug('scoring op {}'.format(t))
+            logger.debug('scoring op %s', t)
             scores[stag] = _refmodel_scores(ops_df[ops_df.tags == t], methods, features)
     else:
         # full jobs, no ops
-        logger.debug('jobid,tags:\n{}'.format(jobs_df[['jobid', 'tags']]))
+        logger.debug('jobid,tags:\n%s', jobs_df[['jobid', 'tags']])
         if pca:
             (jobs_pca_df, pca_variances, pca_features, _) = pca_feature_combine(
                 jobs_df, features, desired=0.85 if pca is True else pca)
-            logger.info('{} PCA components obtained: {}'.format(len(pca_features), pca_features))
-            logger.info('PCA variances: {} (sum={})'.format(pca_variances, np.sum(pca_variances)))
+            logger.info('%s PCA components obtained: %s', len(pca_features), pca_features)
+            logger.info('PCA variances: %s (sum=%s)', pca_variances, np.sum(pca_variances))
             jobs_df = jobs_pca_df
             features = pca_features
         scores = _refmodel_scores(jobs_df, methods, features)
 
-    logger.debug('computed scores: {0}'.format(scores))
+    logger.debug('computed scores: %s', scores)
     computed = scores
 
     # if we use pca, then we need to save the input feature names
@@ -1487,7 +1487,7 @@ active_only: boolean, optional
     # see if we have any PCA features
     pca_features = (r.info_dict or {}).get('pca', {}).get('inp_features', [])
     if pca_features:
-        logger.debug('PCA features found in model: {}'.format(pca_features))
+        logger.debug('PCA features found in model: %s', pca_features)
         metrics |= set(pca_features)
 
     if active_only:
@@ -1535,8 +1535,8 @@ def refmodel_set_active_metrics(ref_id, metrics):
     unavailable_metrics = metrics_set - all_metrics
     if unavailable_metrics:
         logger.warning(
-            'Ignoring metrics that are not available in the trained model: {0}'.format(
-                unavailable_metrics ))
+            'Ignoring metrics that are not available in the trained model: %s',
+                unavailable_metrics )
     active_metrics = list(metrics_set & all_metrics)
     logger.info('Active metrics for model set to: %s', str(active_metrics))
     info_dict = dict.copy(r.info_dict or {})
@@ -1684,7 +1684,7 @@ def get_ops(jobs, tags=[], exact_tag_only=False, combine=False, fmt='dict', op_d
     _empty_collection_check(jobs)
     if not tags:
         tags = rank_proc_tags_keys(jobs)[0][0]
-        logger.debug('no tag specified, using tags: {0}'.format(tags))
+        logger.debug('no tag specified, using tags: %s', tags)
 
     if not isinstance(tags, list):
         tags = [tags]
@@ -1698,12 +1698,12 @@ def get_ops(jobs, tags=[], exact_tag_only=False, combine=False, fmt='dict', op_d
             # and we want to expand that into a list of tags such as
             # [{'op': 'timavg'}, {'op': 'dmget'},...]
             tag_values = job_proc_tags.get(t, [])
-            logger.debug('expanding {0} for values {1}'.format(t, tag_values))
+            logger.debug('expanding %s for values %s', t, tag_values)
             for v in tag_values:
                 _tags.append({t: v})
         else:
             _tags.append(t)
-    logger.debug('tags: {0}'.format(_tags))
+    logger.debug('tags: %s', _tags)
 
     if combine:
         # Operation will pass the list of tags to get_procs
@@ -1792,7 +1792,7 @@ op_duration_method: string, optional
     all_procs = []
     # we iterate over tags, where each tag is dictionary
     for t in tags:
-        logger.debug('  processing op: {}'.format(t))
+        logger.debug('  processing op: %s', t)
         # group the Query response we got by jobid
         # we use group_concat to join the thread_sums json into a giant string
         if settings.orm == 'sqlalchemy':
@@ -1934,7 +1934,7 @@ def delete_jobs(jobs, force=False, before=None, after=None, warn=True, remove_mo
               after is not None,
               limit is not None,
               offset > 0, ] ):
-        logger.info('(delete_jobs) offset = {}'.format(offset))
+        logger.info('(delete_jobs) offset = %s', offset)
         jobs = get_jobs( jobs,
                          before=before,
                          after=after,
@@ -1984,7 +1984,7 @@ def delete_jobs(jobs, force=False, before=None, after=None, warn=True, remove_mo
                 jobs_to_delete.append(jobid)
                 num_jobs_with_models_unremoved -= num_jobs_with_models_unremoved
                 models_to_remove |= set(models)
-            logger.info("Deleting dependent reference models: {}".format(models_to_remove))
+            logger.info("Deleting dependent reference models: %s", models_to_remove)
             delete_refmodels(*models_to_remove)
         else:
             logger.warning(
@@ -2046,10 +2046,10 @@ def retire_jobs(ndays=settings.retire_jobs_ndays, skip_unprocessed=False, dry_ru
 
     JOBS_PER_DELETE_MAX = (settings.retire_jobs_per_delete_max if settings.retire_jobs_per_delete_max > 0 else 2000)
     db_num_jobs = get_jobs(fmt='orm', trigger_post_process=False).count()
-    logger.info('(retire_jobs) number of jobs in DB is {0}'.format(db_num_jobs))
+    logger.info('(retire_jobs) number of jobs in DB is %s', db_num_jobs)
 
     num_jobs = get_jobs(before=-ndays, fmt='orm', trigger_post_process=False).count()
-    logger.info('(retire_jobs) number of jobs older than {0} days is {1}'.format(ndays, num_jobs))
+    logger.info('(retire_jobs) number of jobs older than %s days is %s', ndays, num_jobs)
 
     # uncomment me for training wheels/debug/tests
     # JOBS_PER_DELETE_MAX=100
@@ -2180,13 +2180,13 @@ def ops_costs(jobs=[], tags=['op:hsmput', 'op:dmget', 'op:untar', 'op:mv',
     where the aggregation is performed in the database layer.
     """
 
-    logger.info('dm ops: {0}'.format(tags))
+    logger.info('dm ops: %s', tags)
     if metric not in {"duration", "cpu_time"}:
         raise ValueError('We only support "duration" or "cpu_time" for metric')
-    logger.info('metric: {}'.format(metric))
+    logger.info('metric: %s', metric)
     jobs = orm_jobs_col(jobs)
     njobs = jobs.count()
-    logger.info('number of jobs: {0}'.format(njobs))
+    logger.info('number of jobs: %s', njobs)
     tags = tags_list(tags)
     jobs_metric = 0.0  # cumulative across all jobs for metric
     df_list = []
@@ -2201,7 +2201,7 @@ def ops_costs(jobs=[], tags=['op:hsmput', 'op:dmget', 'op:untar', 'op:mv',
     logger.debug('Using slower (but accurate) computation for "duration" that avoids double-counting overlapping processes in a job. Try using "cpu_time" for faster results')
     for j in jobs:
         n += 1
-        logger.debug('processing {} ({}/{})'.format(j.jobid, n, njobs))
+        logger.debug('processing %s (%s/%s)', j.jobid, n, njobs)
         jobs_metric += j.duration if (metric == 'duration') else j.cpu_time
         job_dm_ops_df = get_op_metrics(j, tags=tags, group_by_tag=True, op_duration_method=agg_method)
         job_dm_ops_df.insert(0, 'jobid', j.jobid)
@@ -2395,20 +2395,20 @@ def analyze_jobs(jobs=[], analyses_filter={}, max_comparable=50, check=True):
 
     ana_jobs = []
     num_analyses_run = 0
-    logger.info('{0} unanalyzed jobs'.format(len(ua_jobs)))
+    logger.info('%s unanalyzed jobs', len(ua_jobs))
     # partition the jobs into sets of comparable jobs based on their tags
     comp_job_parts = comparable_job_partitions(ua_jobs)
-    logger.debug('{0} sets of comparable jobs'.format(len(comp_job_parts)))
+    logger.debug('%s sets of comparable jobs', len(comp_job_parts))
     # iterate over the comparable jobs' sets
     for j_part in comp_job_parts:
         (_, jobids) = j_part
 
         # clip the comparable job partitions if max_comparable
         if max_comparable and (len(jobids) > max_comparable):
-            logger.info('Limiting jobs to a random selection of {} from {}'.format(max_comparable, len(jobids)))
+            logger.info('Limiting jobs to a random selection of %s from %s', max_comparable, len(jobids))
             from random import choices
             jobids = choices(jobids, k=max_comparable)
-            logger.debug('Randomly selected {} jobs for analysis pipeline: {}'.format(max_comparable, jobids))
+            logger.debug('Randomly selected %s jobs for analysis pipeline: %s', max_comparable, jobids)
             # we set check_comparable as False since we already know
             # that the jobs are comparable -- don't waste time!
         num_analyses_run += analyze_comparable_jobs(jobids, check_comparable=False)
@@ -2457,7 +2457,7 @@ def analyze_comparable_jobs(jobids, check_comparable=True, keys=('exp_name', 'ex
     from epmt.epmt_outliers import detect_outlier_jobs
     if check_comparable:
         _warn_incomparable_jobs(jobids)
-    logger.info('analyzing {0} jobs'.format(len(jobids)))
+    logger.info('analyzing %s jobs', len(jobids))
     model_tag = {}
     for k in keys:
         model_tag[k] = Job[jobids[0]].tags.get(k, '')
@@ -2466,14 +2466,14 @@ def analyze_comparable_jobs(jobids, check_comparable=True, keys=('exp_name', 'ex
             for j in jobids:
                 v = jobids[j].tags.get(k, '')
                 if k not in jobids[j].tags:
-                    logger.warning('job {0} tags has no key -- {1}'.format(j, k))
+                    logger.warning('job %s tags has no key -- %s', j, k)
                 assert jobids[j].tags.get(k, '') == model_tag[k]
-    logger.debug('Searching for trained models with tag: {0}'.format(model_tag))
+    logger.debug('Searching for trained models with tag: %s', model_tag)
     trained_models = get_refmodels(tag=model_tag)
     outlier_results = []
     # can we make the if/then more DNRY?
     if trained_models:
-        logger.debug('found {0} trained models for job set'.format(len(trained_models)))
+        logger.debug('found %s trained models for job set', len(trained_models))
         for r in trained_models:
             model_id = r['id']
             d = detect_outlier_jobs(jobids, trained_model=model_id)[1]
@@ -2538,7 +2538,7 @@ def set_job_analyses(jobid, analyses, replace=False, size_limit=64 * 1024):
 
         size = len(dumps(full_analyses))
         if size > size_limit:
-            logger.error("Analyses length({}) > max. analyses limit({}). Aborting..".format(size, size_limit))
+            logger.error("Analyses length(%s) > max. analyses limit(%s). Aborting..", size, size_limit)
             return False
     j.analyses = full_analyses
     orm_commit()
@@ -2846,7 +2846,7 @@ def procs_histogram(jobs, attr='exename', metric=''):
     '''
     procs_hist = {}
     procs = get_procs(jobs, fmt='orm')
-    logger.debug('{} processes found'.format(procs.count()))
+    logger.debug('%s processes found', procs.count())
     for p in procs:
         attr_val = getattr(p, attr)
         if metric:
@@ -2977,7 +2977,7 @@ added_fetaures: list of strings
     for c in features:
         out_df[c.__name__] = [c(k) for k in keys]
         added_features.append(c.__name__)
-    logger.info('Added features: {}'.format(added_features))
+    logger.info('Added features: %s', added_features)
     return out_df, added_features
 
 
@@ -3228,7 +3228,7 @@ def verify_jobs(jobs):
     errors = {}
     for j in jobs:
         jobid = j['jobid']
-        logger.debug('Verifying job {}..'.format(jobid))
+        logger.debug('Verifying job %s..', jobid)
         # first get the errors in the job dict
         job_errors = verify_collection(j, ignore_empty=False)
         # now get the errors in the processes of this job
