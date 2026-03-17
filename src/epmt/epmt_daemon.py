@@ -8,7 +8,7 @@ from sys import exit as sysexit
 from sys import stdin, stdout, stderr
 from time import sleep, time
 from signal import SIGHUP, SIGTERM, SIGQUIT, SIGINT, SIGUSR1
-import logging
+from logging import getLogger
 
 try:
     from daemon import DaemonContext, pidfile
@@ -17,7 +17,7 @@ except ImportError:
     DaemonContext = None
     pidfile = None
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 # DO NOT IMPORT ANYTHING FROM ANY EPMT FILES HERE
 # **** IT WILL BREAK WHEN THE DAEMON FORKS ****
@@ -93,7 +93,7 @@ def start_daemon(foreground=False, pidf=PID_FILE, **daemon_args):
         # ensure logging uses the same file-descriptors and they are preserved across the fork
         logger_files = []
         try:
-            for handler in logging.root.handlers:
+            for handler in getLogger('epmt').handlers:
                 fileno = handler.stream.fileno()
                 logger_files.append(fileno)
             if logger_files:

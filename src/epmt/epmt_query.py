@@ -24,14 +24,10 @@ from json import loads, dumps
 from logging import getLogger
 import epmt.epmt_settings as settings
 
-# do NOT do any epmt imports until logging is set up
-# using epmt_logging_init, other than import epmt_logging_init
 from epmt.epmtlib import epmt_logging_init, version
 
 logger = getLogger(__name__)
 epmt_logging_init(settings.verbose if hasattr(settings, 'verbose') else 0, check=True)
-
-# Put EPMT imports below, after logging is set up
 
 init_settings(settings)  # type: ignore
 setup_db(settings)  # type: ignore
@@ -2721,8 +2717,6 @@ matching_keys : list of strings, optional
 
 
 def _warn_incomparable_jobs(jobs):
-    # import logging
-    # logger.setLevel(logging.DEBUG)
     jobs = orm_jobs_col(jobs)
     logger.debug(jobs)
     if not are_jobs_comparable(jobs):
