@@ -66,7 +66,7 @@ PWD=$(shell pwd)
 	install-py3-conda install-py3-pyenv install-deps \\
 	dist python-dist dist-test docker-dist docker-dist-test \\
 	epmt-dash \\
-	papiex-dist \\
+	papiex-dist vendor-papiex pip-install \\
 	epmt-full-release check-release \\
 	release \\
 	clean-extra clean-all clean distclean dashclean dockerclean papiexclean \\
@@ -305,6 +305,33 @@ $(PAPIEX_SRC_TARBALL):
 	@echo "(PAPIEX_SRC_TARBALL) whoami: $(shell whoami)"
 	curl -L --fail --retry 3 --retry-delay 5 -O $(PAPIEX_SRC_URL) ; \
 	ls $(PAPIEX_SRC_TARBALL)
+
+# Download papiex source into src/vendor/papiex/ so compile_papiex.sh
+# can find it without needing network access at pip-install time.
+vendor-papiex:
+	@echo "(vendor-papiex) whoami: $(shell whoami)"
+	@echo " ------ VENDOR PAPIEX SOURCE INTO src/vendor/papiex ------- "
+	@echo "PAPIEX_SRC_URL = ${PAPIEX_SRC_URL}"
+	if [ -d "src/vendor/papiex" ] && [ -f "src/vendor/papiex/Makefile" ]; then \
+	echo "src/vendor/papiex already exists, skipping download." ; \
+	else \
+	mkdir -p src/vendor ; \
+	curl -L --fail --retry 3 --retry-delay 5 \
+	-o /tmp/papiex-vendor-$(PAPIEX_SRC_BRANCH).tar.gz $(PAPIEX_SRC_URL) ; \
+	tar zxf /tmp/papiex-vendor-$(PAPIEX_SRC_BRANCH).tar.gz -C /tmp ; \
+	TOP_DIR=$$(tar ztf /tmp/papiex-vendor-$(PAPIEX_SRC_BRANCH).tar.gz | head -1 | cut -d/ -f1) ; \
+	mv /tmp/$${TOP_DIR} src/vendor/papiex ; \
+	rm -f /tmp/papiex-vendor-$(PAPIEX_SRC_BRANCH).tar.gz ; \
+	echo "papiex source vendored at src/vendor/papiex" ; \
+	ls src/vendor/papiex ; \
+	fi
+
+# Install epmt directly from src/ using pip, triggering compile_papiex.sh.
+# Run 'make vendor-papiex' first to avoid a network download at install time.
+pip-install: vendor-papiex
+	@echo "(pip-install) whoami: $(shell whoami)"
+	@echo " ------ PIP INSTALL epmt with PAPIEX COMPILATION ------- "
+	pip3 install ./src
 # ----------- \end PAPIEX THINGS ---------- #
 
 
@@ -453,6 +480,8 @@ papiexclean:
 	@echo "(papiexclean) whoami: $(shell whoami)"
 	- rm -fr $(PAPIEX_SRC) 
 	- rm -f $(PAPIEX_SRC_TARBALL) $(PAPIEX_RELEASE)
+	- rm -rf src/vendor/papiex
+	- rm -rf src/epmt/lib
 # ----------- \end CLEANING ---------- #
 
 

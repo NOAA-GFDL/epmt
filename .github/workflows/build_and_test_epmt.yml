@@ -155,6 +155,30 @@ jobs:
         run: |
           make OUTSIDE_DOCKER='YUP' papiex-dist
 
+      # ── Test pip install ./src with papiex compilation via compile_papiex.sh ──
+      # This exercises the new setup.py hook: compile_papiex.sh downloads
+      # papiex source from GitHub, compiles it, and installs .so files into
+      # src/epmt/lib/ so they are bundled into the pip package.
+      # gcc, make, and curl are already available from the earlier yum install step.
+      # compile_papiex.sh always exits 0 on graceful skips (missing tools, network
+      # errors), and setup.py catches non-zero exits and warns without failing the
+      # install — so pip install ./src should always succeed.
+      - name: Test pip install ./src (papiex compiled via compile_papiex.sh)
+        run: |
+          # Remove any pre-copied .so files to exercise the compilation path
+          rm -rf src/epmt/lib/
+          # Install directly from source; setup.py invokes compile_papiex.sh
+          python3 -m pip install ./src
+          SITE_PACKAGES=$(python3 -c "import site; print(site.getsitepackages()[0])")
+          if ls ${SITE_PACKAGES}/epmt/lib/*.so* 2>/dev/null | head -1 | grep -q .; then
+            echo "papiex shared libraries found — compile_papiex.sh succeeded"
+          else
+            echo "WARNING: papiex libraries not found after pip install ./src"
+            echo "         (compile_papiex.sh may have skipped or failed gracefully)"
+          fi
+          # Uninstall before the sdist-based install below
+          python3 -m pip uninstall -y epmt || true
+
       - name: make epmt pip-packaging
         run: |
           make dist python-dist dist-test

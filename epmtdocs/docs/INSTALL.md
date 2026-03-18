@@ -4,6 +4,67 @@ This is a tool to collect metadata and performance data about an entire job down
 
 The software contained in this repository was written by Philip Mucci of Minimal Metrics LLC.
 
+## Installation via pip (recommended)
+
+EPMT can be installed directly with pip.  When build tools (`gcc`, `make`,
+`curl`) are present on the system, `pip install epmt` will automatically
+compile the **papiex** C library and bundle the resulting shared libraries
+into the installed package.  If the build tools are missing, EPMT installs
+cleanly as a pure-Python package and hardware counter collection is simply
+unavailable at runtime (detectable with `epmt check`).
+
+### Quick install
+
+```bash
+pip install epmt
+```
+
+### Install from source (with papiex compilation)
+
+```bash
+# Clone the repository
+git clone https://github.com/NOAA-GFDL/epmt.git
+cd epmt
+
+# (Optional) Pre-download the papiex C source to avoid a network fetch
+# at install time — useful in air-gapped environments.
+make vendor-papiex
+
+# Install; setup.py will compile papiex via compile_papiex.sh
+pip install ./src
+```
+
+### Build environment variables
+
+The following environment variables control how papiex is compiled during
+`pip install`:
+
+| Variable | Default | Description |
+|---|---|---|
+| `PAPIEX_SRC_BRANCH` | `main` | Branch or tag of the papiex repository to download |
+| `CONFIG_PAPIEX_PAPI` | `n` | Set to `y` to enable PAPI hardware counter support |
+| `CONFIG_PAPIEX_DEBUG` | `n` | Set to `y` to enable a debug-mode build |
+
+Example:
+
+```bash
+CONFIG_PAPIEX_PAPI=y pip install ./src
+```
+
+### Verify installation
+
+Run `epmt check` after installation to verify that papiex libraries are
+present and that hardware counter collection is working:
+
+```bash
+epmt check
+```
+
+If papiex was not compiled (e.g. because `gcc` was unavailable), `epmt check`
+will report this and EPMT will still function for metadata collection.
+
+---
+
 ## Installation With Release File
 
 The release file includes EPMT, Data Collection Libraries, Notebook and EPMT Workflow GUI. 
