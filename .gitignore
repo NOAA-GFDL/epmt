@@ -72,7 +72,11 @@ src/epmt/lib/
 # pip build log from setup.py
 install_papiex.log
 
+# setuptools build artifacts
+src/build/
+# papiex compilation byproducts (headers and helper scripts)
+src/epmt/bin/
+src/epmt/include/
+
 # virtualenv
 venv*
-
-
