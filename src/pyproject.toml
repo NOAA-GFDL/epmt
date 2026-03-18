@@ -105,6 +105,7 @@ where = ["."]
 [tool.setuptools.package-data]
 epmt = [
     "lib/*.so*",
+    "bin/*",
 
     "alembic.ini",
     "preset_settings/*.py",

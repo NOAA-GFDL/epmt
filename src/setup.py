@@ -16,6 +16,8 @@ from setuptools.command.build import build
 
 logger = logging.getLogger(__name__)
 
+LOG_FILE = "install_papiex.log"
+
 
 class BuildPapiex(build):
     """Compile papiex native libraries before the standard setuptools build."""
@@ -24,26 +26,35 @@ class BuildPapiex(build):
         script = Path(__file__).parent / "compile_papiex.sh"
         if script.exists():
             try:
-                with open("install_papiex.log", "w", encoding="utf-8") as log_fh:
+                with open(LOG_FILE, "w", encoding="utf-8") as log_fh:
                     subprocess.run(
                         [str(script)],
-#                        stdout=subprocess.STDOUT,#log_fh,
-#                        stderr=subprocess.STDERR,
+                        stdout=log_fh,
+                        stderr=subprocess.STDOUT,
                         check=True,
                     )
-            except subprocess.CalledProcessError as e:
+            except subprocess.CalledProcessError as exc:
                 logger.warning(
-                    "papiex compilation failed. EPMT will still install "
-                    "but hardware counter collection will be unavailable. "
-                    "See install_papiex.log for details."
+                    "papiex compilation failed (exit %d). EPMT will still "
+                    "install but hardware counter collection will be "
+                    "unavailable. Build log follows:\n%s",
+                    exc.returncode, _read_log(),
                 )
-                raise e
-            except FileNotFoundError as e:
+            except FileNotFoundError:
                 logger.warning(
                     "compile_papiex.sh not found — skipping papiex build."
                 )
-                raise e
+            else:
+                logger.info("papiex build log:\n%s", _read_log())
         super().run()
+
+
+def _read_log():
+    """Return the contents of the papiex build log, or a fallback message."""
+    try:
+        return Path(LOG_FILE).read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return "(log file not available)"
 
 
 setup(cmdclass={"build": BuildPapiex})
