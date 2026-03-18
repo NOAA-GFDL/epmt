@@ -75,7 +75,7 @@ jobs:
       # Papiex Makefile default is "--rm -it", but -it causes "not a TTY" error.
       DOCKER_RUN_OPTS: "--rm"
       # Tarball source identifiers — update these to invalidate their caches.
-      PAPIEX_VERSION: "2.3.15"
+      PAPIEX_VERSION: "2.3.16"
       EPMT_DASH_SRC_BRANCH: "main"
 
     steps:
@@ -149,7 +149,7 @@ jobs:
       options: --privileged
     env:
       OS_TARGET: "rocky-8"
-      PAPIEX_VERSION: "2.3.15"
+      PAPIEX_VERSION: "2.3.16"
       EPMT_DASH_SRC_BRANCH: "main"
       # Build environment versions — must match Makefile and build_and_test_epmt.yml
       PYTHON_VERSION: "3.9.25"  # updated from 3.9.22 (issue #153: use latest 3.9.x)

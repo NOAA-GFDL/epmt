@@ -31,7 +31,7 @@ MM_SRC_URL_BASE=https://gitlab.com/minimal-metrics-llc/epmt
 NOAAGFDL_SRC_URL_BASE=https://github.com/noaa-gfdl
 
 # papiex details
-PAPIEX_VERSION?=2.3.15
+PAPIEX_VERSION?=2.3.16
 PAPIEX_SRC?=papiex
 PAPIEX_SRC_BRANCH=main
 PAPIEX_SRC_TARBALL=$(PAPIEX_SRC_BRANCH).tar.gz
