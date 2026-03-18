@@ -19,7 +19,6 @@ name: epmt
 
 channels:
   - conda-forge
-  - defaults
 
 dependencies:
   # 3.9/3.10/3.11 supported; 3.12 requires pandas 2.x + SQLAlchemy 2.x (issue #105)
@@ -50,4 +49,4 @@ dependencies:
   - pip
 
   - pip:
-    - -e src/              # editable install of epmt into this environment
+    - src/              # editable install of epmt into this environment

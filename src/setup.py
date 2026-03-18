@@ -27,20 +27,22 @@ class BuildPapiex(build):
                 with open("install_papiex.log", "w", encoding="utf-8") as log_fh:
                     subprocess.run(
                         [str(script)],
-                        stdout=log_fh,
-                        stderr=subprocess.STDOUT,
+#                        stdout=subprocess.STDOUT,#log_fh,
+#                        stderr=subprocess.STDERR,
                         check=True,
                     )
-            except subprocess.CalledProcessError:
+            except subprocess.CalledProcessError as e:
                 logger.warning(
                     "papiex compilation failed. EPMT will still install "
                     "but hardware counter collection will be unavailable. "
                     "See install_papiex.log for details."
                 )
-            except FileNotFoundError:
+                raise e
+            except FileNotFoundError as e:
                 logger.warning(
                     "compile_papiex.sh not found — skipping papiex build."
                 )
+                raise e
         super().run()
 
 
