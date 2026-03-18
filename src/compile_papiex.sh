@@ -85,7 +85,9 @@ else
 
     # Determine the top-level directory name from the listing before
     # extraction to avoid a second decompression pass.
-    TOP_DIR=$(tar -ztf "${PAPIEX_TMPDIR}/papiex.tar.gz" | head -1 | cut -d/ -f1)
+    # Disable pipefail here: head -1 exits early, causing tar to receive
+    # SIGPIPE (exit 141), which pipefail would propagate as a script failure.
+    TOP_DIR=$(set +o pipefail; tar -ztf "${PAPIEX_TMPDIR}/papiex.tar.gz" | head -1 | cut -d/ -f1)
     tar -zxf "${PAPIEX_TMPDIR}/papiex.tar.gz" -C "${PAPIEX_TMPDIR}"
     PAPIEX_SRC_DIR="${PAPIEX_TMPDIR}/${TOP_DIR}"
 fi
