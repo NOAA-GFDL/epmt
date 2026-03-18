@@ -189,12 +189,8 @@ jobs:
           ls src/dist/epmt*gz
           python3 -m pip install src/dist/epmt*gz
 
-      - name: create links to papiex executables, adjust path
+      - name: adjust path
         run: |
-          SITE_PACKAGES=$(python3 -c "import site; print(site.getsitepackages()[0])")
-          mkdir -p ${SITE_PACKAGES}/papiex-epmt-install
-          ln -s  ${SITE_PACKAGES}/epmt/lib ${SITE_PACKAGES}/papiex-epmt-install/
-          ln -s  ${SITE_PACKAGES}/epmt/bin ${SITE_PACKAGES}/papiex-epmt-install/
           export PATH='/usr/bin:${PATH}:/usr/local/libexec:/usr/local/bin'
 
       - name: Configure epmt to use PostgreSQL
