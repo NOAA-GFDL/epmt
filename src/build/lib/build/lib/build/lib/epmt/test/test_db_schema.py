@@ -1,0 +1,50 @@
+import unittest
+
+from epmt import epmt_settings as settings
+from epmt.orm import setup_db, orm_db_provider, db_session
+from epmt.epmtlib import timing, capture
+from epmt.orm.sqlalchemy.models import Process
+from epmt.orm.sqlalchemy.general import orm_dump_schema, orm_get, Session
+
+@timing
+def setUpModule():
+    setup_db(settings)
+
+
+class EPMTDBSchema(unittest.TestCase):
+
+    def test_schema(self):
+        with capture() as (out, err):
+            retval = orm_dump_schema()
+        # print('schema: ', out.getvalue())
+        s = out.getvalue()
+        # self.assertNotIn('alembic', s)
+        self.assertTrue(s.count('TABLE') >= 6)
+        # check_output("alembic upgrade head", shell=True)
+
+    # Pony has a bug and only uses 32-bit integers for the PK
+    # SQLite doesn't support the ALTER bigint migration. So
+    # this test only works for SQLA+PostgreSQL
+    @unittest.skipUnless( (settings.orm == 'sqlalchemy') and (orm_db_provider() == 'postgres'),
+                          'only works with SQLAlchemy+PostgreSQL')
+    @db_session
+    def test_process_pk_bigint(self):
+        pk_id = 4000000000
+        # If the database already has a process with this ID, then we have
+        # already passed the test, and we don't need to do anything.
+        # Otherwise, we create a Process with the large ID, and save it
+        # to the database. Then we retrieve it, and finally delete it.
+        if orm_get(Process, id=pk_id) is None:
+            p = Process(id=pk_id)
+            Session.add(p)
+            Session.commit()
+            p = Process[pk_id]
+            # now clean the just-added record
+            Session.delete(p)
+            Session.commit()
+            with self.assertRaises(KeyError):
+                Process[pk_id]
+
+
+if __name__ == '__main__':
+    unittest.main()

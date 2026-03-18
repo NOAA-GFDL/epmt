@@ -1,0 +1,23 @@
+"""
+EPMT settings module - user configuration settings.
+"""
+def test_settings_import():
+    pass
+
+epmt_settings_kind = 'empty'
+
+#papiex_options = "COLLATED_TSV"
+papiex_options = "PERF_COUNT_SW_CPU_CLOCK,COLLATED_TSV"
+
+db_params={'url': 'postgresql://epmt:Goal2020@workflow1:5432/epmt', 'echo': False}
+
+stage_command_dest='/nbhome/epmt/.submit'
+
+
+# data retention
+# You will need to run `epmt retire` in a cron job for this to happen
+# Remember, jobs that have dependent trained models will not be retired
+# retire_jobs_ndays = 40   # specify in number of days; set to 0 to not retire jobs
+retire_jobs_ndays = 21   # specify in number of days; set to 0 to not retire jobs
+retire_models_ndays = 0  # specify in number of days; set to 0 to not retire models
+retire_jobs_per_delete_max = 20  # specify the chunk-size to delete jobs in

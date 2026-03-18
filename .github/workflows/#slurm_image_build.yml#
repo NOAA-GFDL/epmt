@@ -1,0 +1,22 @@
+name: slurm_image_build
+
+on:
+  schedule:
+    # Weekly build on Mondays at 6am UTC to verify the SLURM image can still
+    # be built from source.  The resulting image is cached for use by
+    # docker_build_test which restores it instead of rebuilding every PR.
+    - cron: '0 6 * * 1'
+  ## DEBUG: uncomment these lines if one needs to run sooner, rather than later
+  ## re-comment pre-merge
+  #push:
+  workflow_dispatch:
+
+# cancel any in-progress run if a newer one is triggered
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
