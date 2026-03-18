@@ -76,3 +76,6 @@ install_papiex.log
 venv*
 
 
+
+# setuptools build artifacts
+src/build/
