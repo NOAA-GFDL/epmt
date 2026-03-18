@@ -78,4 +78,4 @@ dependencies:
 #   - conda-forge::pyinstaller-hooks-contrib==2023.11
 
   - pip:
-    - -e src/              # editable install of epmt into this environment
+    - src/              # editable install of epmt into this environment
