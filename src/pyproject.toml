@@ -76,9 +76,7 @@ dev = [
     "lazy-object-proxy",
     "mccabe",
     "wrapt",
-]
-# Test runner
-test = [
+    "pylint",
     "pytest",
 ]
 # 20231102 caw: pyinstaller is pinned at 5.7.0, latest version doesn't allow the settings.py tactic.
