@@ -751,14 +751,13 @@ def post_process_job( j,
         logger.info("  job contains %d processes (%d threads)", len(all_procs), nthreads)
         _t3 = time.time()
         logger.debug('  thread sums calculation took: %2.5f sec', _t3 - _t2)
-        # see comment above about why we don't use bulk insert for
-        # host-job associations
-        # if settings.bulk_insert:
-        #     logger.debug('  doing a bulk insert of host job associations')
-        #     t = Base.metadata.tables['host_job_associations']
-        #     thr_data.engine.execute(t.insert(), [ { 'jobid': j.jobid, 'hostname': h } for h in hosts])
-        # else:
-        j.hosts = list(hosts)
+        # Only add hosts not already associated with the job to avoid
+        # UniqueViolation on reprocessing when associations from a
+        # previous (partial) run already exist in the database.
+        existing_hosts = set(j.hosts)
+        new_hosts = hosts - existing_hosts
+        for host in new_hosts:
+            j.hosts.append(host)
         _t4 = time.time()
         logger.debug('  adding %d host(s) to job took: %2.5f sec', len(hosts), _t4 - _t3)
 
