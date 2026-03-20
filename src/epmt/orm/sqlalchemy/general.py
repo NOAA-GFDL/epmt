@@ -605,14 +605,14 @@ def _attribute_filter(qs, attr, target, exact_match=False, model=None, conv_to_s
             if conv_to_str or (isinstance(v, str)):
                 qs = qs.filter(
                     text(
-                        f"cast(json_extract({model.__tablename__}.{attr}, '$.{k}') as text) = '{v}'" if using_sqlite else (
+                        f"cast(json_extract({model.__tablename__}.{attr}, '$.{k}') as text) = '{v}'") if using_sqlite else (
                         getattr(
                             model,
                             attr)[k].astext == str(v)))
             else:
                 qs = qs.filter(
                     text(
-                        f"json_extract({model.__tablename__}.{attr}, '$.{k}') = {v}" if using_sqlite else (
+                        f"json_extract({model.__tablename__}.{attr}, '$.{k}') = {v}") if using_sqlite else (
                         getattr(
                             model,
                             attr)[k] == v))
