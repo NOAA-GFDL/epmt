@@ -52,7 +52,9 @@ notebook = [
     "jupyter-client",
     "jupyter-console",
     "jupyter-core",
+	"jupyter-server<2",
     "notebook<7",
+	"jupyterlab<4",
     "qtconsole",
 ]
 # Dash-based web UI
@@ -71,11 +73,6 @@ docs = [
 ]
 # Linting and static analysis
 dev = [
-    "astroid",
-    "isort",
-    "lazy-object-proxy",
-    "mccabe",
-    "wrapt",
     "pylint",
     "pytest",
 ]
