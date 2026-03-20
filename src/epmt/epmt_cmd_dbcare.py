@@ -124,7 +124,7 @@ def epmt_dbcare(retire_jobs=False, vacuum_tables=False, post_process=False):
         result_count_unprocd_jobs=orm_raw_sql(psql_count_unprocd_jobs)
         number_of_unprocd_jobs=-1
         try:
-            number_of_unprocd_jobs=result_count_unprocd_jobs.scalars().all()[0]
+            number_of_unprocd_jobs=result_count_unprocd_jobs[0][0]
         except Exception as e:
             raise Exception from e
 
@@ -142,7 +142,7 @@ def epmt_dbcare(retire_jobs=False, vacuum_tables=False, post_process=False):
         result_get_unprocd_jobs=orm_raw_sql(psql_get_unprocd_jobs)
         try:
             logger.info('attempting to retrieve job IDs')
-            job_list=result_get_unprocd_jobs.scalars().all()
+            job_list=[row[0] for row in result_get_unprocd_jobs]
             logger.debug('job_list is %s', ' '.join(job_list))
         except Exception as e:
             raise Exception('problem with retrieving job IDs. inspect code.') from e
