@@ -47,7 +47,7 @@ install_prefix = path.abspath(get_install_root() + "/../papiex-epmt-install/")
 # place for error'd CSV files
 error_dest = "/tmp"
 # when we are not attached to a terminal we log to the file below
-logfile = path.expandvars("/tmp/epmt_{}.log".format(getuser() or "unknown"))
+logfile = path.expandvars(f"/tmp/epmt_{getuser() or 'unknown'}.log")
 
 # blacklist for environment filter (in addition to all keys with
 # leading underscores)
