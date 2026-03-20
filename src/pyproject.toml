@@ -71,8 +71,8 @@ docs = [
     "mkdocs-git-committers-plugin",
     "mkdocs-theme-bootstrap4",
 ]
-# Linting and static analysis
-dev = [
+# testing, linting and static analysis
+devtest = [
     "pylint",
     "pytest",
 ]
@@ -83,7 +83,7 @@ build = [
 ]
 # Shorthand: install everything (mirrors the old flat dependency list)
 all = [
-    "epmt[notebook,ui,docs,dev,test,build]",
+    "epmt[notebook,ui,docs,devtest,build]",
 ]
 
 [project.scripts]
