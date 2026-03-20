@@ -77,6 +77,9 @@ jobs:
       - name: Unit test — test_cmds
         run: TZ=UTC pytest -x -vv src/epmt/test/test_cmds.py
 
+      - name: Unit test — test_dbcare
+        run: TZ=UTC pytest -x -vv src/epmt/test/test_dbcare.py
+
       - name: Unit test — test_db_migration
         run: TZ=UTC pytest -x -vv src/epmt/test/test_db_migration.py
 

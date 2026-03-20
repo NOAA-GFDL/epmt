@@ -86,6 +86,41 @@ class TestDbcare(unittest.TestCase):
             self.assertIn('685000', jobs)
 
 
+class TestVacuum(unittest.TestCase):
+    """Tests for vacuum functionality."""
+
+    def test_vacuum_skipped_when_disabled(self):
+        """dbcare with vacuum_tables=False should skip vacuuming."""
+        import epmt.epmt_cmd_dbcare as dbcare_mod
+        with patch.object(dbcare_mod, '_vacuum_tables') as mock_vacuum:
+            epmt_dbcare(retire_jobs=False, vacuum_tables=False, post_process=False)
+            mock_vacuum.assert_not_called()
+
+    def test_vacuum_called_when_enabled(self):
+        """dbcare with vacuum_tables=True should call _vacuum_tables."""
+        import epmt.epmt_cmd_dbcare as dbcare_mod
+        with patch.object(dbcare_mod, '_vacuum_tables') as mock_vacuum:
+            epmt_dbcare(retire_jobs=False, vacuum_tables=True, post_process=False)
+            mock_vacuum.assert_called_once()
+
+    def test_vacuum_tables_no_engine(self):
+        """_vacuum_tables should log error and return if no engine available."""
+        import epmt.epmt_cmd_dbcare as dbcare_mod
+        saved_engine = orm_general.engine
+        try:
+            orm_general.engine = None
+            dbcare_mod._vacuum_tables()
+        finally:
+            orm_general.engine = saved_engine
+
+    def test_vacuum_tables_list(self):
+        """VACUUM_TABLES should contain the expected tables."""
+        from epmt.epmt_cmd_dbcare import VACUUM_TABLES
+        self.assertIn('jobs', VACUUM_TABLES)
+        self.assertIn('processes', VACUUM_TABLES)
+        self.assertIn('processes_staging', VACUUM_TABLES)
+
+
 class TestRetireJobs(unittest.TestCase):
     """Tests for retire_jobs efficiency improvements (PR #189)."""
 
