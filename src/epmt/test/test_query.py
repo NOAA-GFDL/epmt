@@ -506,8 +506,10 @@ class QueryAPI(unittest.TestCase):
         # pylint: disable=no-member
         self.assertEqual([int(x) for x in df.cpu_time.values], [
                          53934101, 31337553, 123305670, 2799492, 20996147, 6496944])
-        # self.assertEqual([int(x) for x in df.duration.values], [6375786656, 6471901800, 6672575160, 8551396, 69194108, 17359881])
-        # self.assertEqual([int(x) for x in df.duration.values], [6378342472, 6474000335, 6674198021, 67199129, 133578518, 287555579])
+        # self.assertEqual([int(x) for x in df.duration.values],
+        #                  [6375786656, 6471901800, 6672575160, 8551396, 69194108, 17359881])
+        # self.assertEqual([int(x) for x in df.duration.values],
+        #                  [6378342472, 6474000335, 6674198021, 67199129, 133578518, 287555579])
         # pylint: disable=no-member
         self.assertEqual(
             list(
@@ -632,13 +634,17 @@ class QueryAPI(unittest.TestCase):
             {
                 'abc': '200',
                 'def': 'bye',
-                'EPMT_JOB_TAGS': 'atm_res:c96l49;exp_component:ocean_month_rho2_1x1deg;exp_name:ESM4_historical_D151;exp_time:18840101;ocn_res:0.5l75;script_name:ESM4_historical_D151_ocean_month_rho2_1x1deg_18840101'})
+                'EPMT_JOB_TAGS': ('atm_res:c96l49;exp_component:ocean_month_rho2_1x1deg;'
+                                  'exp_name:ESM4_historical_D151;exp_time:18840101;'
+                                  'ocn_res:0.5l75;script_name:ESM4_historical_D151_ocean_month_rho2_1x1deg_18840101')})
         self.assertEqual(
             eq.get_job_annotations('685016'),
             {
                 'abc': '200',
                 'def': 'bye',
-                'EPMT_JOB_TAGS': 'atm_res:c96l49;exp_component:ocean_month_rho2_1x1deg;exp_name:ESM4_historical_D151;exp_time:18840101;ocn_res:0.5l75;script_name:ESM4_historical_D151_ocean_month_rho2_1x1deg_18840101'})
+                'EPMT_JOB_TAGS': ('atm_res:c96l49;exp_component:ocean_month_rho2_1x1deg;'
+                                  'exp_name:ESM4_historical_D151;exp_time:18840101;'
+                                  'ocn_res:0.5l75;script_name:ESM4_historical_D151_ocean_month_rho2_1x1deg_18840101')})
         self.assertEqual(eq.get_jobs(annotations={'abc': '200'}, fmt='terse'), ['685016'])
 
     @db_session
@@ -685,9 +691,10 @@ class QueryAPI(unittest.TestCase):
         # op_root_procs = eq.op_roots(['685000', '685003', '685016'], 'op_sequence:1', fmt='orm')
         # l = eq.select((p.job.jobid, p.pid) for p in op_root_procs)[:]
         # self.assertEqual(l,
-        #                 [ ('685000', 6226), ('685000', 10042), ('685000', 10046), ('685000', 10058), ('685000', 10065),
-        #                   ('685000', 10066), ('685003', 29079), ('685003', 31184), ('685003', 31185), ('685003', 31191),
-        #                   ('685003', 31198), ('685003', 31199), ('685016', 122259), ('685016', 128848), ('685016', 128849),
+        #                 [ ('685000', 6226), ('685000', 10042), ('685000', 10046), ('685000', 10058),
+        #                   ('685000', 10065), ('685000', 10066), ('685003', 29079), ('685003', 31184),
+        #                   ('685003', 31185), ('685003', 31191), ('685003', 31198), ('685003', 31199),
+        #                   ('685016', 122259), ('685016', 128848), ('685016', 128849),
         #                   ('685016', 128855), ('685016', 128862), ('685016', 128863)])
         df = eq.op_roots(['685000', '685003', '685016'], 'op_sequence:1', fmt='pandas')
         self.assertIn(df.shape, ((18, 50), (18, 49)))
@@ -830,7 +837,9 @@ class QueryAPI(unittest.TestCase):
             {
                 'exit_code': 0,
                 'exit_reason': 'none',
-                'script_path': '/home/Jeffrey.Durachta/ESM4/DECK/ESM4_historical_D151/gfdl.ncrc4-intel16-prod-openmp/scripts/postProcess/ESM4_historical_D151_ocean_annual_rho2_1x1deg_18840101.tags',
+                'script_path': ('/home/Jeffrey.Durachta/ESM4/DECK/ESM4_historical_D151/'
+                                'gfdl.ncrc4-intel16-prod-openmp/scripts/postProcess/'
+                                'ESM4_historical_D151_ocean_annual_rho2_1x1deg_18840101.tags'),
                 'script_name': 'ESM4_historical_D151_ocean_annual_rho2_1x1deg_18840101'})
 
     @db_session
