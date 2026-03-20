@@ -628,7 +628,7 @@ def post_process_job( j,
 
     # we need to set up signal handlers so the user doesn't
     # abort the post-processing midway.
-    def sig_handler(signo): #, frame):
+    def sig_handler(signo, frame):
         if hasattr(sig_handler, 'interrupted'):
             sys.exit(signo)
         sig_handler.interrupted = True
