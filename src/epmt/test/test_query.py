@@ -25,7 +25,7 @@ def do_cleanup():
 def setUpModule():
     setup_db(settings)
     do_cleanup()
-    datafiles = '{}/test/data/query/*.tgz'.format(install_root)
+    datafiles = f'{install_root}/test/data/query/*.tgz'
     #    print('setUpModdule: importing {0}'.format(datafiles))
     with capture() as (out, err):
         epmt_submit(sorted(glob(datafiles)), dry_run=False)
@@ -372,25 +372,25 @@ class QueryAPI(unittest.TestCase):
             for out_fmt in ['pandas', 'terse', 'orm', 'dict']:
                 out = eq.conv_jobs(jobs, fmt=out_fmt)
                 if out_fmt == 'terse':
-                    self.assertEqual(type(out), list, 'output format not terse when input fmt: {0}'.format(inp_fmt))
-                    self.assertEqual(sorted(out), sorted(ref), 'error in {0} -> {1}'.format(inp_fmt, out_fmt))
+                    self.assertEqual(type(out), list, f'output format not terse when input fmt: {inp_fmt}')
+                    self.assertEqual(sorted(out), sorted(ref), f'error in {inp_fmt} -> {out_fmt}')
                 elif out_fmt == 'orm':
-                    self.assertTrue(orm_is_query(out), 'output format not ORM when input fmt: {0}'.format(inp_fmt))
+                    self.assertTrue(orm_is_query(out), f'output format not ORM when input fmt: {inp_fmt}')
                     self.assertEqual(sorted([j.jobid for j in out]), sorted(
-                        ref), 'error in {0} -> {1}'.format(inp_fmt, out_fmt))
+                        ref), f'error in {inp_fmt} -> {out_fmt}')
                 elif out_fmt == 'dict':
                     self.assertTrue(
                         isinstance(out, list) and len(out) > 0 and isinstance(out[0], dict),
-                        'output format not dictlist when input fmt: {0}'.format(inp_fmt))
+                        f'output format not dictlist when input fmt: {inp_fmt}')
                     self.assertEqual(sorted([j['jobid'] for j in out]), sorted(ref),
-                                     'error in {0} -> {1}'.format(inp_fmt, out_fmt))
+                                     f'error in {inp_fmt} -> {out_fmt}')
                 elif out_fmt == 'pandas':
                     self.assertEqual(
                         type(out),
                         pd.DataFrame,
-                        'output format not dataframe when input fmt: {0}'.format(inp_fmt))
+                        f'output format not dataframe when input fmt: {inp_fmt}')
                     self.assertEqual(sorted(list(out['jobid'].values)), sorted(ref),
-                                     'error in {0} -> {1}'.format(inp_fmt, out_fmt))
+                                     f'error in {inp_fmt} -> {out_fmt}')
 
     @db_session
     def test_job_proc_tags(self):
@@ -851,7 +851,7 @@ class QueryAPI(unittest.TestCase):
         self.assertEqual(len([e for e in errs['685000'] if 'rdtsc_duration' in e]), 9)
         self.assertEqual(len([e for e in errs['685000'] if 'invalid timestamp' in e]), 3)
         self.assertEqual(len([e for e in errs['685000'] if 'in the future' in e]), 1)
-        self.assertEqual(len([e for e in errs['685000'] if 'Process[{}]'.format(proc_id) in e]), 1)
+        self.assertEqual(len([e for e in errs['685000'] if f'Process[{proc_id}]' in e]), 1)
 
     def test_version(self):
         self.assertTrue(eq.version() > (1, 0, 0))
