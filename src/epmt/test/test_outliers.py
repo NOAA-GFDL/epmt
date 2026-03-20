@@ -29,7 +29,7 @@ def do_cleanup():
 def setUpModule():
     setup_db(settings)
     do_cleanup()
-    datafiles = '{}/test/data/outliers/*.tgz'.format(install_root)
+    datafiles = f'{install_root}/test/data/outliers/*.tgz'
 #    print('setUpModule: importing {0}'.format(datafiles))
     environ['EPMT_TZ'] = 'Asia/Kolkata'
     with capture() as (out, err):
