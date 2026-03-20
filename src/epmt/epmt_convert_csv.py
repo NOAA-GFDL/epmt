@@ -67,8 +67,14 @@ OUTPUT_CSV_FIELDS = [
 OUTPUT_CSV_SEP = '\t'
 
 # Expected input format
-# tags,hostname,exename,path,args,exitcode,pid,generation,ppid,pgid,sid,numtids,tid,start,end,usertime,systemtime,rssmax,minflt,majflt,inblock,outblock,vol_ctxsw,invol_ctxsw,num_threads,starttime,processor,delayacct_blkio_time,guest_time,rchar,wchar,syscr,syscw,read_bytes,write_bytes,cancelled_write_bytes,time_oncpu,time_waiting,timeslices,rdtsc_duration,PERF_COUNT_SW_CPU_CLOCK
-# ,pp208,tcsh,/bin/tcsh,-f /home/Jeffrey.Durachta/ESM4/DECK/ESM4_historical_D151/gfdl.ncrc4-intel16-prod-openmp/scripts/postProcess/ESM4_historical_D151_ocean_annual_rho2_1x1deg_18840101.tags,0,6099,0,6098,6089,6084,1,6099,1560599524133795,1560599524134048,2999,0,2852,387,0,0,0,0,0,0,1296261120000,0,0,0,17618,0,40,0,0,0,0,3604195,47138,1,846248,246094
+# tags,hostname,exename,path,args,exitcode,pid,generation,ppid,pgid,sid,numtids,tid,start,end,usertime,systemtime,
+# rssmax,minflt,majflt,inblock,outblock,vol_ctxsw,invol_ctxsw,num_threads,starttime,processor,delayacct_blkio_time,
+# guest_time,rchar,wchar,syscr,syscw,read_bytes,write_bytes,cancelled_write_bytes,time_oncpu,time_waiting,timeslices,
+# rdtsc_duration,PERF_COUNT_SW_CPU_CLOCK
+# ,pp208,tcsh,/bin/tcsh,-f /home/Jeffrey.Durachta/ESM4/DECK/ESM4_historical_D151/gfdl.ncrc4-intel16-prod-openmp/
+# scripts/postProcess/ESM4_historical_D151_ocean_annual_rho2_1x1deg_18840101.tags,0,6099,0,6098,6089,6084,1,6099,
+# 1560599524133795,1560599524134048,2999,0,2852,387,0,0,0,0,0,0,1296261120000,0,0,0,17618,0,40,0,0,0,0,
+# 3604195,47138,1,846248,246094
 
 
 def conv_csv_for_dbcopy(infile, outfile='', jobid='', input_fields=INPUT_CSV_FIELDS):
@@ -143,7 +149,8 @@ def conv_csv_for_dbcopy(infile, outfile='', jobid='', input_fields=INPUT_CSV_FIE
             if row_num == 1:
                 if input_fields and set(r.keys()) < input_fields:
                     # sanity check to make sure our input file has the correct format
-                    logger.error('Input CSV format is not correct. Likely missing  header row. Is it already in v2 format?')
+                    logger.error('Input CSV format is not correct. '
+                                 'Likely missing  header row. Is it already in v2 format?')
                     return False
                 thr_fields = sorted(set(r.keys()) -
                                     set(settings.skip_for_thread_sums) -
