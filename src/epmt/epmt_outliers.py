@@ -1277,7 +1277,8 @@ def detect_rootcause_op(jobs, inp, tag, features=FEATURES, methods=[modified_z_s
         # this is just a sanity check to make sure we only compare
         # rows that have the same tag. Ordinarily this code won't be
         # triggered as eq.get_op_metrics will only return rows that match 'tag'
-        print(f'ref jobs have multiple distinct tags({unique_tags}) that are a superset of specified tag. Please specify an exact tag match')
+        print(f'ref jobs have multiple distinct tags({unique_tags}) that are a superset of '
+              'specified tag. Please specify an exact tag match')
         return (False, None, None)
     return rca(ref_ops_df, inp_ops_df, features, methods)
 
