@@ -354,7 +354,9 @@ class EPMTSubmit(unittest.TestCase):
                                  'SLURM_JOB_QOS': 'Added as default',
                                  'SLURM_GET_USER_ENV': '1',
                                  'SLURM_NODELIST': 'pp208',
-                                 'pp_script': '/home/Jeffrey.Durachta/ESM4/DECK/ESM4_historical_D151/gfdl.ncrc4-intel16-prod-openmp/scripts/postProcess/ESM4_historical_D151_ocean_annual_rho2_1x1deg_18840101.tags',
+                                 'pp_script': ('/home/Jeffrey.Durachta/ESM4/DECK/ESM4_historical_D151/'
+                                               'gfdl.ncrc4-intel16-prod-openmp/scripts/postProcess/'
+                                               'ESM4_historical_D151_ocean_annual_rho2_1x1deg_18840101.tags'),
                                  'MANPATH': '/home/gfdl/man:/usr/local/man:/usr/share/man',
                                  'SLURM_PROCID': '0',
                                  'OSTYPE': 'linux',
@@ -378,7 +380,8 @@ class EPMTSubmit(unittest.TestCase):
                                  'SLURMD_NODENAME': 'pp208',
                                  'SLURM_LOCALID': '0',
                                  'GROUP': 'f',
-                                 'SLURM_SUBMIT_DIR': '/home/Jeffrey.Durachta/ESM4/DECK/ESM4_historical_D151/gfdl.ncrc4-intel16-prod-openmp/scripts/postProcess',
+                                 'SLURM_SUBMIT_DIR': ('/home/Jeffrey.Durachta/ESM4/DECK/ESM4_historical_D151/'
+                                                      'gfdl.ncrc4-intel16-prod-openmp/scripts/postProcess'),
                                  'SLURM_JOBID': '685000',
                                  'HOSTTYPE': 'x86_64-linux',
                                  'SLURM_TOPOLOGY_ADDR_PATTERN': 'node',
@@ -402,7 +405,10 @@ class EPMTSubmit(unittest.TestCase):
                                  'SLURM_JOB_GID': '70',
                                  'TMPDIR': '/vftmp/Jeffrey.Durachta/job685000',
                                  'MODULEPATH': '/usr/local/Modules/modulefiles:/home/fms/local/modulefiles',
-                                 'EPMT_JOB_TAGS': 'exp_name:ESM4_historical_D151;exp_component:ocean_annual_rho2_1x1deg;exp_time:18840101;atm_res:c96l49;ocn_res:0.5l75;script_name:ESM4_historical_D151_ocean_annual_rho2_1x1deg_18840101',
+                                 'EPMT_JOB_TAGS': (
+                                     'exp_name:ESM4_historical_D151;exp_component:ocean_annual_rho2_1x1deg;'
+                                     'exp_time:18840101;atm_res:c96l49;ocn_res:0.5l75;'
+                                     'script_name:ESM4_historical_D151_ocean_annual_rho2_1x1deg_18840101'),
                                  'OMP_NUM_THREADS': '1',
                                  'SLURM_TASK_PID': '6089',
                                  'SLURM_TOPOLOGY_ADDR': 'pp208',
@@ -457,10 +463,23 @@ class EPMTSubmit(unittest.TestCase):
                                   'status': {'exit_code': 0,
                                              'exit_reason': 'none',
                                              'script_name': 'ESM4_historical_D151_ocean_annual_rho2_1x1deg_18840101',
-                                             'script_path': '/home/Jeffrey.Durachta/ESM4/DECK/ESM4_historical_D151/gfdl.ncrc4-intel16-prod-openmp/scripts/postProcess/ESM4_historical_D151_ocean_annual_rho2_1x1deg_18840101.tags'},
-                                  'metric_names': 'PERF_COUNT_SW_CPU_CLOCK,cancelled_write_bytes,delayacct_blkio_time,guest_time,inblock,invol_ctxsw,majflt,minflt,outblock,processor,rchar,rdtsc_duration,read_bytes,rssmax,syscr,syscw,systemtime,time_oncpu,time_waiting,timeslices,usertime,vol_ctxsw,wchar,write_bytes'},
-                    'annotations': {'papiex-error': 'PAPI failed or misbehaved process closed a descriptor it did not own (rdtsc_duration < 0). 4 processes have potentially erroneous PAPI metric counts',
-                                    'EPMT_JOB_TAGS': 'atm_res:c96l49;exp_component:ocean_annual_rho2_1x1deg;exp_name:ESM4_historical_D151;exp_time:18840101;ocn_res:0.5l75;script_name:ESM4_historical_D151_ocean_annual_rho2_1x1deg_18840101',
+                                             'script_path': (
+                                                 '/home/Jeffrey.Durachta/ESM4/DECK/ESM4_historical_D151/'
+                                                 'gfdl.ncrc4-intel16-prod-openmp/scripts/postProcess/'
+                                                 'ESM4_historical_D151_ocean_annual_rho2_1x1deg_18840101.tags')},
+                                  'metric_names': (
+                                      'PERF_COUNT_SW_CPU_CLOCK,cancelled_write_bytes,'
+                                      'delayacct_blkio_time,guest_time,inblock,invol_ctxsw,'
+                                      'majflt,minflt,outblock,processor,rchar,rdtsc_duration,'
+                                      'read_bytes,rssmax,syscr,syscw,systemtime,time_oncpu,'
+                                      'time_waiting,timeslices,usertime,vol_ctxsw,wchar,write_bytes')},
+                    'annotations': {'papiex-error': ('PAPI failed or misbehaved process closed a descriptor'
+                                                      ' it did not own (rdtsc_duration < 0).'
+                                                      ' 4 processes have potentially erroneous PAPI metric counts'),
+                                    'EPMT_JOB_TAGS': (
+                                        'atm_res:c96l49;exp_component:ocean_annual_rho2_1x1deg;'
+                                        'exp_name:ESM4_historical_D151;exp_time:18840101;ocn_res:0.5l75;'
+                                        'script_name:ESM4_historical_D151_ocean_annual_rho2_1x1deg_18840101'),
                                     'papiex-error-process-ids': [22121,
                                                                  23756,
                                                                  24562,
