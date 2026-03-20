@@ -15,7 +15,7 @@
 # After pulling new commits, re-run the pip install line above if
 # pyproject.toml dependencies changed.
 
-name: epmt_w_notebooks
+name: epmt
 
 channels:
   - conda-forge
@@ -48,18 +48,18 @@ dependencies:
   - conda-forge::pylint
   - pip
   
-  # --- notebook extras -------------------------------------------------- (TESTED, WORKS!)
-  - conda-forge::ipykernel
-  - conda-forge::ipython
-  - conda-forge::ipywidgets
-  - conda-forge::jupyter
-  - conda-forge::jupyter_client
-  - conda-forge::jupyter_console
-  - conda-forge::jupyter_core
-  - conda-forge::jupyter_server<2
-  - conda-forge::notebook<7
-  - conda-forge::jupyterlab<4        # must stay <4 while notebook is <7  
-  - conda-forge::qtconsole
+#  # --- notebook extras -------------------------------------------------- (TESTED, WORKS!)
+#  - conda-forge::ipykernel
+#  - conda-forge::ipython
+#  - conda-forge::ipywidgets
+#  - conda-forge::jupyter
+#  - conda-forge::jupyter_client
+#  - conda-forge::jupyter_console
+#  - conda-forge::jupyter_core
+#  - conda-forge::jupyter_server<2
+#  - conda-forge::notebook<7
+#  - conda-forge::jupyterlab<4        # must stay <4 while notebook is <7  
+#  - conda-forge::qtconsole
 
 #  # --- ui extras -------------------------------------------------- (NOT TESTED)
 #  - conda-forge::dash
@@ -78,4 +78,4 @@ dependencies:
 #   - conda-forge::pyinstaller-hooks-contrib==2023.11
 
   - pip:
-    - src/              # editable install of epmt into this environment
+    - -e src/              # editable install of epmt into this environment
