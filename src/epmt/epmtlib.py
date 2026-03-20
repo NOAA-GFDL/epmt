@@ -15,6 +15,8 @@ from pwd import getpwuid
 from subprocess import call
 from time import time
 
+logger = getLogger(__name__)
+
 # semantic version
 # first element is the major version number
 # second element is the minor version number
@@ -39,7 +41,13 @@ def get_username():
 
 def epmt_logging_init(intlvl=0, check=False, log_pid=False):
     '''
-    if check is set, then we will bail if logging has already been initialized
+    Configure logging for the ``epmt`` package.
+
+    Handlers are attached to the ``epmt`` package logger (not the root
+    logger) so that third-party libraries are unaffected.
+
+    If *check* is set, then we will bail if logging has already been
+    initialized.
     '''
     import logging
     import epmt.epmt_settings as settings
@@ -61,24 +69,27 @@ def epmt_logging_init(intlvl=0, check=False, log_pid=False):
     else:  # intlvl >= 2:
         level = DEBUG  # 10
 
-    # Set level and remove all existing handlers
-    # rootLogger = getLogger(__name__) # thank you! @ ericzhou13
-    rootLogger = getLogger()
-    rootLogger.debug("epmt_logging_init(%d,%s,%s): %d handlers", intlvl, check, log_pid, len(rootLogger.handlers))
-    for handler in rootLogger.handlers:
-        rootLogger.removeHandler(handler)
-    rootLogger.setLevel(level)
+    # Configure the 'epmt' package logger instead of the root logger.
+    # All epmt.* module loggers inherit from this logger, and third-party
+    # loggers (matplotlib, numba, parso, etc.) are no longer affected.
+    epmt_logger = getLogger('epmt')
+    epmt_logger.debug("epmt_logging_init(%d,%s,%s): %d handlers", intlvl, check, log_pid, len(epmt_logger.handlers))
+    for handler in epmt_logger.handlers[:]:
+        epmt_logger.removeHandler(handler)
+    epmt_logger.setLevel(level)
+    # Prevent log messages from propagating to the root logger, which
+    # would cause duplicate output if the root has its own handlers.
+    epmt_logger.propagate = False
 
     # only log to file if stdout is not a tty
     from sys import stdout
     if not stdout.isatty():
-        # basicConfig(filename='epmt.log', filemode='a', level=level)
         logFormatter = logging.Formatter("[%(asctime)-19.19s, %(process)6d] %(levelname)-7.7s %(name)s:%(message)s")
         fileHandler = logging.FileHandler(settings.logfile)
         fileHandler.setFormatter(logFormatter)
         fileHandler.setLevel(level)
-        rootLogger.debug("epmt_logging_init(): not_a_tty: adding handler for settings.logfile=%s", settings.logfile)
-        rootLogger.addHandler(fileHandler)
+        epmt_logger.debug("epmt_logging_init(): not_a_tty: adding handler for settings.logfile=%s", settings.logfile)
+        epmt_logger.addHandler(fileHandler)
 
     consoleHandler = logging.StreamHandler()
     consoleFormatter = logging.Formatter(
@@ -86,20 +97,10 @@ def epmt_logging_init(intlvl=0, check=False, log_pid=False):
          if log_pid else
          "%(asctime)-19.19s %(levelname)7.7s: %(name)s: %(message)s"))
     consoleHandler.setFormatter(consoleFormatter)
-    rootLogger.addHandler(consoleHandler)
+    epmt_logger.addHandler(consoleHandler)
 
-    # matplotlib generates a ton of debug messages
-    mpl_logger = logging.getLogger('matplotlib')
-    mpl_logger.setLevel(logging.WARNING)
-
-    # numba.byteflow generates a ton of debug messages
-    numba_logger = logging.getLogger('numba')
-    numba_logger.setLevel(logging.WARNING)
-
-    # ipython's parso logger has too many debug messages
-    parso_logger = logging.getLogger('parso')
-    parso_logger.setLevel(logging.WARNING)
-
+    # Alembic's logger lives outside the epmt hierarchy, so we still
+    # need to set its level explicitly.
     alembic_logger = logging.getLogger('alembic')
     alembic_logger.setLevel(level)
 
@@ -110,8 +111,6 @@ def epmt_logging_init(intlvl=0, check=False, log_pid=False):
     # to show the sqlalchemy's INFO level messages (but instead
     # a level higher).
     sqlalchemy_logger = logging.getLogger('sqlalchemy')
-    #sqlalchemy_logger.setLevel(level + 10)
-    #sqlalchemy_logger.setLevel(level + 20)
     sqlalchemy_logger.setLevel(level + 30)
 
 
@@ -120,7 +119,6 @@ def init_settings(settings):
         return
     init_settings.initialized = True
 
-    logger = getLogger('init_settings')
     err_msg = ""
 
     if environ.get("PAPIEX_OUTPUT"):
@@ -258,7 +256,6 @@ def safe_rm(f):
 
 
 def timing(f):
-    logger = getLogger(__name__)
 
     @wraps(f)
     def wrap(*args, **kw):
@@ -316,7 +313,6 @@ def tag_from_string(s, delim=';', sep=':', tag_default_value='1'):
     if not s:
         return (None if s is None else {})
 
-    logger = getLogger(__name__)
     tag = {}
     for t in s.split(delim):
         t = t.strip()
@@ -650,7 +646,6 @@ def compare_dicts(d1, d2):
 
 
 def get_batch_envvar(var, where):
-    logger = getLogger(__name__)
     key2slurm = {
         "JOB_NAME": "SLURM_JOB_NAME",
         "JOB_USER": "SLURM_JOB_USER"
@@ -668,7 +663,6 @@ def get_batch_envvar(var, where):
 
 
 def get_metadata_env_changes(metadata):
-    logger = getLogger(__name__)
     start_env = metadata['job_pl_env']
     stop_env = metadata['job_el_env']
     (added, removed, modified, same) = compare_dicts(stop_env, start_env)
@@ -699,7 +693,6 @@ def check_fix_metadata(raw_metadata):
         return raw_metadata
 
     import epmt.epmt_settings as settings
-    logger = getLogger(__name__)
 
     # First check what should be here
     try:
@@ -924,7 +917,6 @@ def dframe_encode_features(df, features=[], reversible=False):
 
     NOTE: If encoded_features is empty, no features were encoded.
     '''
-    logger = getLogger(__name__)
     if not features:
         import epmt.epmt_settings as settings
         logger.debug('Selecting non-numeric columns from dataframe and then pruning out blacklisted features')
@@ -975,7 +967,6 @@ def dframe_decode_features(df, features):
               calling dframe_encode_features, as otherwise the strings
               are hashed and not encoded (hashed strings cannot be decoded).
     '''
-    logger = getLogger(__name__)
     decoded_df = df.copy()
     decoded_features = []
     for c in features:
@@ -1131,7 +1122,6 @@ def get_install_root():
     >>> '/abc/def/ghi.py'.rsplit('/',1)
     ['/abc/def', 'ghi.py']
     '''
-    # logger = getLogger(__name__)
     install_root = __file__.rsplit('/', 2)[0]
     # handle pip packaging here -- even when "manually" installed ala 4.9.6, our install_dir should always end in /epmt.
     # XXX THIS IS STILL HOKEY and i'm not sure how to make it work for all possible installations.
@@ -1223,7 +1213,6 @@ def set_signal_handlers(signals=[], handler=None):
     to the default)
     '''
     from signal import SIGHUP, SIGTERM, SIGINT, signal, SIG_DFL
-    logger = getLogger(__name__)
 
     # set defaults
     signals = signals or [SIGHUP, SIGTERM, SIGINT]

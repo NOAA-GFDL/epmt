@@ -29,7 +29,7 @@ from glob import glob
 
 from logging import getLogger
 
-logger = getLogger('epmt_concat')  # you can use other name
+logger = getLogger(__name__)
 
 
 class InvalidFileFormat(RuntimeError):
@@ -42,7 +42,6 @@ def rename_bad_files(outfile, errdir, badfiles):
     errdir is place for output
     badfiles is possibly empty list of files that errored in parsing
     '''
-    logger = getLogger('rename_bad_files')
     logger.debug("%s,%s,%s", outfile, errdir, str(badfiles))
     if not errdir:
         logger.warning("No error dir specified, skipping renaming of bad CSV files!")
@@ -83,7 +82,6 @@ def parseFile(inputfile, masterHeader, masterHeaderFile, delim, commentDelim):
 
     Returns: tuple(comments list, masterHeader string, datas list)
     """
-    logger = getLogger('parseFile')
     fileLines = []
     comments = []
     header = ""
@@ -130,7 +128,6 @@ def parseLine(infile, line, masterHeader, masterHeaderFile, headerDelimCount, he
       - we have no header: set it
       - header is known: line is data
     """
-    logger = getLogger('parseLine')
     Delim = r"(?<!\\)" + delim
     lineDelimCount = len(findall(Delim, line))
     # we have no header: set it
@@ -203,7 +200,6 @@ def writeCSV(outfile, comments, masterHeader, dataList):
         [",asus,sleep,/bin/sleep,1,0,26577,0,26576,26497"]
 
     """
-    logger = getLogger('writeCSV')
     try:
         logger.info("Writing file(%s)", outfile)
         # write comments
@@ -230,7 +226,6 @@ def verifyOut(fileList, outfile):
 
     Return: True if line count matches
     """
-    logger = getLogger('verifyOut')
     outputLines = file_len(outfile)
     lines = 0
     for file in fileList:
@@ -290,7 +285,6 @@ def csvjoiner(indir,
         debug - Defaults to intlvl=2, set "false" to disable debug
     """
 
-    logger = getLogger("csvjoiner")
     epmt_logging_init(intlvl=debug, check=True)
     logger.debug("indir=%s,outfile=%s,delim=%s,comment=%s,keep_going=%s,errdir=%s",
                  str(indir), outfile, delim, comment, keep_going, errdir)
@@ -330,7 +324,7 @@ def csvjoiner(indir,
         fileList = sorted(list(set(fileList)))
         for test in fileList:
             if not path.isfile(test):
-                logger.error(test + " does not exist or is not a file")
+                logger.error("%s does not exist or is not a file", test)
                 return False, None, badfiles
 
     if len(fileList) == 0:

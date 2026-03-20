@@ -21,6 +21,8 @@ import tarfile
 from glob import glob
 import atexit
 
+logger = getLogger(__name__)
+
 # While it may seem like a good idea to put these constants in a
 # settings file, it probably isn't because these are not user-tweakable
 # settings, and modifying them can have unexpected ramifications
@@ -115,7 +117,6 @@ def conv_csv_for_dbcopy(infile, outfile='', jobid='', input_fields=INPUT_CSV_FIE
     `convert_csv_in_tar` on a staged .tgz file.
     '''
 
-    logger = getLogger(__name__)  # you can use other name
     outfile = outfile or infile   # empty outfile => overwrite infile
 
     if infile == outfile:
@@ -131,9 +132,9 @@ def conv_csv_for_dbcopy(infile, outfile='', jobid='', input_fields=INPUT_CSV_FIE
     if not jobid:
         jobid = extract_jobid_from_collated_csv(infile)
         if not jobid:
-            logger.error('Could not determine jobid from input path: ' + infile)
+            logger.error('Could not determine jobid from input path: %s', infile)
             return False
-        logger.debug('determined jobid ' + jobid + ' from input csv')
+        logger.debug('determined jobid %s from input csv', jobid)
     _start_time = time.time()
 
     # if infile is a string, then it's a path
@@ -275,7 +276,6 @@ def convert_csv_in_tar(in_tar, out_tar=''):
     format conversion. This method will also add a header file
     in the newly-created tar.
     '''
-    logger = getLogger(__name__)
     if not any( [ in_tar.endswith('.tgz'), in_tar.endswith('.tar.gz'), in_tar.endswith('.tar') ] ):
         raise ValueError('input file must have a .tar, .tgz or .tar.gz suffix')
 
@@ -299,7 +299,7 @@ def convert_csv_in_tar(in_tar, out_tar=''):
     try:
         tar = tarfile.open(in_tar, 'r|*')
     except Exception as e:
-        logger.error('error in processing compressed tar: ' + str(e))
+        logger.error('error in processing compressed tar: %s', e)
         return False
 
     # extract the files into a temp. directory
@@ -387,6 +387,5 @@ def extract_jobid_from_collated_csv(collated_csv):
 
 if __name__ == "__main__":
     import sys
-    logger = getLogger("epmt_convert_csv")
     epmt_logging_init(intlvl=2)
     convert_csv_in_tar(sys.argv[1], sys.argv[2] if len(sys.argv) > 2 else '')

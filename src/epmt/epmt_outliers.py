@@ -20,14 +20,13 @@ import numpy as np
 import epmt.epmt_settings as settings
 from epmt.orm import db_session, ReferenceModel, orm_get, orm_col_len
 
-# the first epmt import must be epmt_query as it sets up logging
 import epmt.epmt_query as eq
 from epmt.epmtlib import tags_list, tag_from_string, dict_in_list
 from epmt.epmt_stat import ( thresholds, rca, get_classifier_name,
                              partition_classifiers_uv_mv, mvod_scores_using_model,
                              uvod_classifiers, modified_z_score )
 
-logger = getLogger(__name__)  # you can use other name
+logger = getLogger(__name__)
 
 FEATURES = settings.outlier_features
 

@@ -47,16 +47,16 @@ def find_diffs_in_envs(start_env, stop_env):
     for e in start_env.keys():
         if e in stop_env.keys():
             if start_env[e] == stop_env[e]:
-                logger.debug("Found " + e)
+                logger.debug("Found %s", e)
             else:
-                logger.debug("Different " + e)
+                logger.debug("Different %s", e)
                 env[e] = stop_env[e]
         else:
-            logger.debug("Deleted " + e)
+            logger.debug("Deleted %s", e)
             env[e] = start_env[e]
     for e in stop_env.keys():
         if e not in start_env.keys():
-            logger.debug("Added " + e)
+            logger.debug("Added %s", e)
             env[e] = stop_env[e]
     return env
 
@@ -97,7 +97,7 @@ def read_job_metadata_direct(file):
 
 @logfn
 def read_job_metadata(jobdatafile):
-    logger.info("Unpickling from " + jobdatafile)
+    logger.info("Unpickling from %s", jobdatafile)
     try:
         with open(jobdatafile, 'rb') as file:
             return read_job_metadata_direct(file)
@@ -109,7 +109,7 @@ def read_job_metadata(jobdatafile):
 def write_job_epilog(jobdatafile, metadata):
     with open(jobdatafile, 'w+b') as file:
         pickle.dump(metadata, file)
-        logger.debug("Pickled to " + jobdatafile)
+        logger.debug("Pickled to %s", jobdatafile)
         return True
     return False
 
@@ -145,7 +145,7 @@ def verify_install_prefix():
     ]
     for e in papiex_shared_obj_file_list:
         cmd = "ls -l " + install_prefix + e + ">/dev/null 2>&1"
-        logger.info("\t" + cmd)
+        logger.info("\t%s", cmd)
         return_code = run(cmd, shell=True).returncode
         if return_code != 0:
             logger.error("%s failed", cmd)
@@ -173,7 +173,7 @@ def verify_epmt_output_prefix():
 
     # Print and create dir
     def testdir(str2):
-        logger.info("\tmkdir -p " + str2)
+        logger.info("\tmkdir -p %s", str2)
         return create_job_dir(str2)
 
     # Test create (or if it exists)
@@ -186,14 +186,14 @@ def verify_epmt_output_prefix():
 
     # Test to make sure we can access it
     cmd = "ls -lR " + opf + " >/dev/null"
-    logger.info("\t" + cmd)
+    logger.info("\t%s", cmd)
     return_code = run(cmd, shell=True).returncode
     if return_code != 0:
         retval = False
 
     # Remove the created tmp dir
     cmd = "rm -rf " + opf + "tmp"
-    logger.info("\t" + cmd)
+    logger.info("\t%s", cmd)
     return_code = run(cmd, shell=True).returncode
     if return_code != 0:
         retval = False
@@ -212,8 +212,8 @@ def verify_papiex_options():
     environments where perf_event_open() is restricted.'''
     s = get_papiex_options(settings)
     print("papiex_options =",s, end='')
-    logger.info(f'papiex_options = {s}')
-    logger.info(f'settings.install_prefix = {settings.install_prefix}')
+    logger.info('papiex_options = %s', s)
+    logger.info('settings.install_prefix = %s', settings.install_prefix)
     retval = True
 
     # Check for any components
@@ -221,7 +221,7 @@ def verify_papiex_options():
     #          +"| sed -n -e '/Active/,$p' | grep perf_event >/dev/null 2>&1"
     cmd = settings.install_prefix + "/bin/papi_component_avail 2>&1 " + \
         "| sed -e '/Active/,$p' | grep perf_event >/dev/null 2>&1"
-    logger.info("\t" + cmd)
+    logger.info("\t%s", cmd)
     return_code = run(cmd, shell=True).returncode
     if return_code != 0:
         logger.error("%s failed", cmd)
@@ -791,7 +791,7 @@ def epmt_annotate(argslist, replace=False):
     # we also need to recreate the tar.
     retval = annotate_metadata(metadatafile, annotations, replace=replace)
     if not retval:
-        logger.error('Could not annotate metadatafile: ' + metadatafile)
+        logger.error('Could not annotate metadatafile: %s', metadatafile)
 
     # for staged file case we need to recreate the .tgz file
     # but do not call stage! create_tar will log an error if it failed
@@ -992,9 +992,6 @@ def epmt_source(slurm_prolog=False, papiex_debug=False, monitor_debug=False, run
 
 @logfn
 def epmt_run(cmdline, wrapit=False, dry_run=False, debug=False):
-    # logger.setLevel(DEBUG)
-    # logger.warning('HELLO')
-    # logger.debug("epmt_run(%s, %s, %s, %s, %s)", cmdline, str(wrapit), str(dry_run), str(debug))
 
     if not cmdline:
         logger.error("No command given")
@@ -1423,7 +1420,7 @@ def open_compressed_tar(inputf):
     try:
         tar = tarfile.open(inputf, flags)
     except Exception as e:
-        logger.error('error opening compressed tar ' + inputf + ":" + str(e))
+        logger.error('error opening compressed tar %s:%s', inputf, e)
         return True, None
 
     return False, tar
@@ -1579,7 +1576,7 @@ def stage_job(indir, collate=True, compress_and_tar=True, keep_going=True):
         # no need to cleanup as copy_files will clean
         # up temp dir if it created one using mkdtemp
         if not tempdir:
-            logger.error("No job metadata found in " + indir)
+            logger.error("No job metadata found in %s", indir)
             return False
 
         tsv_files = glob(indir + '/*.tsv')
@@ -1717,8 +1714,6 @@ def epmt_entrypoint(args):
                       check=True,
                       log_pid=(hasattr(args, 'num_cpus') and (args.num_cpus > 1)))
 
-    # initialize logger ... inl: after epmt_logging_init? shouldnt that one function call do it?
-    logger = getLogger(__name__)
     init_settings(settings)
 
     # Here it's up to each command to validate what it is looking for

@@ -3,7 +3,7 @@
 [![build_and_test_epmt](https://github.com/NOAA-GFDL/epmt/actions/workflows/build_and_test_epmt.yml/badge.svg)](https://github.com/NOAA-GFDL/epmt/actions/workflows/build_and_test_epmt.yml)
 [![docker_build_test](https://github.com/NOAA-GFDL/epmt/actions/workflows/docker_build_test.yml/badge.svg)](https://github.com/NOAA-GFDL/epmt/actions/workflows/docker_build_test.yml)
 [![codecov](https://codecov.io/gh/NOAA-GFDL/epmt/branch/main/graph/badge.svg)](https://codecov.io/gh/NOAA-GFDL/epmt)
-[![pylint](https://img.shields.io/badge/pylint-%E2%89%A57.2-brightgreen)](https://github.com/NOAA-GFDL/epmt/actions/workflows/build_and_test_epmt.yml)
+[![pylint](https://img.shields.io/badge/pylint-%E2%89%A57.4-brightgreen)](https://github.com/NOAA-GFDL/epmt/actions/workflows/build_and_test_epmt.yml)
 
 **Experiment Performance Management Tool**  aka  
 **WorkflowDB** aka  

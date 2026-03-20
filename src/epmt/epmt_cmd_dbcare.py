@@ -2,7 +2,7 @@
 EPMT dbcare module - executes tasks for taking care of the database, designed to be run on a regular basis
 """
 
-import logging
+from logging import getLogger
 
 #import epmt
 from epmt.epmt_cmd_retire import epmt_retire
@@ -10,7 +10,7 @@ from epmt.epmt_query import post_process_jobs
 #from epmt import epmt_query as eq
 from epmt.orm.sqlalchemy import orm_raw_sql
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 
 def epmt_dbcare(retire_jobs = False, vacuum_tables = False, post_process = False):

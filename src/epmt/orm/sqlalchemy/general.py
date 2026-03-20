@@ -605,7 +605,8 @@ def _attribute_filter(qs, attr, target, exact_match=False, model=None, conv_to_s
             if conv_to_str or (isinstance(v, str)):
                 qs = qs.filter(
                     text(
-                        f"cast(json_extract({model.__tablename__}.{attr}, '$.{k}') as text) = '{v}'") if using_sqlite else (
+                        f"cast(json_extract({model.__tablename__}.{attr},"
+                        f" '$.{k}') as text) = '{v}'") if using_sqlite else (
                         getattr(
                             model,
                             attr)[k].astext == str(v)))
@@ -713,7 +714,7 @@ def orm_raw_sql(sql, commit=False):
     # As we may get really long queries when moving processes from staging,
     # only log the first 100 or so of long queries
     if len(sql) > settings.max_log_statement_length:
-        logger.debug(f'Executing very long (length={len(sql)} SQL statement(s): ... ')
+        logger.debug('Executing very long (length=%d) SQL statement(s): ... ', len(sql))
         logger.debug(
             ''.join(
                 map(str,

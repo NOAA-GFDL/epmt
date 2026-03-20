@@ -24,14 +24,10 @@ from json import loads, dumps
 from logging import getLogger
 import epmt.epmt_settings as settings
 
-# do NOT do any epmt imports until logging is set up
-# using epmt_logging_init, other than import epmt_logging_init
 from epmt.epmtlib import epmt_logging_init, version
 
-logger = getLogger(__name__)  # you can use other name
+logger = getLogger(__name__)
 epmt_logging_init(settings.verbose if hasattr(settings, 'verbose') else 0, check=True)
-
-# Put EPMT imports below, after logging is set up
 
 init_settings(settings)  # type: ignore
 setup_db(settings)  # type: ignore
@@ -2748,8 +2744,6 @@ matching_keys : list of strings, optional
 
 
 def _warn_incomparable_jobs(jobs):
-    # import logging
-    # logger.setLevel(logging.DEBUG)
     jobs = orm_jobs_col(jobs)
     logger.debug(jobs)
     if not are_jobs_comparable(jobs):
@@ -2877,7 +2871,6 @@ def procs_histogram(jobs, attr='exename', metric=''):
      ...
     }
     '''
-    logger = getLogger(__name__)  # you can use other name
     procs_hist = {}
     procs = get_procs(jobs, fmt='orm')
     logger.debug('%s processes found', procs.count())
@@ -3005,7 +2998,6 @@ added_fetaures: list of strings
     8  {'mv': 118, 'perl': 101, 'globus-url-copy': 76...  [TAVG.exe, arch, basename, bash, cat, chmod, c...
 
     '''
-    logger = getLogger(__name__)  # you can use other name
     out_df = jobs_df.copy()
     keys = list(jobs_df[key].values)
     added_features = []

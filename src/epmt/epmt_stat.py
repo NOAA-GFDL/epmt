@@ -20,7 +20,7 @@ from numbers import Number
 import epmt.epmt_settings as settings
 from epmt.epmtlib import logfn
 
-logger = getLogger(__name__)  # you can use other name
+logger = getLogger(__name__)
 
 # this sets the defaults to be used when a trained model is not provided
 thresholds = settings.outlier_thresholds
@@ -274,7 +274,6 @@ def outliers_uv(ys, methods=[outliers_iqr, outliers_z_score, outliers_modified_z
              value. So, use the outliers_* wrappers instead of methods
              such as iqr, z_score, modified_z_score
     '''
-    logger = getLogger(__name__)  # you can use other name
     ys = np.array(ys)
     logger.debug('input vector: %s', ys)
     out_vec = np.zeros_like(ys)
@@ -313,7 +312,6 @@ def mvod_classifiers(contamination=0.1, warnopts='ignore'):
     if warnopts:
         from warnings import simplefilter
         simplefilter(warnopts)
-    logger = getLogger(__name__)  # you can use other name
 
     from pyod.models.abod import ABOD
     from pyod.models.knn import KNN
@@ -389,7 +387,6 @@ def mvod_scores(X=None, classifiers=[], warnopts='ignore'):
         # simplefilter(action='ignore', category=FutureWarning)
         simplefilter(warnopts)
 
-    logger = getLogger(__name__)  # you can use other name
 
     # the contamination below, is *ONLY* used in the model
     # for preditiction of outliers and used for random data
@@ -516,7 +513,6 @@ def mvod_scores_using_model(inp, model_inp, classifier, threshold=None):
              row score is higher than the given threshold
              and 0 if its lower.
     """
-    logger = getLogger(__name__)  # you can use other name
     inp_nrows = inp.shape[0]
     logger.debug('--- input to classify ---')
     logger.debug(inp)
@@ -599,7 +595,7 @@ def rca(ref, inp, features, methods=[modified_z_score]):
         # pick all the common numeric columns in the dataframe
         ref_cols_set = set(ref.columns.values)
         features = [f for f in list(inp.columns.values) if (isinstance(inp[f][0], Number) and (f in ref_cols_set))]
-        logger.debug('using following features for RCA analysis: ' + str(features))
+        logger.debug('using following features for RCA analysis: %s', features)
 
     ref_computed = ref[features].describe()
     ref_computed.loc['input'] = inp.iloc[0]
