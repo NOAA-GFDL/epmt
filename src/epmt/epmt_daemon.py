@@ -92,7 +92,7 @@ def start_daemon(foreground=False, pidf=PID_FILE, **daemon_args):
     else:
         context.detach_process = True
         context.pidfile = pidfile.TimeoutPIDLockFile(pidf)
-        logger.info('Using lock file {0} for the EPMT daemon'.format(pidf))
+        logger.info('Using lock file %s for the EPMT daemon', pidf)
         # ensure logging uses the same file-descriptors and they are preserved across the fork
         logger_files = []
         try:
@@ -121,12 +121,12 @@ def stop_daemon(pidf=PID_FILE):
     logger = logging.getLogger(stop_daemon.__name__)
     stat, pid = is_daemon_running(pidf)
     if stat:
-        logger.info('Sending SIGUSR1 signal to EPMT daemon PID {0}'.format(pid))
+        logger.info('Sending SIGUSR1 signal to EPMT daemon PID %s', pid)
         try:
             print("Sending signal to EPMT daemon pid " + str(pid))
             kill(pid, SIGUSR1)
         except Exception as e:
-            logger.error('Error sending SIGUSR1 to process PID {0}: {1}'.format(pid, str(e)))
+            logger.error('Error sending SIGUSR1 to process PID %s: %s', pid, e)
             return -1
     else:
         logger.error('EPMT daemon not running, start with "epmt daemon --start"')
@@ -218,16 +218,15 @@ def daemon_loop(context, maxiters=0, post_process=True, analyze=True, retire=Fal
                          'Alternatively, disable retire mode for the daemon')
             return True
         logger.info('retire mode enabled for daemon')
-        logger.info('jobs will be retired after {} days'.format(settings.retire_jobs_ndays))
-        logger.info('models will be retired after {} days'.format(settings.retire_models_ndays))
+        logger.info('jobs will be retired after %s days', settings.retire_jobs_ndays)
+        logger.info('models will be retired after %s days', settings.retire_models_ndays)
 
     if ingest:
         logger.info('ingestion mode enabled for daemon')
-        logger.info(
-            'ingestion mode (path={},recursive={},keep={},move_away={})'.format(
-                ingest, recursive, keep, move_away))
+        logger.info('ingestion mode (path=%s,recursive=%s,keep=%s,move_away=%s)',
+                    ingest, recursive, keep, move_away)
         if not path.isdir(ingest):
-            logger.error('Ingest path ({}) does not exist'.format(ingest))
+            logger.error('Ingest path (%s) does not exist', ingest)
             return True
 
         from epmt.epmtlib import suggested_cpu_count_for_submit
@@ -281,10 +280,10 @@ def daemon_loop(context, maxiters=0, post_process=True, analyze=True, retire=Fal
             if ingest:
                 from epmt.epmtlib import find_files_in_dir
                 from epmt.epmt_cmds import epmt_submit
-                logger.debug('checking dir {} for jobs (*.tgz) to ingest'.format(ingest))
+                logger.debug('checking dir %s for jobs (*.tgz) to ingest', ingest)
                 tgz_files = find_files_in_dir(ingest, '*.tgz', recursive=recursive)
                 if tgz_files:
-                    logger.info('{} .tgz files found to ingest'.format(len(tgz_files)))
+                    logger.info('%s .tgz files found to ingest', len(tgz_files))
                     epmt_submit(
                         tgz_files,
                         ncpus=ncpus,
@@ -309,7 +308,7 @@ def daemon_loop(context, maxiters=0, post_process=True, analyze=True, retire=Fal
                 # unpdj - ppd_jobs should be 0 in size, let's check
                 err_ppd_jobs = list(filter(lambda i: i not in ppd_jobs, unpdj))
                 tot_pp_jobs += len(ppd_jobs)
-                logger.info('{0} jobs post-processed, {1} errors'.format(len(ppd_jobs), len(err_ppd_jobs)))
+                logger.info('%s jobs post-processed, %s errors', len(ppd_jobs), len(err_ppd_jobs))
 
                 #
                 # Handle unprocessed jobs, remove from unprocessed and log
@@ -322,7 +321,7 @@ def daemon_loop(context, maxiters=0, post_process=True, analyze=True, retire=Fal
                     # ppd_jobs - ana_jobs should be 0, let's check
                     err_ana_jobs = list(filter(lambda i: i not in ana_jobs, ppd_jobs))
                     tot_ua_jobs += len(ana_jobs)
-                    logger.info('{0} jobs analyzed, {1} errors'.format(len(ana_jobs), len(err_ana_jobs)))
+                    logger.info('%s jobs analyzed, %s errors', len(ana_jobs), len(err_ana_jobs))
 
                     #
                     # Handle unanalyzed jobs, log (don't remove)
@@ -339,10 +338,10 @@ def daemon_loop(context, maxiters=0, post_process=True, analyze=True, retire=Fal
                 logger.debug('ending daemon loop, as requested %d iterations completed', maxiters)
                 break
             if delay > 0:
-                logger.debug('sleeping for {0:.3f} sec'.format(delay))
+                logger.debug('sleeping for %.3f sec', delay)
                 sleep(delay)
             else:
-                logger.warning("daemon loop took {0} seconds. No sleep for me!".format(_loop_time))
+                logger.warning('daemon loop took %s seconds. No sleep for me!', _loop_time)
         return False
 
 
