@@ -122,6 +122,11 @@ jobs:
           conda activate epmt-verify
           TZ=UTC pytest -x -vv ${{ steps.site_pkgs.outputs.site_pkgs }}/epmt/test/test_cmds.py
 
+      - name: Unit test — test_dbcare
+        run: |
+          conda activate epmt-verify
+          TZ=UTC pytest -x -vv ${{ steps.site_pkgs.outputs.site_pkgs }}/epmt/test/test_dbcare.py
+
       - name: Unit test — test_db_migration
         run: |
           conda activate epmt-verify
