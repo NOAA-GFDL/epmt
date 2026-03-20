@@ -538,7 +538,8 @@ def mvod_scores_using_model(inp, model_inp, classifier, threshold=None):
     logger.debug('MVOD %s (threshold=%s)', c_name, threshold)
     from math import isclose
     if not isclose(model_score_max, threshold, rel_tol=1e-2):
-        logger.warning('MVOD %s is not stable. We computed a threshold %s, while the passed threshold from the saved model was %s',
+        logger.warning('MVOD %s is not stable. We computed a threshold %s, '
+                       'while the passed threshold from the saved model was %s',
                        c_name, model_score_max, threshold)
     for i in range(inp_nrows):
         # pick the ith row
@@ -906,7 +907,9 @@ def get_modes(X, max_modes=10):
         modes_by_silhouette_method = np.argmax(km_silhouette) + 2
         logger.debug('optimal clustering according to silhouette method: %s', modes_by_silhouette_method)
         if modes_by_elbow_method != modes_by_silhouette_method:
-            logger.warning('Elbow and silhouette methods gave different mode counts -- %s and %s. Usually this means you might have a single mode or your data was not drawn from normal distributions',
+            logger.warning('Elbow and silhouette methods gave different mode counts -- '
+                           '%s and %s. Usually this means you might have a single mode '
+                           'or your data was not drawn from normal distributions',
                            modes_by_elbow_method, modes_by_silhouette_method)
             num_modes = 1
 
