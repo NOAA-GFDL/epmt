@@ -199,7 +199,8 @@ def daemon_loop(context, maxiters=0, post_process=True, analyze=True, retire=Fal
 
     logger = logging.getLogger(daemon_loop.__name__)
     logger.debug(
-        '(context=%s,maxiters=%d,post_process=%s,analyze=%s,retire=%s,ingest=%s,recursive=%s,keep=%s,moveaway=%s,verbose=%d)',
+        '(context=%s,maxiters=%d,post_process=%s,analyze=%s,'
+        'retire=%s,ingest=%s,recursive=%s,keep=%s,moveaway=%s,verbose=%d)',
         type(context),
         maxiters,
         post_process,
