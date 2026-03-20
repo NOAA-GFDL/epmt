@@ -1,0 +1,65 @@
+# Conda development environment for epmt
+#
+# Prerequisites:
+#   module load conda
+#
+# Create the environment:
+#   conda env create -f environment.yaml
+#
+# Activate:
+#   conda activate epmt
+#
+# Editable install (from the repo root, ~/Working/epmt):
+#   pip install -e src/
+#
+# After pulling new commits, re-run the pip install line above if
+# pyproject.toml dependencies changed.
+
+name: epmt_notebook
+
+channels:
+  - conda-forge
+
+dependencies:
+  # 3.9/3.10/3.11 supported; 3.12 requires pandas 2.x + SQLAlchemy 2.x (issue #105)
+  - python>=3.9,<3.12
+  - sqlite>=3.49           # epmt's DB layer requires SQLite >= 3.49
+
+  # --- runtime dependencies (mirrors src/pyproject.toml) -----------------
+  - conda-forge::alembic
+  - conda-forge::flask
+  - conda-forge::kneed
+  - conda-forge::numpy==1.26.4
+  - conda-forge::pandas==1.5.3
+  - conda-forge::plotly
+  - conda-forge::psycopg2          # conda-forge ships psycopg2 (not -binary)
+  - conda-forge::py-cpuinfo
+  - conda-forge::pyod
+  - conda-forge::python-daemon
+  - conda-forge::pytz
+  - conda-forge::scikit-learn
+  - conda-forge::scipy
+  - conda-forge::six
+  - conda-forge::sqlalchemy==1.4.54
+
+  # --- dev / test extras -------------------------------------------------
+  - conda-forge::pytest
+  - conda-forge::pytest-cov
+  - conda-forge::pylint
+  - pip
+  
+  # --- notebook extras -------------------------------------------------- (TESTED, WORKS!)
+  - conda-forge::ipykernel
+  - conda-forge::ipython
+  - conda-forge::ipywidgets
+  - conda-forge::jupyter
+  - conda-forge::jupyter_client
+  - conda-forge::jupyter_console
+  - conda-forge::jupyter_core
+  - conda-forge::jupyter_server<2
+  - conda-forge::notebook<7
+  - conda-forge::jupyterlab<4        # must stay <4 while notebook is <7  
+  - conda-forge::qtconsole
+
+  - pip:
+    - -e src/              # editable install of epmt into this environment
