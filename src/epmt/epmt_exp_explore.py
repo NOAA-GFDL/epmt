@@ -249,9 +249,9 @@ def exp_explore(exp_name, metric='duration', op=np.sum, limit=10):
     print(f'\ntop {limit} components by {op.__name__}({metric}):')
     print(f"{'component':>16}  {'sum':>12}         {'min':>12} {'max':>12} {'cv':>4}")
     for v in ordered_comp_list:
-        print(f"{v['exp_component']:>16.16}: {op(v['metrics']):12d}"
+        print(f"{v['exp_component']:>16.16}: {int(op(v['metrics'])):12d}"
               f" [{100 * np.sum(v['metrics']) / agg_metric:4.1f}%]"
-              f" {np.min(v['metrics']):12d} {np.max(v['metrics']):12d} {variation(v['metrics']):4.1f}")
+              f" {int(np.min(v['metrics'])):12d} {int(np.max(v['metrics'])):12d} {variation(v['metrics']):4.1f}")
 
     # now let's the variations within a component across different time segments
     print('\nvariations across time segments (by component):')
@@ -261,7 +261,7 @@ def exp_explore(exp_name, metric='duration', op=np.sum, limit=10):
         outliers = v['outlier_scores']
         for idx in range(len(v['metrics'])):
             print(f"{v['exp_component']:>16.16} {v['exp_times'][idx]:>12}"
-                  f" {v['jobids'][idx]:>12} {v['metrics'][idx]:16d}"
+                  f" {v['jobids'][idx]:>12} {int(v['metrics'][idx]):16d}"
                   f" {'**' * int(outliers[idx]):>6}")
         print()
 
@@ -273,7 +273,7 @@ def exp_explore(exp_name, metric='duration', op=np.sum, limit=10):
     outlier_scores = es.outliers_uv(metric_sums)
     print(f'{metric} by time segment:')
     for idx in range(len(time_segments)):
-        print(f"{time_segments[idx]:>12} {metric_sums[idx]:16d} {'**' * int(outlier_scores[idx]):>6}")
+        print(f"{time_segments[idx]:>12} {int(metric_sums[idx]):16d} {'**' * int(outlier_scores[idx]):>6}")
     return True
 
 
