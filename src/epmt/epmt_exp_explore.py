@@ -95,18 +95,18 @@ def exp_component_outliers(exp_name, metric='duration', op=np.sum, limit=10):
     # sorted jobids
     exp_jobids = sorted([j.jobid for j in exp_jobs], key=natural_keys)
     if not exp_jobids:
-        logger.warning('Could not find any jobs with an "exp_name" tag matching {}'.format(exp_name))
+        logger.warning('Could not find any jobs with an "exp_name" tag matching %s', exp_name)
         return False
 
     # get a compact string of jobids if possible for logs
     try:
-        job_ranges_str = ",".join(["{}..{}".format(a, b) if (a != b) else "{}".format(a)
+        job_ranges_str = ",".join([f"{a}..{b}" if (a != b) else f"{a}"
                                   for (a, b) in ranges([int(x) for x in exp_jobids])])
-        logger.info('Experiment {} contains {} jobs: {}'.format(exp_name, exp_jobs.count(), job_ranges_str))
+        logger.info('Experiment %s contains %s jobs: %s', exp_name, exp_jobs.count(), job_ranges_str)
     except BaseException:
         # the ranges function can fail for non-integer jobids, so here
         # we simply print the job count, and not actually list the jobids
-        logger.info('Experiment {} contains {} jobs'.format(exp_name, exp_jobs.count()))
+        logger.info('Experiment %s contains %s jobs', exp_name, exp_jobs.count())
 
     # we create a dict of dicts. The top-level dict is indexed by component name
     # Effectively we get to know for each component, the jobs and the time-segment
@@ -243,23 +243,19 @@ def exp_explore(exp_name, metric='duration', op=np.sum, limit=10):
 
     agg_metric = np.sum([np.array(d['metrics']).sum() for d in ordered_comp_list])
 
-    print('\ntop {} components by {}({}):'.format(limit, op.__name__, metric))
-    print("%16s  %12s         %12s %12s %4s" % ("component", "sum", "min", "max", "cv"))
+    print(f'\ntop {limit} components by {op.__name__}({metric}):')
+    print(f"{'component':>16}  {'sum':>12}         {'min':>12} {'max':>12} {'cv':>4}")
     for v in ordered_comp_list:
-        print("%16.16s: %12d [%4.1f%%] %12d %12d %4.1f" %
-              (v['exp_component'], op(v['metrics']), 100 *
-               np.sum(v['metrics']) /
-                  agg_metric, np.min(v['metrics']), np.max(v['metrics']), variation(v['metrics'])))
+        print(f"{v['exp_component']:>16.16}: {op(v['metrics']):12d} [{100 * np.sum(v['metrics']) / agg_metric:4.1f}%] {np.min(v['metrics']):12d} {np.max(v['metrics']):12d} {variation(v['metrics']):4.1f}")
 
     # now let's the variations within a component across different time segments
     print('\nvariations across time segments (by component):')
-    print("%16s %12s %12s %16s" % ("component", "exp_time", "jobid", metric))
+    print(f"{'component':>16} {'exp_time':>12} {'jobid':>12} {metric:>16}")
 
     for v in ordered_comp_list:
         outliers = v['outlier_scores']
         for idx in range(len(v['metrics'])):
-            print("%16.16s %12s %12s %16d %6s" % (v['exp_component'], v['exp_times']
-                  [idx], v['jobids'][idx], v['metrics'][idx], "**" * int(outliers[idx])))
+            print(f"{v['exp_component']:>16.16} {v['exp_times'][idx]:>12} {v['jobids'][idx]:>12} {v['metrics'][idx]:16d} {'**' * int(outliers[idx]):>6}")
         print()
 
     # finally let's see if by summing the metric across all the jobs in a
@@ -268,9 +264,9 @@ def exp_explore(exp_name, metric='duration', op=np.sum, limit=10):
     time_segments = list(od.keys())
     metric_sums = [np.sum(od[t]['metrics']) for t in time_segments]
     outlier_scores = es.outliers_uv(metric_sums)
-    print('{} by time segment:'.format(metric))
+    print(f'{metric} by time segment:')
     for idx in range(len(time_segments)):
-        print("%12s %16d %6s" % (time_segments[idx], metric_sums[idx], "**" * int(outlier_scores[idx])))
+        print(f"{time_segments[idx]:>12} {metric_sums[idx]:16d} {'**' * int(outlier_scores[idx]):>6}")
     return True
 
 
@@ -318,23 +314,23 @@ def find_missing_time_segments(exp_name, jobs=[], components=[], time_segments=r
     '''
     tag_filter = {'exp_name': exp_name}
     jobs = eq.get_jobs(jobs, fmt='orm', tags=[tag_filter])
-    logger.debug('Looking for time segments: {}'.format(sorted(time_segments)))
-    logger.debug('{} matching jobs from the experiment'.format(jobs.count()))
+    logger.debug('Looking for time segments: %s', sorted(time_segments))
+    logger.debug('%s matching jobs from the experiment', jobs.count())
     jobs_tags = eq.get_job_tags(jobs, tag_filter=tag_filter, fold=True)
     matched_comp = jobs_tags['exp_component']
     if components:
         matched_comp &= set(components)
-    logger.debug('{} components matched'.format(len(matched_comp)))
+    logger.debug('%s components matched', len(matched_comp))
     ret = {}
     for c in sorted(matched_comp):
-        comp_tags = eq.get_job_tags(jobs, tag_filter='exp_name:{};exp_component:{}'.format(exp_name, c))
+        comp_tags = eq.get_job_tags(jobs, tag_filter=f'exp_name:{exp_name};exp_component:{c}')
         exp_times = comp_tags['exp_time']
         if isinstance(exp_times, str):
             exp_times = [exp_times]
         exp_times = set([int(t) for t in exp_times])
         missing_times = set(time_segments) - exp_times
         if missing_times:
-            print('{} is missing {}'.format(c, sorted(missing_times)))
+            print(f'{c} is missing {sorted(missing_times)}')
             ret[c] = sorted(missing_times)
     return ret
 
