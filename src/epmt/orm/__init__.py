@@ -89,7 +89,7 @@ def orm_db_size(findwhat=['database', 'table', 'index', 'tablespace'], usejson=T
                 struct[arg] = databased
             except BaseException:
                 e = exc_info()[0]
-                logger.warning("DB size query failed: %s" % e)
+            logger.warning("DB size query failed: %s", e)
 
         if arg == 'table':
             tabled = {}
@@ -117,7 +117,7 @@ def orm_db_size(findwhat=['database', 'table', 'index', 'tablespace'], usejson=T
                 struct[arg] = indexd
             except BaseException:
                 e = exc_info()[0]
-                logger.warning("Index size query failed: %s" % e)
+                logger.warning("Index size query failed: %s", e)
 
         if arg == 'tablespace':
             tablespaced = {}
@@ -132,7 +132,7 @@ def orm_db_size(findwhat=['database', 'table', 'index', 'tablespace'], usejson=T
                 struct[arg] = tablespaced
             except BaseException:
                 e = exc_info()[0]
-                logger.warning("Tablespace size query failed: %s" % e)
+                logger.warning("Tablespace size query failed: %s", e)
 
     current_time = datetime.utcnow().isoformat() + "Z"
 
