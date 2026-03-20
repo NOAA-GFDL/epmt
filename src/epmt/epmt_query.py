@@ -1870,7 +1870,7 @@ op_duration_method: string, optional
 
 @db_session
 def delete_jobs(jobs, force=False, before=None, after=None, warn=True, remove_models=False,
-                limit=None, offset=0, skip_unprocessed=False, dry_run=False):
+                limit=None, offset=0, skip_unprocessed=False, dry_run=False, fltr=None):
     """
     Deletes one or more jobs and returns the number of jobs deleted::Jobs
 
@@ -1890,17 +1890,16 @@ def delete_jobs(jobs, force=False, before=None, after=None, warn=True, remove_mo
             these options.
 
     warn : boolean, optional
-            THIS ARGUMENT IS DEPRECATED
-            This option is only useful in daemon mode where we want to
-            disable unnecessary copious warnings in logs.
-            Default True. When disabled, no warnings will be given about attempting
-            to delete jobs that have models associated with them. Instead
-            those jobs will be skipped.
+            THIS ARGUMENT IS DEPRECATED AND IGNORED.
 
     remove_models : boolean, optional
             By default False. If set to True, dependent reference models will
             removed prior to removal of the job. If False, jobs with dependent
             models will not be deleted.
+
+    fltr : SQLAlchemy filter expression, optional
+            An optional SQLAlchemy filter to apply when querying jobs
+            for deletion. Passed through to get_jobs.
 
     Notes
     -----
@@ -1925,21 +1924,21 @@ def delete_jobs(jobs, force=False, before=None, after=None, warn=True, remove_mo
         >>> delete_jobs([], force=True, after=-7)
 
     """
-    if not warn:
-        logger.warning('verbosity is controlled elsewhere, this argument is now impotent as evidenced by this message.')
     logger.debug("Jobs sent in %s", str(jobs) )
     jobs = orm_jobs_col(jobs)
 
     if any( [ before is not None,
               after is not None,
               limit is not None,
-              offset > 0, ] ):
+              offset > 0,
+              fltr is not None, ] ):
         logger.info('(delete_jobs) offset = %s', offset)
         jobs = get_jobs( jobs,
                          before=before,
                          after=after,
                          limit=limit,
                          offset=offset,
+                         fltr=fltr,
                          fmt='orm',
                          trigger_post_process=not skip_unprocessed )
 
@@ -2048,23 +2047,25 @@ def retire_jobs(ndays=settings.retire_jobs_ndays, skip_unprocessed=False, dry_ru
     db_num_jobs = get_jobs(fmt='orm', trigger_post_process=False).count()
     logger.info('(retire_jobs) number of jobs in DB is %s', db_num_jobs)
 
-    num_jobs = get_jobs(before=-ndays, fmt='orm', trigger_post_process=False).count()
-    logger.info('(retire_jobs) number of jobs older than %s days is %s', ndays, num_jobs)
+    # Pre-filter: exclude model-associated jobs from the candidate count
+    # so we don't waste iterations on jobs that will never be deleted.
+    no_model_fltr = ~Job.ref_models.any()
+    num_jobs_total = get_jobs(before=-ndays, fmt='orm', trigger_post_process=False).count()
+    num_jobs = get_jobs(before=-ndays, fltr=no_model_fltr, fmt='orm', trigger_post_process=False).count()
+    logger.info('(retire_jobs) number of jobs older than %s days is %s (%s excluding model-associated)',
+                ndays, num_jobs_total, num_jobs)
 
-    # uncomment me for training wheels/debug/tests
-    # JOBS_PER_DELETE_MAX=100
-    # num_jobs=get_jobs(before=-ndays, limit=400, fmt='orm', trigger_post_process = False).count()
     if num_jobs <= JOBS_PER_DELETE_MAX:
         # can delete in one swoop, when less than max.
-        return delete_jobs([], force=True, before=-ndays, warn=False,
+        return delete_jobs([], force=True, before=-ndays,
+                           fltr=no_model_fltr,
                            skip_unprocessed=skip_unprocessed, dry_run=dry_run)
 
-    #if num_jobs > JOBS_PER_DELETE_MAX:
     logger.warning('(retire_jobs) will be deleting jobs in chunks of %d', JOBS_PER_DELETE_MAX)
 
     tot_num_deleted = 0
     num_delete_attempts = 0  # keep track of num we attempt to delete
-    offset = 0  # if jobs spared via ref-model-assoc, stop targeting those jobs.
+    offset = 0  # if jobs spared via skip_unprocessed, stop targeting those jobs.
 
     while num_delete_attempts < num_jobs:
         logger.info('%d jobs to go', num_jobs - num_delete_attempts)
@@ -2077,8 +2078,10 @@ def retire_jobs(ndays=settings.retire_jobs_ndays, skip_unprocessed=False, dry_ru
             limit = num_jobs - num_delete_attempts
 
         logger.info('attempting to delete %d jobs now...', limit)
-        num_deleted = delete_jobs(jobs=[], force=True, before=-ndays, warn=False,
-                                  limit=limit, offset=offset, skip_unprocessed=skip_unprocessed,
+        num_deleted = delete_jobs(jobs=[], force=True, before=-ndays,
+                                  limit=limit, offset=offset,
+                                  fltr=no_model_fltr,
+                                  skip_unprocessed=skip_unprocessed,
                                   dry_run=dry_run)
 
         tot_num_deleted += num_deleted
