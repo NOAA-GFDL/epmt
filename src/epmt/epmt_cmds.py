@@ -66,7 +66,7 @@ def dump_config(outf, sep=":"):
     for key, value in sorted(settings.__dict__.items()):
         if not (key.startswith('__') or key.startswith('_') or key == 'ERROR'):
             if type(value) in [str, int, float, list, dict, bool]:
-                print("%s%s%s" % (key, sep, str(value)), file=outf)
+                print(f"{key}{sep}{str(value)}", file=outf)
     print("\nenvironment variables (overrides settings.py):", file=outf)
     env_var_list = [
         "PAPIEX_OSS_PATH", "PAPIEX_OUTPUT",
@@ -77,7 +77,7 @@ def dump_config(outf, sep=":"):
     #              ]:
     for v in env_var_list:
         if v in environ:
-            print("%s%s%s" % (v, sep, environ[v]), file=outf)
+            print(f"{v}{sep}{environ[v]}", file=outf)
 
 
 @logfn
@@ -89,7 +89,7 @@ def read_job_metadata_direct(file):
         logger.debug("doing special unpickling for job metadata pickled using python2")
         data = conv_dict_byte2str(pickle.load(file, encoding='bytes'))
     except Exception as e:
-        logger.error("Error unpickling job metadata file: {}".format(e))
+        logger.error("Error unpickling job metadata file: %s", e)
         raise
     logger.debug("Unpickled ")
     return data
@@ -133,7 +133,7 @@ def verify_install_prefix():
     retval = True
     # Check for bad stuff and shortcut
     if "*" in install_prefix or "?" in install_prefix:
-        logger.error("Found wildcards in install_prefix: {}".format(install_prefix))
+        logger.error("Found wildcards in install_prefix: %s", install_prefix)
         PrintFail()
         return False
     papiex_shared_obj_file_list = [
@@ -265,7 +265,7 @@ def verify_db_params():
             PrintPass()
             return True
     except ImportError as e:
-        logger.error("Error setting up DB: {}".format(str(e)))
+        logger.error("Error setting up DB: %s", str(e))
         PrintFail()
         return False
 
@@ -310,8 +310,8 @@ def verify_stage_command():
 
     tmp = environ.get('TMPDIR', '/tmp')
     tmpfile = 'test_stage_cmd'
-    inp = '/{0}/{1}'.format(tmp, tmpfile)
-    target = '{0}/{1}'.format(dest, tmpfile)
+    inp = f'/{tmp}/{tmpfile}'
+    target = f'{dest}/{tmpfile}'
     try:
         safe_rm(target)
         open(inp, 'a').close()
@@ -320,7 +320,7 @@ def verify_stage_command():
         print(str(e), file=stderr)
         PrintFail()
         if not path.exists(target):
-            raise FileNotFoundError("could not create output in {0}".format(dest)) from e
+            raise FileNotFoundError(f"could not create output in {dest}") from e
         return False
     finally:
         safe_rm(inp)
@@ -593,7 +593,7 @@ def epmt_dump_metadata(filelist, key=None):
         return False
 
     for f in filelist:
-        logger.info('Processing {}'.format(f))
+        logger.info('Processing %s', f)
 
         if not path.exists(f):
             if ('/' in f) or ('.tgz' in f):
@@ -601,7 +601,7 @@ def epmt_dump_metadata(filelist, key=None):
                 return False
 
             # if the file does not exist then we check the DB
-            logger.debug('{} was not found in the file-system. Checking database..'.format(f))
+            logger.debug('%s was not found in the file-system. Checking database..', f)
             from epmt.epmt_cmd_show import epmt_show_job
             rc = epmt_show_job(f, key=key)
             if not rc:
@@ -613,10 +613,10 @@ def epmt_dump_metadata(filelist, key=None):
             try:
                 info = tar.getmember("./job_metadata")
             except KeyError:
-                logger.error('Did not find %s in tar file ' % "job_metadata")
+                logger.error('Did not find %s in tar file', "job_metadata")
                 return False
             else:
-                logger.info('%s is %d bytes in archive' % (info.name, info.size))
+                logger.info('%s is %d bytes in archive', info.name, info.size)
                 f = tar.extractfile(info)
                 metadata = read_job_metadata_direct(f)
         else:
@@ -628,7 +628,7 @@ def epmt_dump_metadata(filelist, key=None):
             print(metadata[key])
         else:
             for d in sorted(metadata.keys()):
-                print("%-24s%-56s" % (d, str(metadata[d])))
+                print(f"{d:<24}{str(metadata[d]):<56}")
     return rc_final
 
 
@@ -657,12 +657,12 @@ def annotate_metadata(metadatafile, annotations, replace=False):
     where possible.
     '''
     if not path.isfile(metadatafile):
-        logger.error('{} does not exist'.format(metadatafile))
+        logger.error('%s does not exist', metadatafile)
         return False
 
     metadata = read_job_metadata(metadatafile)
     if not metadata:
-        logger.error('Error reading metadata from {}'.format(metadatafile))
+        logger.error('Error reading metadata from %s', metadatafile)
         return False
 
     # get existing annotations unless replace is set
@@ -670,7 +670,7 @@ def annotate_metadata(metadatafile, annotations, replace=False):
 
     # now merge in the new annotations, where the new annotations will override existing annotations if keys are common
     ann.update(annotations)
-    logger.debug('Updated annotations: {}'.format(ann))
+    logger.debug('Updated annotations: %s', ann)
     metadata['annotations'] = ann
     return write_job_metadata(metadatafile, metadata)
 
@@ -716,7 +716,7 @@ def epmt_annotate(argslist, replace=False):
         annotations = get_annotations_from_kwargs(argslist)
         if not annotations:
             return False
-        logger.info('annotating a job in the batch environment: {}'.format(annotations))
+        logger.info('annotating a job in the batch environment: %s', annotations)
         jobid, datadir, metadatafile = setup_vars()
         if not (jobid and datadir and metadatafile):
             logger.error("jobid, datadir and metadatafile MUST be set in the environment")
@@ -747,17 +747,17 @@ def epmt_annotate(argslist, replace=False):
         if arg0.endswith('.tgz'):
             # staged file form
             staged_file = arg0
-            logger.info('annotating staged job file {0}: {1}'.format(staged_file, annotations))
+            logger.info('annotating staged job file %s: %s', staged_file, annotations)
             tempdir = extract_tar(staged_file, check_metadata=True)
             if not tempdir:
-                logger.error('Error extracting {}'.format(staged_file))
+                logger.error('Error extracting %s', staged_file)
                 return False
             metadatafile = tempdir + "/job_metadata"
 
         elif path.isdir(arg0):
             # job directory form
             job_dir = arg0
-            logger.info('annotating dir {}: {}'.format(job_dir, annotations))
+            logger.info('annotating dir %s: %s', job_dir, annotations)
             if path.exists(stopped_metadata_file(job_dir + "/job_metadata")):
                 metadatafile = stopped_metadata_file(job_dir + "/job_metadata")
                 logger.debug("job %s has been stopped", job_dir)
@@ -771,16 +771,16 @@ def epmt_annotate(argslist, replace=False):
         else:
             # database jobid form
             jobid = argslist[0]
-            logger.info('annotating job {0} in db: {1}'.format(jobid, annotations))
+            logger.info('annotating job %s in db: %s', jobid, annotations)
             from epmt.epmt_query import annotate_job
             updated_ann = annotate_job(jobid, annotations, replace)
-            logger.debug('updated annotations: {}'.format(updated_ann))
+            logger.debug('updated annotations: %s', updated_ann)
             if settings.job_tags_env in annotations:
                 # we need to set <job>.tags to the value of EPMT_JOB_TAGS
                 from epmt.epmt_query import tag_job
                 # we have to overwrite the existing tags (not merge it in)
                 r = tag_job(jobid, annotations[settings.job_tags_env], True)
-                logger.debug('Updated tags for job {} to {}'.format(jobid, r))
+                logger.debug('Updated tags for job %s to %s', jobid, r)
             return annotations.items() <= updated_ann.items()
 
     # below we handle annotation update in the metadata file
@@ -1301,7 +1301,7 @@ def copy_files(src_dir, dest_dir='', patterns=['*'], prefix=''):
     if not files:
         logger.debug('No files to copy!')
         return False
-    logger.debug('Copying {} to {}'.format(files, dest_dir))
+    logger.debug('Copying %s to %s', files, dest_dir)
     for f in files:
         filename = path.basename(f)
         target = dest_dir + "/" + filename
@@ -1338,7 +1338,7 @@ def create_tar(tarfile, indir, remove_dir=False):
     True on success, False on error
     '''
     if not path.isdir(indir):
-        logger.error('{} does not exist'.format(indir))
+        logger.error('%s does not exist', indir)
     cmd = "tar -C " + indir + " -cz -f " + tarfile + " ."
     logger.debug(cmd)
     retval = run(cmd, shell=True).returncode
@@ -1386,17 +1386,17 @@ def extract_tar(tarfile, outdir='', check_metadata=False):
         try:
             info = tar.getmember("./job_metadata")
         except KeyError:
-            logger.error('ERROR: Did not find %s in tar file' % "job_metadata")
+            logger.error('ERROR: Did not find %s in tar file', "job_metadata")
             return False
-        logger.info('%s is %d bytes in archive' % (info.name, info.size))
+        logger.info('%s is %d bytes in archive', info.name, info.size)
 
     from tempfile import mkdtemp, gettempdir
     outdir = outdir or mkdtemp(prefix='epmt_stage_', dir=gettempdir())
-    logger.debug('extracting {0} to {1}'.format(tarfile, outdir))
+    logger.debug('extracting %s to %s', tarfile, outdir)
     try:
         tar.extractall(path=outdir)
     except Exception as e:
-        logger.error('Error extracting {} into {}: {}'.format(tarfile, outdir, str(e)))
+        logger.error('Error extracting %s into %s: %s', tarfile, outdir, str(e))
         # cleanup since we had an error
         rmtree(outdir, ignore_errors=True)
         return False
@@ -1467,7 +1467,7 @@ def submit_dir_or_tgz_to_db(inputf,
     status = False
     exc = None
     r = None
-    msg = "submit_dir_or_tgz_to_db({}): ".format(inputf)
+    msg = f"submit_dir_or_tgz_to_db({inputf}): "
 
     try:
         r = submit_to_db(inputf, pattern, dry_run=dry_run)
@@ -1514,10 +1514,10 @@ def submit_to_db(inputf, pattern, dry_run=True):
         try:
             info = tar.getmember("./job_metadata")
         except KeyError:
-            logger.error('Did not find %s in tar file %s' % ("job_metadata", inputf))
+            logger.error('Did not find %s in tar file %s', "job_metadata", inputf)
             return (False, 'Did not find metadata in tar file ' + inputf, ())
         else:
-            logger.info('%s is %d bytes in tar file %s' % (info.name, info.size, inputf))
+            logger.info('%s is %d bytes in tar file %s', info.name, info.size, inputf)
             f = tar.extractfile(info)
             metadata = read_job_metadata_direct(f)
             filedict = get_filedict(None, settings.input_pattern, tar)
@@ -1580,7 +1580,7 @@ def stage_job(indir, collate=True, compress_and_tar=True, keep_going=True):
         if tsv_files:
             copied_to = copy_files(indir, dest_dir=tempdir, patterns=['*.tsv'])
             if not copied_to:
-                logger.error('No job performance data found in {}'.format(indir))
+                logger.error('No job performance data found in %s', indir)
                 rmtree(tempdir, ignore_errors=True)
                 return False
         else:
