@@ -96,9 +96,9 @@ def orm_db_size(findwhat=['database', 'table', 'index', 'tablespace'], usejson=T
             #            try:
             for table in orm_dump_schema(show_attributes=False):
                 cmd = "SELECT pg_total_relation_size(\'" + table + "\')"
-                size = orm_sql(cmd).fetchall()[0][0]
+                size = orm_sql(cmd)[0][0]
                 cmd = "SELECT count(*) from \"" + table + "\""
-                count = orm_sql(cmd).fetchall()[0][0]
+                count = orm_sql(cmd)[0][0]
                 tabled[table] = [int(size), int(count)]
                 logger.debug("table[%s]=[%d,%d]", table, int(size), int(count))
                 struct[arg] = tabled
@@ -111,7 +111,7 @@ def orm_db_size(findwhat=['database', 'table', 'index', 'tablespace'], usejson=T
             try:
                 for table in orm_dump_schema(show_attributes=False):
                     cmd = "SELECT pg_indexes_size(\'" + table + "\')"
-                    size = orm_sql(cmd).fetchone()[0]
+                    size = orm_sql(cmd)[0][0]
                     indexd[table] = int(size)
                     logger.debug("index[%s]=%d", table, int(size))
                 struct[arg] = indexd
@@ -126,7 +126,7 @@ def orm_db_size(findwhat=['database', 'table', 'index', 'tablespace'], usejson=T
                 for tablespace in tablespaces:
                     tablespace = tablespace[0]
                     cmd = "SELECT pg_tablespace_size(\'" + str(tablespace) + "\')"
-                    size = orm_sql(cmd).fetchall()[0][0]
+                    size = orm_sql(cmd)[0][0]
                     tablespaced[tablespace] = int(size)
                     logger.debug("tablespace[%s]=%d", tablespace, int(size))
                 struct[arg] = tablespaced
