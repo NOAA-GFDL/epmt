@@ -82,7 +82,9 @@ def epmt_logging_init(intlvl=0, check=False, log_pid=False):
 
     consoleHandler = logging.StreamHandler()
     consoleFormatter = logging.Formatter(
-        "[%(asctime)-19.19s, %(process)d] %(levelname)7.7s: %(name)s: %(message)s" if log_pid else "%(asctime)-19.19s %(levelname)7.7s: %(name)s: %(message)s")
+        ("[%(asctime)-19.19s, %(process)d] %(levelname)7.7s: %(name)s: %(message)s"
+         if log_pid else
+         "%(asctime)-19.19s %(levelname)7.7s: %(name)s: %(message)s"))
     consoleHandler.setFormatter(consoleFormatter)
     rootLogger.addHandler(consoleHandler)
 
@@ -938,7 +940,8 @@ def dframe_encode_features(df, features=[], reversible=False):
 
     if reversible:
         logger.warning(
-            'You have enabled "reversible". Be warned that the encoded feature columns can contain some very large integers')
+            'You have enabled "reversible". Be warned that the encoded feature '
+            'columns can contain some very large integers')
     encoded_df = df.copy()
     encoded_features = []
     logger.debug('encoding feature columns: %s', features)
