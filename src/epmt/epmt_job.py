@@ -991,6 +991,15 @@ def populate_process_table_from_staging(j):
 
     update_job_sql = f"UPDATE jobs SET info_dict = '{dumps(job_info_dict)}' WHERE jobid = '{jobid}'"
 
+    # Clean up any previously-inserted process rows for this job to handle
+    # re-processing after a partial failure (e.g., SLURM time limit kill).
+    # The cleanup runs in the same transaction as the INSERT so both are
+    # rolled back together on failure.
+    if nprocs > 0:
+        cleanup_sql = "DELETE FROM processes WHERE jobid = '{}';\n".format(jobid)
+        insert_sql = cleanup_sql + insert_sql
+        logger.debug('prepended cleanup DELETE for job %s processes', jobid)
+
     # INSERT SQL transaction
     try:
         # orm_raw_sql(insert_sql+delete_sql+update_job_sql, commit=True)
