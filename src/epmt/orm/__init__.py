@@ -89,7 +89,7 @@ def orm_db_size(findwhat=['database', 'table', 'index', 'tablespace'], usejson=T
                 struct[arg] = databased
             except BaseException:
                 e = exc_info()[0]
-            logger.warning("DB size query failed: %s", e)
+                logger.warning("DB size query failed: %s", e)
 
         if arg == 'table':
             tabled = {}
