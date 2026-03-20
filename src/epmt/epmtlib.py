@@ -30,7 +30,7 @@ def version():
 
 
 def version_str(terse=False):
-    return __version__ if terse else "EPMT {0}".format(__version__)
+    return __version__ if terse else f"EPMT {__version__}"
 
 
 def get_username():
@@ -264,7 +264,7 @@ def timing(f):
         result = f(*args, **kw)
         te = time()
         if result:
-            logger.debug('%r took: %2.5f sec' % (f.__name__, te - ts))
+            logger.debug('%r took: %2.5f sec', f.__name__, te - ts)
         return result
     return wrap
 
@@ -325,7 +325,7 @@ def tag_from_string(s, delim=';', sep=':', tag_default_value='1'):
                 v = v.strip()
                 tag[k] = v
             except Exception as e:
-                logger.warning('ignoring key/value pair as it has an invalid format: {0}'.format(t))
+                logger.warning('ignoring key/value pair as it has an invalid format: %s', t)
                 logger.warning("%s", e)
                 continue
         else:
@@ -341,7 +341,7 @@ def tag_dict_to_string(tag, delim=';', sep=':'):
     '''
     if isinstance(tag, str):
         return tag
-    return delim.join(["{}{}{}".format(k, sep, tag[k]) for k in sorted(tag.keys())])
+    return delim.join([f"{k}{sep}{tag[k]}" for k in sorted(tag.keys())])
 
 
 def tags_list(tags):
@@ -744,7 +744,7 @@ def check_fix_metadata(raw_metadata):
         # we can ignore all the fields returned except the first
         env_changes = get_metadata_env_changes(raw_metadata)[0]
         if env_changes:
-            logger.debug('start/stop environment changed: {0}'.format(env_changes))
+            logger.debug('start/stop environment changed: %s', env_changes)
         metadata['job_env_changes'] = env_changes
 
     # mark the metadata as checked so we don't check it again unnecessarily
@@ -755,7 +755,7 @@ def check_fix_metadata(raw_metadata):
 def check_pid(pid):
     """Check whether pid exists"""
     if pid < 0:
-        return (False, 'Invalid PID: {0}'.format(pid))
+        return (False, f'Invalid PID: {pid}')
     from os import kill
     try:
         kill(pid, 0)
@@ -763,7 +763,7 @@ def check_pid(pid):
         from errno import ESRCH, EPERM
         if err.errno == ESRCH:
             # ESRCH == No such process
-            return (False, 'No such process (PID: {0})'.format(pid))
+            return (False, f'No such process (PID: {pid})')
         elif err.errno == EPERM:
             # EPERM clearly means there's a process but we cannot
             # send a signal to it
@@ -811,7 +811,7 @@ def conv_to_datetime(t):
             retval = datetime.strptime(t, '%m/%d/%Y %H:%M')
         except Exception as e:
             logger = getLogger(__name__)
-            logger.error('could not convert string to datetime: %s' % str(e))
+            logger.error('could not convert string to datetime: %s', str(e))
             return None
     elif type(t) in (int, float):
         if t > 0:
@@ -927,8 +927,8 @@ def dframe_encode_features(df, features=[], reversible=False):
         import epmt.epmt_settings as settings
         logger.debug('Selecting non-numeric columns from dataframe and then pruning out blacklisted features')
         obj_features = list(df.select_dtypes(include='object').columns.values)
-        logger.debug('Non-numeric features in dataframe: {}'.format(obj_features))
-        logger.debug('Blacklisted features to prune: {}'.format(settings.outlier_features_blacklist))
+        logger.debug('Non-numeric features in dataframe: %s', obj_features)
+        logger.debug('Blacklisted features to prune: %s', settings.outlier_features_blacklist)
         features = list(set(df.select_dtypes(include='object').columns.values) -
                         set(settings.outlier_features_blacklist))
 
@@ -941,14 +941,14 @@ def dframe_encode_features(df, features=[], reversible=False):
             'You have enabled "reversible". Be warned that the encoded feature columns can contain some very large integers')
     encoded_df = df.copy()
     encoded_features = []
-    logger.debug('encoding feature columns: {}'.format(features))
+    logger.debug('encoding feature columns: %s', features)
     for c in features:
         str_vec = df[c].to_numpy()
         int_vec = encode2ints(str_vec) if reversible else hash_strings(str_vec)
         encoded_df[c] = int_vec
-        logger.debug('mapped feature {}: {} -> {}'.format(c, str_vec, int_vec))
+        logger.debug('mapped feature %s: %s -> %s', c, str_vec, int_vec)
         encoded_features.append(c)
-    logger.info('Encoded features: {}'.format(encoded_features))
+    logger.info('Encoded features: %s', encoded_features)
     return (encoded_df, encoded_features)
 
 
@@ -979,14 +979,14 @@ def dframe_decode_features(df, features):
         int_vec = df[c].to_numpy()
         str_vec = decode2strings(int_vec)
         decoded_df[c] = str_vec
-        logger.debug('decoded {}: {} -> {}'.format(c, int_vec, str_vec))
+        logger.debug('decoded %s: %s -> %s', c, int_vec, str_vec)
         decoded_features.append(c)
     if decoded_features != features:
         logger.warning('decoded features list is not identical to requested features')
     if not decoded_features:
         logger.warning('No features were decoded')
     else:
-        logger.info('Decoded features: {}'.format(decoded_features))
+        logger.info('Decoded features: %s', decoded_features)
     return (decoded_df, decoded_features)
 
 
@@ -1001,7 +1001,7 @@ def find_files_in_dir(path, pattern='*.tgz', recursive=False):
     RETURNS: List of files that match
     '''
     from glob import glob
-    pathname = '{}/{}{}'.format(path, '**/' if recursive else '', pattern)
+    pathname = f'{path}/{"**/" if recursive else ""}{pattern}'
     return glob(pathname, recursive=recursive)
 
 
@@ -1114,7 +1114,7 @@ def docs_module_index(mod, fmt=None):
     out_str = ""
     for section in sorted(sections.keys()):
         section_calls = sections[section]
-        out_str += "\n\nSection::{}\n".format(section)
+        out_str += f"\n\nSection::{section}\n"
         out_str += "\n".join([fmt_string.format(o[0], o[1]) for o in section_calls])
     return out_str
 
@@ -1156,10 +1156,10 @@ def logfn(func):
         # the module is prepended automatically by our logging format
         # as we use getLogger with the module name
         # logger.info('{}({}{}{})'.format(func.__name__,
-        logger.debug('{}({}{}{})'.format(func.__name__,
-                                         ", ".join([str(x) for x in func_args]),
-                                         "," if func_kwargs else "",
-                                         ",".join(["{}={}".format(k, v) for (k, v) in func_kwargs.items()])))
+        logger.debug('%s(%s%s%s)', func.__name__,
+                     ", ".join([str(x) for x in func_args]),
+                     "," if func_kwargs else "",
+                     ",".join([f"{k}={v}" for (k, v) in func_kwargs.items()]))
         # now call the actual function with its arguments (if any)
         return func(*func_args, **func_kwargs)
     return log_func
@@ -1209,7 +1209,7 @@ def csv_probe_format(f):
         # the second element is a list of CSV column names
         return ('1', s.split('\n')[0].split(','))
     # if we reached here, then we don't understand the CSV format
-    raise ValueError("CSV file -- {} -- has an unknown file format. Is it corrupted?".format(f.name))
+    raise ValueError(f"CSV file -- {f.name} -- has an unknown file format. Is it corrupted?")
 
 
 def set_signal_handlers(signals=[], handler=None):
