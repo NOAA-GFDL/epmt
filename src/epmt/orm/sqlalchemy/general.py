@@ -734,12 +734,16 @@ def orm_raw_sql(sql, commit=False):
             res = connection.execute(sqla_sql.text(s))
         if commit:
             trans.commit()
+            connection.close()
             return True
+        # Materialize results before closing the connection to avoid
+        # psycopg2.InterfaceError: cursor already closed
+        rows = res.fetchall()
     except BaseException:
         trans.rollback()
         raise
     connection.close()
-    return res
+    return rows
 
 
 def set_sql_debug(discard):
