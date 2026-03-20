@@ -616,6 +616,23 @@ class EPMTSubmit(unittest.TestCase):
         self.assertTrue(eq.is_job_post_processed('685016'))
 
     @db_session
+    def test_reprocess_job_no_duplicate_hosts(self):
+        """Reprocessing a job with force=True must not raise
+        UniqueViolation for host_job_associations that already exist."""
+        from epmt.epmt_job import post_process_job
+        j = Job['685000']
+        self.assertTrue(eq.is_job_post_processed(j))
+        hosts_before = sorted([h.name for h in j.hosts])
+        self.assertTrue(hosts_before)
+        # force reprocessing — previously this would raise
+        # psycopg2.errors.UniqueViolation on the second INSERT
+        result = post_process_job(j.jobid, force=True)
+        self.assertTrue(result)
+        j = Job['685000']
+        hosts_after = sorted([h.name for h in j.hosts])
+        self.assertEqual(hosts_before, hosts_after)
+
+    @db_session
     def test_convert_csv(self):
         import tempfile
         from epmt.epmt_convert_csv import convert_csv_in_tar
