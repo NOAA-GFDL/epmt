@@ -217,7 +217,8 @@ def verify_papiex_options():
     retval = True
 
     # Check for any components
-    #    cmd = settings.install_prefix+"/bin/papi_component_avail 2>&1 "+"| sed -n -e '/Active/,$p' | grep perf_event >/dev/null 2>&1"
+    #    cmd = settings.install_prefix+"/bin/papi_component_avail 2>&1 "
+    #          +"| sed -n -e '/Active/,$p' | grep perf_event >/dev/null 2>&1"
     cmd = settings.install_prefix + "/bin/papi_component_avail 2>&1 " + \
         "| sed -e '/Active/,$p' | grep perf_event >/dev/null 2>&1"
     logger.info("\t" + cmd)
@@ -237,8 +238,9 @@ def verify_papiex_options():
         # cmd = settings.install_prefix+"/bin/papi_command_line 2>&1 "+e+"| sed -n
         # -e '/PERF_COUNT_SW_CPU_CLOCK\ :/,$p' | grep PERF_COUNT_SW_CPU_CLOCK >
         # /dev/null 2>&1" # does not work for rocky-8.
+        # guessing... NOT TRIED YET TODO: TRY THIS INSTEAD OF ABOVE LINE
         cmd = settings.install_prefix + "/bin/papi_command_line 2>&1 " + e + \
-            "| sed -e '/PERF_COUNT_SW_CPU_CLOCK\\ :/,$p' | grep PERF_COUNT_SW_CPU_CLOCK > /dev/null 2>&1"  # guessing... NOT TRIED YET TODO: TRY THIS INSTEAD OF ABOVE LINE
+            "| sed -e '/PERF_COUNT_SW_CPU_CLOCK\\ :/,$p' | grep PERF_COUNT_SW_CPU_CLOCK > /dev/null 2>&1"
         logger.info("\t" + cmd)
         return_code = run(cmd, shell=True).returncode
         if return_code != 0:
@@ -971,13 +973,17 @@ def epmt_source(slurm_prolog=False, papiex_debug=False, monitor_debug=False, run
 
     elif not run_cmd:
         # set up functions
-        cmd += "epmt_push_preload ()\n{\nif [ -z \"$PAPIEX_OLD_LD_PRELOAD\" ]; then export LD_PRELOAD=$PAPIEX_LD_PRELOAD ; else export LD_PRELOAD=$PAPIEX_LD_PRELOAD:$PAPIEX_OLD_LD_PRELOAD ; fi\n};\n"
-        cmd += "epmt_pop_preload ()\n{\nif [ -z \"$PAPIEX_OLD_LD_PRELOAD\" ]; then export -n LD_PRELOAD ; else export LD_PRELOAD=$PAPIEX_OLD_LD_PRELOAD ; fi\n};\n"
+        cmd += ("epmt_push_preload ()\n{\nif [ -z \"$PAPIEX_OLD_LD_PRELOAD\" ]; then"
+                " export LD_PRELOAD=$PAPIEX_LD_PRELOAD ; else"
+                " export LD_PRELOAD=$PAPIEX_LD_PRELOAD:$PAPIEX_OLD_LD_PRELOAD ; fi\n};\n")
+        cmd += ("epmt_pop_preload ()\n{\nif [ -z \"$PAPIEX_OLD_LD_PRELOAD\" ]; then"
+                " export -n LD_PRELOAD ; else export LD_PRELOAD=$PAPIEX_OLD_LD_PRELOAD ; fi\n};\n")
         cmd += "epmt_instrument () {\nexport MONITOR_DEBUG PAPIEX_OUTPUT PAPIEX_DEBUG PAPIEX_OPTIONS LD_PRELOAD;\n"
         cmd += "epmt_push_preload;\n};\n"
         cmd += "epmt_uninstrument () {\nexport -n MONITOR_DEBUG PAPIEX_OUTPUT PAPIEX_DEBUG PAPIEX_OPTIONS;\n"
         cmd += "epmt_pop_preload;\n};\n"
-        #cmd += "epmt () {\nepmt_pop_preload;\n cmd=`command epmt`;\nif [ $? -eq 0 ]; then $cmd $* ; else \"epmt not in \$PATH\"; fi\n;epmt_push_preload;\n};\n"
+        #cmd += "epmt () {\nepmt_pop_preload;\n cmd=`command epmt`;\nif [ $? -eq 0 ]; then"
+        #        " $cmd $* ; else \"epmt not in $PATH\"; fi\n;epmt_push_preload;\n};\n"
 
         # Now enable instrumentation
         cmd += "epmt_instrument;\n"
@@ -1828,7 +1834,9 @@ def epmt_entrypoint(args):
     # submit does the drop on its own, so here we handle... Ian: why was this sentence never finished??
     if args.command == 'drop':
         if not args.force:
-            confirm = input("This will drop the entire database. This action cannot be reversed. Are you sure (yes/NO): ")
+            confirm = input(
+                "This will drop the entire database. This action cannot be reversed."
+                " Are you sure (yes/NO): ")
             if confirm.upper() not in ('Y', 'YES'):
                 return 0
 
