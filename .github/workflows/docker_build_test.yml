@@ -461,6 +461,9 @@ jobs:
       - name: test_cmds
         run: docker exec ${{ env.CONTAINER_NAME }} bash -c 'cd $(python3 -c "import site; print(site.getsitepackages()[0])") && TZ=UTC pytest -x -vv epmt/test/test_cmds.py'
 
+      - name: test_dbcare
+        run: docker exec ${{ env.CONTAINER_NAME }} bash -c 'cd $(python3 -c "import site; print(site.getsitepackages()[0])") && TZ=UTC pytest -x -vv epmt/test/test_dbcare.py'
+
       - name: test_db_migration
         run: docker exec ${{ env.CONTAINER_NAME }} bash -c 'cd $(python3 -c "import site; print(site.getsitepackages()[0])") && TZ=UTC pytest -x -vv epmt/test/test_db_migration.py'
 

@@ -71,6 +71,7 @@ test:
     - pytest -v ${site_pkgs}/epmt/test/test_anysh.py
     - pytest -v ${site_pkgs}/epmt/test/test_check.py           || echo "unit test test_check failed (GUARDED)"
     - pytest -v ${site_pkgs}/epmt/test/test_cmds.py
+    - pytest -v ${site_pkgs}/epmt/test/test_dbcare.py
     - pytest -v ${site_pkgs}/epmt/test/test_db_migration.py
     - pytest -v ${site_pkgs}/epmt/test/test_db_schema.py
     - pytest -v ${site_pkgs}/epmt/test/test_explore.py
