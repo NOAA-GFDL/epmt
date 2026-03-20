@@ -300,8 +300,10 @@ class Process(with_metaclass(CommonMeta, Base)):
     # relationships
     host = relationship('Host', back_populates="processes")
     children = relationship('Process', backref=backref('parent', remote_side=[id]))
-    #ancestors = relationship('ProcessAssociation',backref='descendants', primaryjoin=id==ProcessAssociation.fk_ancestor)
-    #descendants = relationship('ProcessAssociation',backref='ancestors', primaryjoin=id==ProcessAssociation.fk_descendant )
+    #ancestors = relationship('ProcessAssociation',backref='descendants',
+    #                         primaryjoin=id==ProcessAssociation.fk_ancestor)
+    #descendants = relationship('ProcessAssociation',backref='ancestors',
+    #                           primaryjoin=id==ProcessAssociation.fk_descendant )
     ancestors = relationship('Process',
                              backref='descendants',
                              secondary=ancestor_descendant_associations_table,
