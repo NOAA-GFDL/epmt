@@ -102,7 +102,8 @@ def conv_jobs(jobs, fmt='dict', merge_sums=True, trigger_post_process=True):
             common_fields = list(set(j) & set(j[PROC_SUMS_FIELD_IN_JOB]))
             if common_fields:
                 logger.warning(
-                    'while hoisting proc_sums to job-level, found %s common fields: %s', len(common_fields), common_fields)
+                    'while hoisting proc_sums to job-level, found %s common fields: %s',
+                    len(common_fields), common_fields)
             j.update(j[PROC_SUMS_FIELD_IN_JOB])
             del j[PROC_SUMS_FIELD_IN_JOB]
 
@@ -130,7 +131,8 @@ def __conv_procs_orm(procs, merge_sums=True, fmt='dict'):
             common_fields = list(set(p) & set(p[THREAD_SUMS_FIELD_IN_PROC]))
             if common_fields:
                 logger.warning(
-                    'while hoisting thread_sums to process-level, found %s common fields: %s', len(common_fields), common_fields)
+                    'while hoisting thread_sums to process-level, found %s common fields: %s',
+                    len(common_fields), common_fields)
             p.update(p[THREAD_SUMS_FIELD_IN_PROC])
             # add an alias for a consistent user experience
             p['jobid'] = p['job']
@@ -219,7 +221,8 @@ def timeline(jobs, limit=0, fltr='', when=None, hosts=[], fmt='pandas'):
     3  685000  modulecmd 2019-06-15 11:52:04.176020  3416
     4  685000       test 2019-06-15 11:52:04.192758  3417
 
-    >>> eq.timeline([u'685000', u'685016'], limit=5, hosts=[Host[u'pp313'], Host[u'pp208']])[['job', 'exename', 'start', 'host']]
+    >>> eq.timeline([u'685000', u'685016'], limit=5,
+    ...             hosts=[Host[u'pp313'], Host[u'pp208']])[['job', 'exename', 'start', 'host']]
           job    exename                      start   host
     0  685000       tcsh 2019-06-15 11:52:04.126892  pp208
     1  685000       tcsh 2019-06-15 11:52:04.133795  pp208
@@ -894,7 +897,8 @@ tag_filter : dict or string
      'ocn_res': '0.5l75',
      'exp_name': 'ESM4_historical_D151',
      'exp_component': 'ocean_annual_z_1x1deg',
-     'exp_time': {'18890101', '18640101', '18940101', '18690101', '18590101', '18790101', '18540101', '18740101', '18840101'},
+     'exp_time': {'18890101', '18640101', '18940101', '18690101', '18590101',
+                  '18790101', '18540101', '18740101', '18840101'},
      'script_name': {'ESM4_historical_D151_ocean_annual_z_1x1deg_18540101',
       'ESM4_historical_D151_ocean_annual_z_1x1deg_18840101',
       'ESM4_historical_D151_ocean_annual_z_1x1deg_18640101',
@@ -975,9 +979,17 @@ def rank_proc_tags_keys(jobs, order='cardinality', exclude=[]):
     Examples
     --------
       >>> eq.rank_proc_tags_keys(['685000'])
-          [('op', {'ncatted', 'ncrcat', 'dmput', 'fregrid', 'rm', 'timavg', 'hsmget', 'mv', 'cp', 'splitvars', 'untar'}), ('op_instance', {'9', '19', '6', '4', '20', '12', '8', '16', '2', '15', '5', '13', '10', '3', '11', '7', '14', '1', '18'}), ('op_sequence', {'83', '9', '67', '82', '60', '89', '85', '79', '20', '72', '8', '12', '27', '2', '51', '55', '87', '17', '48', '61', '40', '14', '7', '53', '26', '56', '37', '35', '4', '18', '36', '54', '62', '84', '70', '24', '50', '63', '58', '5', '13', '64', '57', '76', '44', '34', '1', '39', '21', '29', '81', '78', '42', '46', '19', '66', '43', '16', '28', '49', '30', '15', '10', '22', '73', '86', '77', '33', '47', '68', '31', '75', '6', '45', '32', '71', '41', '65', '80', '25', '74', '3', '11', '69', '52', '23', '59', '88', '38'})]
+          [('op', {'ncatted', 'ncrcat', 'dmput', 'fregrid', 'rm', 'timavg',
+            'hsmget', 'mv', 'cp', 'splitvars', 'untar'}),
+           ('op_instance',
+            {'9', '19', '6', '4', '20', '12', '8', '16', '2', '15', '5', '13', '10', '3', '11', '7', '14', '1', '18'}),
+           ('op_sequence', {'83', '9', '67', '82', '60', '89', '85', '79', '20', '72', '8', '12', '27', '2', ...})]
       >>> eq.rank_proc_tags_keys(['685000'], order = 'frequency')
-      [('op', {'ncatted', 'ncrcat', 'dmput', 'fregrid', 'rm', 'timavg', 'hsmget', 'mv', 'cp', 'splitvars', 'untar'}), ('op_instance', {'9', '19', '6', '4', '20', '12', '8', '16', '2', '15', '5', '13', '10', '3', '11', '7', '14', '1', '18'}), ('op_sequence', {'83', '9', '67', '82', '60', '89', '85', '79', '20', '72', '8', '12', '27', '2', '51', '55', '87', '17', '48', '61', '40', '14', '7', '53', '26', '56', '37', '35', '4', '18', '36', '54', '62', '84', '70', '24', '50', '63', '58', '5', '13', '64', '57', '76', '44', '34', '1', '39', '21', '29', '81', '78', '42', '46', '19', '66', '43', '16', '28', '49', '30', '15', '10', '22', '73', '86', '77', '33', '47', '68', '31', '75', '6', '45', '32', '71', '41', '65', '80', '25', '74', '3', '11', '69', '52', '23', '59', '88', '38'})]
+      [('op', {'ncatted', 'ncrcat', 'dmput', 'fregrid', 'rm', 'timavg',
+        'hsmget', 'mv', 'cp', 'splitvars', 'untar'}),
+       ('op_instance',
+        {'9', '19', '6', '4', '20', '12', '8', '16', '2', '15', '5', '13', '10', '3', '11', '7', '14', '1', '18'}),
+       ('op_sequence', {'83', '9', '67', '82', '60', '89', '85', '79', '20', '72', '8', '12', '27', '2', ...})]
     '''
     _empty_collection_check(jobs)
     if order.lower() not in ('cardinality', 'frequency'):
@@ -1229,16 +1241,19 @@ enabled: boolean, optional
     to a list of tags for the ops, or use the wildcard (*):
     >>> r = eq.create_refmodel(jobs, tag='exp_name:linux_kernel', op_tags='*', methods= [es.modified_z_score])
 
-    >>> r['id'], r['tags'], r['jobs']
-    (11, {'exp_name': 'linux_kernel'}, [u'kern-6656-20190614-190245', u'kern-6656-20190614-191138', u'kern-6656-20190614-192044-outlier', u'kern-6656-20190614-194024'])
+    >>> r['id'], r['tags'], r['jobs']  # doctest: +ELLIPSIS
+    (11, {'exp_name': 'linux_kernel'}, [...])
 
-    >>> r['op_tags']
-    [{u'op_instance': u'4', u'op_sequence': u'4', u'op': u'build'}, {u'op_instance': u'5', u'op_sequence': u'5', u'op': u'clean'}, {u'op_instance': u'3', u'op_sequence': u'3', u'op': u'configure'}, {u'op_instance': u'1', u'op_sequence': u'1', u'op': u'download'}, {u'op_instance': u'2', u'op_sequence': u'2', u'op': u'extract'}]
+    >>> r['op_tags']  # doctest: +ELLIPSIS
+    [{..., u'op': u'build'}, {..., u'op': u'clean'}, ..., {..., u'op': u'extract'}]
 
     Below is an example of creating a refmodel using MV classifiers
     >>> from pyod.models.knn import KNN
     >>> from pyod.models.abod import ABOD
-    >>> r = eq.create_refmodel(['625172', '627922', '629337', '633144', '676007', '680181', '685000', '685003', '685016', '692544', '693147', '696127'], methods = [ABOD(), KNN()], features = ['cpu_time', 'duration', 'num_procs'])
+    >>> r = eq.create_refmodel(
+    ...     ['625172', '627922', '629337', '633144', '676007', '680181',
+    ...      '685000', '685003', '685016', '692544', '693147', '696127'],
+    ...     methods = [ABOD(), KNN()], features = ['cpu_time', 'duration', 'num_procs'])
     WARNING: epmt_query: The jobs do not share identical tag values for "exp_name" and "exp_component"
     WARNING: The jobs do not share identical tag values for "exp_name" and "exp_component"
         685000 ESM4_historical_D151 ocean_annual_rho2_1x1deg
@@ -1253,8 +1268,8 @@ enabled: boolean, optional
         633144 ESM4_historical_D151 ocean_month_rho2_1x1deg
         676007 ESM4_historical_D151 ocean_month_rho2_1x1deg
         680181 ESM4_historical_D151 ocean_month_rho2_1x1deg
-    >>> r
-    {'jobs': ['685000', '685003', '685016', '625172', '693147', '692544', '696127', '627922', '629337', '633144', '676007', '680181'], 'name': None, 'tags': {}, 'op_tags': [], 'computed': {'pyod.models.abod': {'cpu_time,duration,num_procs': -3.478362573453902e-40}, 'pyod.models.knn': {'cpu_time,duration,num_procs': 6014539197.113887}}, 'enabled': True, 'id': 6, 'created_at': datetime.datetime(2020, 2, 3, 17, 6, 59, 501012)}
+    >>> r  # doctest: +ELLIPSIS
+    {'jobs': [...], 'name': None, 'tags': {}, 'op_tags': [], 'computed': {...}, ...}
 
     """
     if not jobs or (not (orm_is_query(jobs)) and len(jobs) == 0) or (orm_is_query(jobs) and (jobs.count == 0)):
@@ -1292,7 +1307,8 @@ enabled: boolean, optional
         logger.info("request to do PCA (pca=%s). Input features: %s", pca, features)
         if len(features) < 5:
             logger.warning(
-                'Too few input features for PCA. Are you sure you did not want to set features=[] to enable selecting all available features?')
+                'Too few input features for PCA. Are you sure you did not want to set '
+                'features=[] to enable selecting all available features?')
         from epmt.epmt_outliers import pca_feature_combine
         import numpy as np
 
@@ -1349,7 +1365,8 @@ enabled: boolean, optional
         info_dict['pca'] = {'inp_features': orig_features, 'out_features': pca_features}
 
     # now save the ref model
-    r = orm_create(ReferenceModel, jobs=jobs, name=name, tags=tag, op_tags=op_tags, computed=computed, info_dict = info_dict, enabled=enabled)
+    r = orm_create(ReferenceModel, jobs=jobs, name=name, tags=tag, op_tags=op_tags,
+                   computed=computed, info_dict = info_dict, enabled=enabled)
     orm_commit()
     if fmt == 'orm':
         return r
@@ -1664,24 +1681,27 @@ def get_ops(jobs, tags=[], exact_tag_only=False, combine=False, fmt='dict', op_d
 
           >>> ops = get_ops(['685000', '685003'],tags =['op:timavg', 'op:ncks'],combine=True, fmt='orm')
           >>> hl_op = ops[0]   # ops only has one element when combine is True
-          >>> hl_op.start, hl_op.end, hl_op.duration, hl_op.num_runs()
-          (datetime.datetime(2019, 6, 15, 13, 38, 25, 618279), datetime.datetime(2019, 6, 15, 13, 42, 18, 345456), 40827030.00000001, 159)
+          >>> hl_op.start, hl_op.end, hl_op.duration, hl_op.num_runs()  # doctest: +ELLIPSIS
+          (datetime.datetime(...), datetime.datetime(...), ..., 159)
 
 
           Rather than specifying the tags, we can just mention the key
           we care about. This will be auto-expanded:
 
           >>> op = get_ops(['685000', '685003'], tags = 'op', combine=True)[0]
-          DEBUG:epmt_query:expanding op for values ['splitvars', 'untar', 'dmput', 'ncatted', 'ncks', 'cp', 'timavg', 'hsmget', 'ncrcat', 'rm', 'fregrid', 'mv']
-          DEBUG:epmt_query:tags: [{'op': 'splitvars'}, {'op': 'untar'}, {'op': 'dmput'}, {'op': 'ncatted'}, {'op': 'ncks'}, {'op': 'cp'}, {'op': 'timavg'}, {'op': 'hsmget'}, {'op': 'ncrcat'}, {'op': 'rm'}, {'op': 'fregrid'}, {'op': 'mv'}]
-
-
-          If we are lazy and only want the top-level ops (based on the tag of most importance):
+          DEBUG:epmt_query:expanding op for values ['splitvars', 'untar', 'dmput',
+          'ncatted', 'ncks', 'cp', 'timavg', 'hsmget', 'ncrcat', 'rm', 'fregrid', 'mv']
+          DEBUG:epmt_query:tags: [{'op': 'splitvars'}, {'op': 'untar'}, {'op': 'dmput'},
+          {'op': 'ncatted'}, {'op': 'ncks'}, {'op': 'cp'}, {'op': 'timavg'},
+          {'op': 'hsmget'}, {'op': 'ncrcat'}, {'op': 'rm'}, {'op': 'fregrid'}, {'op': 'mv'}]
 
           >>> ops = eq.get_ops(['685000', '685003'], tags = '')
           DEBUG:epmt_query:no tag specified, using tags: op
-          DEBUG:epmt_query:expanding op for values ['splitvars', 'untar', 'dmput', 'ncatted', 'ncks', 'cp', 'timavg', 'hsmget', 'ncrcat', 'rm', 'fregrid', 'mv']
-          DEBUG:epmt_query:tags: [{'op': 'splitvars'}, {'op': 'untar'}, {'op': 'dmput'}, {'op': 'ncatted'}, {'op': 'ncks'}, {'op': 'cp'}, {'op': 'timavg'}, {'op': 'hsmget'}, {'op': 'ncrcat'}, {'op': 'rm'}, {'op': 'fregrid'}, {'op': 'mv'}]
+          DEBUG:epmt_query:expanding op for values ['splitvars', 'untar', 'dmput',
+          'ncatted', 'ncks', 'cp', 'timavg', 'hsmget', 'ncrcat', 'rm', 'fregrid', 'mv']
+          DEBUG:epmt_query:tags: [{'op': 'splitvars'}, {'op': 'untar'}, {'op': 'dmput'},
+          {'op': 'ncatted'}, {'op': 'ncks'}, {'op': 'cp'}, {'op': 'timavg'},
+          {'op': 'hsmget'}, {'op': 'ncrcat'}, {'op': 'rm'}, {'op': 'fregrid'}, {'op': 'mv'}]
           >>> len(ops)
           12
     '''
@@ -1823,7 +1843,9 @@ op_duration_method: string, optional
         #    # That does not work with the GROUP BY clause. By having order=0, we use the
         #    # implicit order and works with GROUP BY
         #    procs = get_procs(jobs, order=0, tags = t, exact_tag_only = exact_tags_only, fmt='orm')
-        #    procs_grp_by_job = select((p.job, count(p.id), min(p.start), max(p.end), sum(p.duration), sum(p.cpu_time), sum(p.numtids), group_concat(p.threads_sums, sep='@@@')) for p in procs)
+        #    procs_grp_by_job = select((p.job, count(p.id), min(p.start), max(p.end),
+        #        sum(p.duration), sum(p.cpu_time), sum(p.numtids),
+        #        group_concat(p.threads_sums, sep='@@@')) for p in procs)
 
         for row in procs_grp_by_job:
             (j, nprocs, start, end, duration, excl_cpu, ntids, threads_sums_str) = row
@@ -2105,7 +2127,8 @@ def retire_jobs(ndays=settings.retire_jobs_ndays, skip_unprocessed=False, dry_ru
     return tot_num_deleted
 
 # @db_session
-# def dm_calc(jobs = [], tags = ['op:hsmput', 'op:dmget', 'op:untar', 'op:mv', 'op:dmput', 'op:hsmget', 'op:rm', 'op:cp']):
+# def dm_calc(jobs = [],
+#             tags = ['op:hsmput', 'op:dmget', 'op:untar', 'op:mv', 'op:dmput', 'op:hsmget', 'op:rm', 'op:cp']):
 #     """
 #     Data-migration calculation helper for a collection of jobs (deprecated)
 #
@@ -2119,7 +2142,9 @@ def retire_jobs(ndays=settings.retire_jobs_ndays, skip_unprocessed=False, dry_ru
 #     num_jobs = jobs.count()
 #     logger.debug('number of jobs: {0}'.format(num_jobs))
 #     if (num_jobs > 100):
-#         logger.warning('job count ({0}) > 100: it is recommended to use dm_calc_iter instead for a lower memory footprint and faster time-to-solution'.format(num_jobs))
+#         logger.warning(
+#             'job count ({0}) > 100: it is recommended to use dm_calc_iter instead '
+#             'for a lower memory footprint and faster time-to-solution'.format(num_jobs))
 #     tags = tags_list(tags)
 #     dm_ops_df = get_op_metrics(jobs, tags = tags, group_by_tag = True)
 #     jobs_cpu_time = 0.0
@@ -2202,7 +2227,9 @@ def ops_costs(jobs=[], tags=['op:hsmput', 'op:dmget', 'op:untar', 'op:mv',
     # scenarios we use the faster "sum" aggregation available in the
     # database itself
     agg_method = 'sum-minus-overlap' if metric == 'duration' else "sum"
-    logger.debug('Using slower (but accurate) computation for "duration" that avoids double-counting overlapping processes in a job. Try using "cpu_time" for faster results')
+    logger.debug('Using slower (but accurate) computation for "duration" that avoids '
+                 'double-counting overlapping processes in a job. '
+                 'Try using "cpu_time" for faster results')
     for j in jobs:
         n += 1
         logger.debug('processing %s (%s/%s)', j.jobid, n, njobs)
