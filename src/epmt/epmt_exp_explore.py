@@ -72,12 +72,15 @@ def exp_component_outliers(exp_name, metric='duration', op=np.sum, limit=10):
     # jobs 625151 (time-segment 18540101) and 691209 (time-segment 18890101)
     # are likely outliers; one on the higher side, and one on the lower.
     >>> exp_component_outliers('ESM4_historical_D151', 'duration')
-    INFO: epmt_query: Experiment ESM4_historical_D151 contains 13 jobs: 625151,627907,629322,633114,675992, 680163,685000..685001,685003,685016,691209,692500,693129
+    INFO: epmt_query: Experiment ESM4_historical_D151 contains 13 jobs:
+    625151,627907,629322,633114,675992, 680163,685000..685001,685003,685016,691209,692500,693129
     [{
          'exp_component': 'ocean_annual_z_1x1deg',
-          'exp_times': ['18540101','18590101','18640101','18690101','18740101','18790101','18840101','18890101','18940101'],
+          'exp_times': ['18540101','18590101','18640101','18690101','18740101',
+                        '18790101','18840101','18890101','18940101'],
           'jobids': ['625151','627907','629322','633114','675992','680163','685001','691209','693129'],
-          'metrics': array([1.04256232e+10, 6.58917488e+09, 7.28633175e+09, 6.03672005e+09, 9.11415052e+09, 6.15619201e+09, 6.81571048e+09, 8.60163243e+08, 3.61932477e+09]),
+          'metrics': array([1.04256232e+10, 6.58917488e+09, 7.28633175e+09, 6.03672005e+09,
+                            9.11415052e+09, 6.15619201e+09, 6.81571048e+09, 8.60163243e+08, 3.61932477e+09]),
           'outlier_scores': array([2., 0., 0., 0., 0., 0., 0., 2., 1.])
      },
      {
@@ -246,7 +249,9 @@ def exp_explore(exp_name, metric='duration', op=np.sum, limit=10):
     print(f'\ntop {limit} components by {op.__name__}({metric}):')
     print(f"{'component':>16}  {'sum':>12}         {'min':>12} {'max':>12} {'cv':>4}")
     for v in ordered_comp_list:
-        print(f"{v['exp_component']:>16.16}: {op(v['metrics']):12d} [{100 * np.sum(v['metrics']) / agg_metric:4.1f}%] {np.min(v['metrics']):12d} {np.max(v['metrics']):12d} {variation(v['metrics']):4.1f}")
+        print(f"{v['exp_component']:>16.16}: {op(v['metrics']):12d}"
+              f" [{100 * np.sum(v['metrics']) / agg_metric:4.1f}%]"
+              f" {np.min(v['metrics']):12d} {np.max(v['metrics']):12d} {variation(v['metrics']):4.1f}")
 
     # now let's the variations within a component across different time segments
     print('\nvariations across time segments (by component):')
@@ -255,7 +260,9 @@ def exp_explore(exp_name, metric='duration', op=np.sum, limit=10):
     for v in ordered_comp_list:
         outliers = v['outlier_scores']
         for idx in range(len(v['metrics'])):
-            print(f"{v['exp_component']:>16.16} {v['exp_times'][idx]:>12} {v['jobids'][idx]:>12} {v['metrics'][idx]:16d} {'**' * int(outliers[idx]):>6}")
+            print(f"{v['exp_component']:>16.16} {v['exp_times'][idx]:>12}"
+                  f" {v['jobids'][idx]:>12} {v['metrics'][idx]:16d}"
+                  f" {'**' * int(outliers[idx]):>6}")
         print()
 
     # finally let's see if by summing the metric across all the jobs in a
@@ -305,11 +312,23 @@ def find_missing_time_segments(exp_name, jobs=[], components=[], time_segments=r
     Examples
     --------
     >>> d = exp.find_missing_time_segments('ESM4_historical_D151', time_segments=range(18540101, 20140101, 50000))
-    ocean_annual_rho2_1x1deg is missing [18540101, 18590101, 18640101, 18690101, 18740101, 18790101, 18890101, 18940101, 18990101, 19040101, 19090101, 19140101, 19190101, 19240101, 19290101, 19340101, 19390101, 19440101, 19490101, 19540101, 19590101, 19640101, 19690101, 19740101, 19790101, 19840101, 19890101, 19940101, 19990101, 20040101, 20090101]
-    ocean_cobalt_fdet_100 is missing [18540101, 18590101, 18640101, 18690101, 18740101, 18790101, 18890101, 18940101, 18990101, 19040101, 19090101, 19140101, 19190101, 19240101, 19290101, 19340101, 19390101, 19440101, 19490101, 19540101, 19590101, 19640101, 19690101, 19740101, 19790101, 19840101, 19890101, 19940101, 19990101, 20040101, 20090101]
+    ocean_annual_rho2_1x1deg is missing [18540101, 18590101, 18640101, 18690101, 18740101,
+    18790101, 18890101, 18940101, 18990101, 19040101, 19090101, 19140101, 19190101, 19240101,
+    19290101, 19340101, 19390101, 19440101, 19490101, 19540101, 19590101, 19640101, 19690101,
+    19740101, 19790101, 19840101, 19890101, 19940101, 19990101, 20040101, 20090101]
+    ocean_cobalt_fdet_100 is missing [18540101, 18590101, 18640101, 18690101, 18740101,
+    18790101, 18890101, 18940101, 18990101, 19040101, 19090101, 19140101, 19190101, 19240101,
+    19290101, 19340101, 19390101, 19440101, 19490101, 19540101, 19590101, 19640101, 19690101,
+    19740101, 19790101, 19840101, 19890101, 19940101, 19990101, 20040101, 20090101]
     >>> d
-    { 'ocean_annual_rho2_1x1deg' : [18540101, 18590101, 18640101, 18690101, 18740101, 18790101, 18890101, 18940101, 18990101, 19040101, 19090101, 19140101, 19190101, 19240101, 19290101, 19340101, 19390101, 19440101, 19490101, 19540101, 19590101, 19640101, 19690101, 19740101, 19790101, 19840101, 19890101, 19940101, 19990101, 20040101, 20090101],
-      'ocean_cobalt_fdet_100': [18540101, 18590101, 18640101, 18690101, 18740101, 18790101, 18890101, 18940101, 18990101, 19040101, 19090101, 19140101, 19190101, 19240101, 19290101, 19340101, 19390101, 19440101, 19490101, 19540101, 19590101, 19640101, 19690101, 19740101, 19790101, 19840101, 19890101, 19940101, 19990101, 20040101, 20090101]
+    { 'ocean_annual_rho2_1x1deg' : [18540101, 18590101, 18640101, 18690101, 18740101,
+      18790101, 18890101, 18940101, 18990101, 19040101, 19090101, 19140101, 19190101, 19240101,
+      19290101, 19340101, 19390101, 19440101, 19490101, 19540101, 19590101, 19640101, 19690101,
+      19740101, 19790101, 19840101, 19890101, 19940101, 19990101, 20040101, 20090101],
+      'ocean_cobalt_fdet_100': [18540101, 18590101, 18640101, 18690101, 18740101,
+      18790101, 18890101, 18940101, 18990101, 19040101, 19090101, 19140101, 19190101, 19240101,
+      19290101, 19340101, 19390101, 19440101, 19490101, 19540101, 19590101, 19640101, 19690101,
+      19740101, 19790101, 19840101, 19890101, 19940101, 19990101, 20040101, 20090101]
     }
     '''
     tag_filter = {'exp_name': exp_name}
@@ -379,11 +398,14 @@ def exp_find_jobs(exp_name, components=[], exp_times=[], failed=None, **kwargs):
 
     Examples
     --------
-    >>> exp.exp_find_jobs('ESM4_historical_D151', components=['ocean_annual_rho2_1x1deg', 'ocean_cobalt_fdet_100'], exp_times=['18540101', '18840101'], failed = False)
+    >>> exp.exp_find_jobs('ESM4_historical_D151',
+    ...     components=['ocean_annual_rho2_1x1deg', 'ocean_cobalt_fdet_100'],
+    ...     exp_times=['18540101', '18840101'], failed = False)
     ['685000', '685003']
     '''
     if 'tags' in kwargs:
-        logger.warning('If you use the "tags" option then "exp_name", "components" and "exp_time" options will be ignored')
+        logger.warning('If you use the "tags" option then "exp_name", '
+                       '"components" and "exp_time" options will be ignored')
     else:
         # create tags using exp_name and components
         tags = [{'exp_name': exp_name, 'exp_component': c}
