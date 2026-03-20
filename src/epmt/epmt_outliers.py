@@ -348,7 +348,7 @@ def detect_outlier_jobs(jobs, trained_model=None, features=FEATURES, methods=[],
     # check if any columns contain nans
     nan_columns = jobs.columns[jobs.isnull().any()].tolist()
     if nan_columns:
-        raise ValueError('dataframe columns ({}) contain atlleast one NaN each'.format(nan_columns))
+        raise ValueError(f'dataframe columns ({nan_columns}) contain atlleast one NaN each')
 
     model_params = {}
     if trained_model:
@@ -377,7 +377,7 @@ def detect_outlier_jobs(jobs, trained_model=None, features=FEATURES, methods=[],
         c_name = get_classifier_name(m)
         if trained_model:
             if c_name not in trained_model.computed:
-                logger.warning("Skipping classifier %s -- could not find it in trained model", c_name)
+                logger.warning('Skipping classifier %s -- could not find it in trained model', c_name)
                 continue
             model_params[m] = trained_model.computed[c_name]
         else:
@@ -406,9 +406,9 @@ def detect_outlier_jobs(jobs, trained_model=None, features=FEATURES, methods=[],
         raise ValueError(err_msg)
 
     logger.info(
-        'outlier detection will be performed using %s univariate and %s multivariate classifiers', 
-            len(uv_methods),
-            len(mv_methods))
+        'outlier detection will be performed using %s univariate and %s multivariate classifiers',
+        len(uv_methods),
+        len(mv_methods))
 
     # sanitize features list
     if pca and features and (features != '*'):
@@ -416,7 +416,7 @@ def detect_outlier_jobs(jobs, trained_model=None, features=FEATURES, methods=[],
     features = sanitize_features(features, jobs, trained_model)
 
     if pca is not False:
-        logger.info("request to do PCA (pca=%s). Input features: %s", pca, features)
+        logger.info('request to do PCA (pca=%s). Input features: %s', pca, features)
         if len(features) < 5:
             logger.warning(
                 'Too few input features for PCA. Are you sure you did not want to set features=[] '
@@ -805,12 +805,12 @@ ime', 'time_oncpu', 'time_waiting', 'timeslices', 'usertime', 'vol_ctxsw', 'wcha
             logger.warning('Set of unique tags are different from the model')
             if jobs_tags_set - model_tags_set:
                 logger.warning(
-                    'Jobs have the following tags, not found in the model: %s', 
-                        jobs_tags_set - model_tags_set)
+                    'Jobs have the following tags, not found in the model: %s',
+                    jobs_tags_set - model_tags_set)
             if model_tags_set - jobs_tags_set:
                 logger.warning(
-                    'Model has the following tags, not found in the jobs: %s', 
-                        model_tags_set - jobs_tags_set)
+                    'Model has the following tags, not found in the jobs: %s',
+                    model_tags_set - jobs_tags_set)
     else:
         _err_col_len(jobs, 4, 'Too few jobs to do outlier detection. Need at least 4!')
     if not tags:
@@ -893,7 +893,7 @@ ime', 'time_oncpu', 'time_waiting', 'timeslices', 'usertime', 'vol_ctxsw', 'wcha
     features = sanitize_features(features, ops, trained_model)
 
     if pca:
-        logger.info("request to do PCA (pca=%s). Input features: %s", pca, features)
+        logger.info('request to do PCA (pca=%s). Input features: %s', pca, features)
         if len(features) < 5:
             logger.warning('Too few input features for PCA. Are you sure you did not want to set '
                            'features=[] to enable selecting all available features?' )
@@ -1007,9 +1007,9 @@ ime', 'time_oncpu', 'time_waiting', 'timeslices', 'usertime', 'vol_ctxsw', 'wcha
         parts = {}
         for tag in tags_to_use:
             dft = retval[retval.tags == tag]
-            q_ref = "&".join(["{0} == 0".format(f) for f in features])
+            q_ref = "&".join([f"{f} == 0" for f in features])
             dft_ref = dft.query(q_ref).reset_index(drop=True)
-            q_outlier = "|".join(["{0} > 0".format(f) for f in features])
+            q_outlier = "|".join([f"{f} > 0" for f in features])
             dft_outlier = dft.query(q_outlier).reset_index(drop=True)
             parts[dumps(tag)] = (set(dft_ref['jobid'].values), (set(dft_outlier['jobid'].values)))
 
@@ -1036,8 +1036,8 @@ ime', 'time_oncpu', 'time_waiting', 'timeslices', 'usertime', 'vol_ctxsw', 'wcha
                 m_name = get_classifier_name(m)
                 if features_str not in model_params[t][m]:
                     logger.warning(
-                        'Skipping classifier %s, could not find model threshold for the feature set for tag %s', 
-                            m_name, t)
+                        'Skipping classifier %s, could not find model threshold for the feature set for tag %s',
+                        m_name, t)
                     continue
                 (model_score, model_inp) = model_params[t][m].get(features_str)
                 model_ndarray = np.asarray(model_inp)
@@ -1097,8 +1097,8 @@ def detect_outliers(df, features=[], methods=[]):
     features = features or list(df.columns.values)
     retval = pd.DataFrame(0, columns=features, index=df.index)
     methods = methods or uvod_classifiers()
-    logger.debug("Doing outlier detection using: %s", features)
-    logger.debug("Using the following classifiers: %s", [f.__name__ for f in methods])
+    logger.debug('Doing outlier detection using: %s', features)
+    logger.debug('Using the following classifiers: %s', [f.__name__ for f in methods])
     for c in features:
         for m in methods:
             m_name = get_classifier_name(m)
@@ -1276,8 +1276,8 @@ def detect_rootcause_op(jobs, inp, tag, features=FEATURES, methods=[modified_z_s
         # this is just a sanity check to make sure we only compare
         # rows that have the same tag. Ordinarily this code won't be
         # triggered as eq.get_op_metrics will only return rows that match 'tag'
-        print('ref jobs have multiple distinct ' + \
-              'tags({0}) that are a superset of specified tag. Please specify an exact tag match'.format(unique_tags) )
+        print(f'ref jobs have multiple distinct tags({unique_tags}) that are a superset of '
+              'specified tag. Please specify an exact tag match')
         return (False, None, None)
     return rca(ref_ops_df, inp_ops_df, features, methods)
 
@@ -1460,13 +1460,13 @@ pca_variance_ratios_list: List of variance ratios. You should
     # check if df contains nans, if so print out the columns
     nan_cols = inp_df.columns[inp_df.isnull().any()].tolist()
     if nan_cols:
-        raise ValueError('PCA input dataframe contains nans in columns: {}'.format(nan_cols))
+        raise ValueError(f'PCA input dataframe contains nans in columns: {nan_cols}')
     inp_data = inp_df[features].to_numpy()
     (pca_data, pca_) = pca_stat(inp_data, desired)
     pca_feature_names = []
     features_df = pd.DataFrame(data=pca_.components_, columns=features)
     for i in range(len(pca_.explained_variance_ratio_)):
-        pca_feature_names.append('pca_{:02d}'.format(i + 1))
+        pca_feature_names.append(f'pca_{i + 1:02d}')
     out_df = pd.DataFrame(data=pca_data, columns=pca_feature_names, index=inp_df.index)
 
     inp_features_set = set(features)
@@ -1679,7 +1679,7 @@ def feature_scatter_plot(jobs, features=[], outfile='', annotate=False):
     x_label_ext = ''
     if pca_variances is not None:
         pca_01_weight = round(pca_variances[0] / pca_variances[1], 1)
-        x_label_ext = ' (weight: {})'.format(pca_01_weight)
+        x_label_ext = f' (weight: {pca_01_weight})'
     plt = px.scatter(
         jobs_df,
         x=features[0],
@@ -1827,6 +1827,6 @@ def _err_col_len(c, min_length=1, msg=None):
     '''
     l = orm_col_len(c)
     if l < min_length:
-        msg = msg or "length of collection is less than the minimum ({0})".format(min_length)
+        msg = msg or f"length of collection is less than the minimum ({min_length})"
         logger.warning(msg)
         raise RuntimeError(msg)

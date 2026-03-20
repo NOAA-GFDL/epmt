@@ -34,7 +34,7 @@ def get_classifier_name(c):
         return c.__name__
     if hasattr(c, '__module__'):
         return c.__module__
-    raise 'Could not determine classifier name for {}'.format(c)
+    raise f'Could not determine classifier name for {c}'
 
 
 def is_classifier_mv(c):
@@ -107,6 +107,7 @@ def z_score(ys, params=()):
     # issue by using np.nan_to_num
     import warnings
     warnings.filterwarnings("ignore", category=RuntimeWarning)
+    logger = getLogger(__name__)  # you can use other name
     logger.debug('scoring using %s', 'z_score')
     ys = np.array(ys)
     if params:
@@ -170,6 +171,7 @@ def iqr(ys, params=()):
     >>> outliers
         array([0, 0, 0, 0, 0, 0, 1])
     '''
+    logger = getLogger(__name__)  # you can use other name
     logger.debug('scoring using %s', 'iqr')
     ys = np.array(ys)
     span = [25, 75]
@@ -207,6 +209,7 @@ def modified_z_score(ys, params=()):
     params if passed in, is of the form (max, median, median_abs_dev)
     We will ignore params(0) as that's the max z_score in the ref_model
     '''
+    logger = getLogger(__name__)  # you can use other name
     logger.debug('scoring using %s', 'modified_z_score')
     median_y = params[1] if params else np.median(ys)
     if params:
@@ -531,11 +534,9 @@ def mvod_scores_using_model(inp, model_inp, classifier, threshold=None):
     logger.debug('MVOD %s (threshold=%s)', c_name, threshold)
     from math import isclose
     if not isclose(model_score_max, threshold, rel_tol=1e-2):
-        logger.warning(
-            'MVOD %s is not stable. We computed a threshold %s, while the passed threshold from the saved model was %s',
-                c_name,
-                model_score_max,
-                threshold)
+        logger.warning('MVOD %s is not stable. We computed a threshold %s, '
+                       'while the passed threshold from the saved model was %s',
+                       c_name, model_score_max, threshold)
     for i in range(inp_nrows):
         # pick the ith row
         row = inp[i]
@@ -684,6 +685,7 @@ def pca_stat(inp_features, desired=2):
     from sklearn.preprocessing import StandardScaler
     from sklearn.decomposition import PCA
 
+    logger = getLogger(__name__)  # you can use other name
     logger.debug('input feature array shape: %s', inp_features.shape)
     if np.isnan(inp_features).any():
         raise ValueError('input contains at-least one non-numeric (nan) element')
@@ -817,7 +819,7 @@ def check_dist(data=[], dist='norm', alpha=0.05):
         # The test below requires at least 20 elements
         tests['norm'].append(('D\'Agostino', normaltest))
     if dist not in tests:
-        raise ValueError('We only support the following distributions: {}'.format(tests.keys()))
+        raise ValueError(f'We only support the following distributions: {tests.keys()}')
     logger.debug('Testing for %s distribution', dist)
 
     for (test, f) in tests[dist]:
@@ -901,10 +903,10 @@ def get_modes(X, max_modes=10):
         modes_by_silhouette_method = np.argmax(km_silhouette) + 2
         logger.debug('optimal clustering according to silhouette method: %s', modes_by_silhouette_method)
         if modes_by_elbow_method != modes_by_silhouette_method:
-            logger.warning(
-                'Elbow and silhouette methods gave different mode counts -- %s and %s. Usually this means you might have a single mode or your data was not drawn from normal distributions',
-                    modes_by_elbow_method,
-                    modes_by_silhouette_method)
+            logger.warning('Elbow and silhouette methods gave different mode counts -- '
+                           '%s and %s. Usually this means you might have a single mode '
+                           'or your data was not drawn from normal distributions',
+                           modes_by_elbow_method, modes_by_silhouette_method)
             num_modes = 1
 
     km = KMeans(n_clusters=num_modes, random_state=0).fit(X_scaled)

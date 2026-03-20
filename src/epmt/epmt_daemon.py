@@ -193,7 +193,8 @@ def daemon_loop(context, maxiters=0, post_process=True, analyze=True, retire=Fal
     sig_count = 0
 
     logger.debug(
-        '(context=%s,maxiters=%d,post_process=%s,analyze=%s,retire=%s,ingest=%s,recursive=%s,keep=%s,moveaway=%s,verbose=%d)',
+        '(context=%s,maxiters=%d,post_process=%s,analyze=%s,'
+        'retire=%s,ingest=%s,recursive=%s,keep=%s,moveaway=%s,verbose=%d)',
         type(context),
         maxiters,
         post_process,
@@ -217,9 +218,8 @@ def daemon_loop(context, maxiters=0, post_process=True, analyze=True, retire=Fal
 
     if ingest:
         logger.info('ingestion mode enabled for daemon')
-        logger.info(
-            'ingestion mode (path=%s,recursive=%s,keep=%s,move_away=%s)',
-                ingest, recursive, keep, move_away)
+        logger.info('ingestion mode (path=%s,recursive=%s,keep=%s,move_away=%s)',
+                    ingest, recursive, keep, move_away)
         if not path.isdir(ingest):
             logger.error('Ingest path (%s) does not exist', ingest)
             return True
@@ -333,10 +333,10 @@ def daemon_loop(context, maxiters=0, post_process=True, analyze=True, retire=Fal
                 logger.debug('ending daemon loop, as requested %d iterations completed', maxiters)
                 break
             if delay > 0:
-                logger.debug('sleeping for {0:.3f} sec'.format(delay))
+                logger.debug('sleeping for %.3f sec', delay)
                 sleep(delay)
             else:
-                logger.warning("daemon loop took %s seconds. No sleep for me!", _loop_time)
+                logger.warning('daemon loop took %s seconds. No sleep for me!', _loop_time)
         return False
 
 

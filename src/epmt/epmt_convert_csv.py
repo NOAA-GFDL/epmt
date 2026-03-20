@@ -69,8 +69,14 @@ OUTPUT_CSV_FIELDS = [
 OUTPUT_CSV_SEP = '\t'
 
 # Expected input format
-# tags,hostname,exename,path,args,exitcode,pid,generation,ppid,pgid,sid,numtids,tid,start,end,usertime,systemtime,rssmax,minflt,majflt,inblock,outblock,vol_ctxsw,invol_ctxsw,num_threads,starttime,processor,delayacct_blkio_time,guest_time,rchar,wchar,syscr,syscw,read_bytes,write_bytes,cancelled_write_bytes,time_oncpu,time_waiting,timeslices,rdtsc_duration,PERF_COUNT_SW_CPU_CLOCK
-# ,pp208,tcsh,/bin/tcsh,-f /home/Jeffrey.Durachta/ESM4/DECK/ESM4_historical_D151/gfdl.ncrc4-intel16-prod-openmp/scripts/postProcess/ESM4_historical_D151_ocean_annual_rho2_1x1deg_18840101.tags,0,6099,0,6098,6089,6084,1,6099,1560599524133795,1560599524134048,2999,0,2852,387,0,0,0,0,0,0,1296261120000,0,0,0,17618,0,40,0,0,0,0,3604195,47138,1,846248,246094
+# tags,hostname,exename,path,args,exitcode,pid,generation,ppid,pgid,sid,numtids,tid,start,end,usertime,systemtime,
+# rssmax,minflt,majflt,inblock,outblock,vol_ctxsw,invol_ctxsw,num_threads,starttime,processor,delayacct_blkio_time,
+# guest_time,rchar,wchar,syscr,syscw,read_bytes,write_bytes,cancelled_write_bytes,time_oncpu,time_waiting,timeslices,
+# rdtsc_duration,PERF_COUNT_SW_CPU_CLOCK
+# ,pp208,tcsh,/bin/tcsh,-f /home/Jeffrey.Durachta/ESM4/DECK/ESM4_historical_D151/gfdl.ncrc4-intel16-prod-openmp/
+# scripts/postProcess/ESM4_historical_D151_ocean_annual_rho2_1x1deg_18840101.tags,0,6099,0,6098,6089,6084,1,6099,
+# 1560599524133795,1560599524134048,2999,0,2852,387,0,0,0,0,0,0,1296261120000,0,0,0,17618,0,40,0,0,0,0,
+# 3604195,47138,1,846248,246094
 
 
 def conv_csv_for_dbcopy(infile, outfile='', jobid='', input_fields=INPUT_CSV_FIELDS):
@@ -144,7 +150,8 @@ def conv_csv_for_dbcopy(infile, outfile='', jobid='', input_fields=INPUT_CSV_FIE
             if row_num == 1:
                 if input_fields and set(r.keys()) < input_fields:
                     # sanity check to make sure our input file has the correct format
-                    logger.error('Input CSV format is not correct. Likely missing  header row. Is it already in v2 format?')
+                    logger.error('Input CSV format is not correct. '
+                                 'Likely missing  header row. Is it already in v2 format?')
                     return False
                 thr_fields = sorted(set(r.keys()) -
                                     set(settings.skip_for_thread_sums) -
@@ -308,7 +315,7 @@ def convert_csv_in_tar(in_tar, out_tar=''):
 
     # close the input tar
     tar.close()
-    in_csv_files = glob('{}/*.csv'.format(tempdir))
+    in_csv_files = glob(f'{tempdir}/*.csv')
     if not in_csv_files:
         logger.error('No CSV files found in %s', in_tar)
         return False
@@ -317,13 +324,13 @@ def convert_csv_in_tar(in_tar, out_tar=''):
     assert len(in_csv_files) == 1
 
     hostname = basename(in_csv_files[0]).split('-')[0]
-    header_filename = "{}-papiex-header.tsv".format(hostname)
+    header_filename = f"{hostname}-papiex-header.tsv"
     if "./" + header_filename in tar_contents:
         # a header file presence indicates v2 CSV
         logger.error('%s already contains CSV files in v2 format', in_tar)
         return False
     in_csv = in_csv_files[0]  # only one csv file will be present
-    out_csv = tempdir + "/" + "{}-papiex.tsv".format(hostname)
+    out_csv = f"{tempdir}/{hostname}-papiex.tsv"
     logger.info('Starting CSV conversion..')
     # save the header returned for subsequent use
     hdr = conv_csv_for_dbcopy(in_csv, out_csv)
@@ -332,7 +339,7 @@ def convert_csv_in_tar(in_tar, out_tar=''):
         return False
 
     # write the header into a separate file
-    with open('{}/{}'.format(tempdir, header_filename), 'w') as csv_hdr_flo:
+    with open(f'{tempdir}/{header_filename}', 'w') as csv_hdr_flo:
         csv_hdr_flo.write(hdr)
     logger.debug("Created CSV header file: %s", header_filename)
     tar_contents.append("./" + header_filename)

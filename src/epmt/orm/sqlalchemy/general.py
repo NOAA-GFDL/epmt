@@ -236,21 +236,20 @@ def orm_delete_jobs(jobs, use_orm=False):
             logger.warning(
                 'process job is in staging- removing process rows corresponding to the job in the staging table')
             (first_proc_id, last_proc_id) = j.info_dict['procs_staging_ids']
-            logger.warning('first and last proc_ids pulled are: %s and %s', first_proc_id, last_proc_id)
-            stmts.append( "DELETE FROM processes_staging WHERE id BETWEEN {} AND {};\n".format( first_proc_id,
-                                                                                                last_proc_id  ) )
+            logger.warning(f'first and last proc_ids pulled are: {first_proc_id} and {last_proc_id}')
+            stmts.append( f"DELETE FROM processes_staging WHERE id BETWEEN {first_proc_id} AND {last_proc_id};\n" )
         else:
             logger.debug('process job is NOT in staging table- no processes_staging targets will be added to query')
         stmts.append( 'DELETE FROM ancestor_descendant_associations WHERE EXISTS (' +
                       'SELECT ad.* from ancestor_descendant_associations ad INNER JOIN ' +
                       'processes p ON (ad.ancestor = p.id OR ad.descendant = p.id) ' +
-                      'WHERE p.jobid = \'{0}\')'.format(jobid) )
+                      f'WHERE p.jobid = \'{jobid}\')')
         stmts.append( 'DELETE FROM host_job_associations ' +
-                      'WHERE host_job_associations.jobid = \'{0}\''.format(jobid) )
+                      f'WHERE host_job_associations.jobid = \'{jobid}\'')
         stmts.append( 'DELETE FROM refmodel_job_associations '+
-                      'WHERE refmodel_job_associations.jobid = \'{0}\''.format(jobid) )
-        stmts.append( 'DELETE FROM processes WHERE processes.jobid = \'{0}\''.format(jobid) )
-        stmts.append( 'DELETE FROM jobs WHERE jobs.jobid = \'{0}\''.format(jobid) )
+                      f'WHERE refmodel_job_associations.jobid = \'{jobid}\'')
+        stmts.append( f'DELETE FROM processes WHERE processes.jobid = \'{jobid}\'')
+        stmts.append( f'DELETE FROM jobs WHERE jobs.jobid = \'{jobid}\'')
 
     # now try executing the statement we put together above
     try:
@@ -606,22 +605,15 @@ def _attribute_filter(qs, attr, target, exact_match=False, model=None, conv_to_s
             if conv_to_str or (isinstance(v, str)):
                 qs = qs.filter(
                     text(
-                        "cast(json_extract({0}.{1}, '$.{2}') as text) = '{3}'".format(
-                            model.__tablename__,
-                            attr,
-                            k,
-                            v)) if using_sqlite else (
+                        f"cast(json_extract({model.__tablename__}.{attr},"
+                        f" '$.{k}') as text) = '{v}'") if using_sqlite else (
                         getattr(
                             model,
                             attr)[k].astext == str(v)))
             else:
                 qs = qs.filter(
                     text(
-                        "json_extract({0}.{1}, '$.{2}') = {3}".format(
-                            model.__tablename__,
-                            attr,
-                            k,
-                            v)) if using_sqlite else (
+                        f"json_extract({model.__tablename__}.{attr}, '$.{k}') = {v}") if using_sqlite else (
                         getattr(
                             model,
                             attr)[k] == v))
@@ -683,9 +675,9 @@ def orm_dump_schema(show_attributes=True):
             print('\nTABLE', t.name)
             for c in t.columns:
                 try:
-                    print('%20s\t%10s' % (c.name, str(c.type)))
+                    print(f'{c.name:>20}\t{str(c.type):>10}')
                 except BaseException:
-                    print('%20s\t%10s' % (c.name, str(c.type.__class__.__name__.split('.')[-1])))
+                    print(f'{c.name:>20}\t{str(c.type.__class__.__name__.split(".")[-1]):>10}')
     else:
         m = MetaData()
         m.reflect(engine)  # Read what exists on db so we can have full picture
@@ -704,11 +696,11 @@ def get_mapper(tbl):
     ]
     if len(mappers) > 1:
         raise ValueError(
-            "Multiple mappers found for table '%s'." % tbl.name )
+            f"Multiple mappers found for table '{tbl.name}'." )
 
     if not mappers:
         raise ValueError(
-            "Could not get mapper for table '%s'." % tbl.name )
+            f"Could not get mapper for table '{tbl.name}'." )
 
     return mappers[0]
 
@@ -841,7 +833,7 @@ def migrate_db():
     if updated_version != epmt_schema_head:
         logger.warning(
             'Database migration failed. Current schema version is %s, while head is %s',
-                updated_version, epmt_schema_head)
+            updated_version, epmt_schema_head)
     else:
         logger.info('Database successfully migrated to: %s', epmt_schema_head)
     return epmt_schema_head == updated_version

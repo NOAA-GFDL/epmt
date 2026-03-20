@@ -21,9 +21,9 @@ def epmt_show_job(jobid, key=None):
             print(j_dict[key])
         else:
             logger.error('Key "%s" was not found as an attribute of the job table', key)
-            print('Here are the keys that were found: {}'.format(",".join(sorted(j_dict.keys()))))
+            print(f'Here are the keys that were found: {",".join(sorted(j_dict.keys()))}')
             return False
     else:
         for k in sorted(j_dict.keys()):
-            print("%-20s      %-20s" % (k, j_dict[k]))
+            print(f"{k:<20}      {j_dict[k]!s:<20}")
     return True

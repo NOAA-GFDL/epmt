@@ -25,7 +25,7 @@ def do_cleanup():
 def setUpModule():
     setup_db(settings)
     do_cleanup()
-    datafiles = '{}/test/data/query/*.tgz'.format(install_root)
+    datafiles = f'{install_root}/test/data/query/*.tgz'
     #    print('setUpModdule: importing {0}'.format(datafiles))
     with capture() as (out, err):
         epmt_submit(sorted(glob(datafiles)), dry_run=False)
@@ -372,25 +372,25 @@ class QueryAPI(unittest.TestCase):
             for out_fmt in ['pandas', 'terse', 'orm', 'dict']:
                 out = eq.conv_jobs(jobs, fmt=out_fmt)
                 if out_fmt == 'terse':
-                    self.assertEqual(type(out), list, 'output format not terse when input fmt: {0}'.format(inp_fmt))
-                    self.assertEqual(sorted(out), sorted(ref), 'error in {0} -> {1}'.format(inp_fmt, out_fmt))
+                    self.assertEqual(type(out), list, f'output format not terse when input fmt: {inp_fmt}')
+                    self.assertEqual(sorted(out), sorted(ref), f'error in {inp_fmt} -> {out_fmt}')
                 elif out_fmt == 'orm':
-                    self.assertTrue(orm_is_query(out), 'output format not ORM when input fmt: {0}'.format(inp_fmt))
+                    self.assertTrue(orm_is_query(out), f'output format not ORM when input fmt: {inp_fmt}')
                     self.assertEqual(sorted([j.jobid for j in out]), sorted(
-                        ref), 'error in {0} -> {1}'.format(inp_fmt, out_fmt))
+                        ref), f'error in {inp_fmt} -> {out_fmt}')
                 elif out_fmt == 'dict':
                     self.assertTrue(
                         isinstance(out, list) and len(out) > 0 and isinstance(out[0], dict),
-                        'output format not dictlist when input fmt: {0}'.format(inp_fmt))
+                        f'output format not dictlist when input fmt: {inp_fmt}')
                     self.assertEqual(sorted([j['jobid'] for j in out]), sorted(ref),
-                                     'error in {0} -> {1}'.format(inp_fmt, out_fmt))
+                                     f'error in {inp_fmt} -> {out_fmt}')
                 elif out_fmt == 'pandas':
                     self.assertEqual(
                         type(out),
                         pd.DataFrame,
-                        'output format not dataframe when input fmt: {0}'.format(inp_fmt))
+                        f'output format not dataframe when input fmt: {inp_fmt}')
                     self.assertEqual(sorted(list(out['jobid'].values)), sorted(ref),
-                                     'error in {0} -> {1}'.format(inp_fmt, out_fmt))
+                                     f'error in {inp_fmt} -> {out_fmt}')
 
     @db_session
     def test_job_proc_tags(self):
@@ -506,8 +506,10 @@ class QueryAPI(unittest.TestCase):
         # pylint: disable=no-member
         self.assertEqual([int(x) for x in df.cpu_time.values], [
                          53934101, 31337553, 123305670, 2799492, 20996147, 6496944])
-        # self.assertEqual([int(x) for x in df.duration.values], [6375786656, 6471901800, 6672575160, 8551396, 69194108, 17359881])
-        # self.assertEqual([int(x) for x in df.duration.values], [6378342472, 6474000335, 6674198021, 67199129, 133578518, 287555579])
+        # self.assertEqual([int(x) for x in df.duration.values],
+        #                  [6375786656, 6471901800, 6672575160, 8551396, 69194108, 17359881])
+        # self.assertEqual([int(x) for x in df.duration.values],
+        #                  [6378342472, 6474000335, 6674198021, 67199129, 133578518, 287555579])
         # pylint: disable=no-member
         self.assertEqual(
             list(
@@ -632,13 +634,17 @@ class QueryAPI(unittest.TestCase):
             {
                 'abc': '200',
                 'def': 'bye',
-                'EPMT_JOB_TAGS': 'atm_res:c96l49;exp_component:ocean_month_rho2_1x1deg;exp_name:ESM4_historical_D151;exp_time:18840101;ocn_res:0.5l75;script_name:ESM4_historical_D151_ocean_month_rho2_1x1deg_18840101'})
+                'EPMT_JOB_TAGS': ('atm_res:c96l49;exp_component:ocean_month_rho2_1x1deg;'
+                                  'exp_name:ESM4_historical_D151;exp_time:18840101;'
+                                  'ocn_res:0.5l75;script_name:ESM4_historical_D151_ocean_month_rho2_1x1deg_18840101')})
         self.assertEqual(
             eq.get_job_annotations('685016'),
             {
                 'abc': '200',
                 'def': 'bye',
-                'EPMT_JOB_TAGS': 'atm_res:c96l49;exp_component:ocean_month_rho2_1x1deg;exp_name:ESM4_historical_D151;exp_time:18840101;ocn_res:0.5l75;script_name:ESM4_historical_D151_ocean_month_rho2_1x1deg_18840101'})
+                'EPMT_JOB_TAGS': ('atm_res:c96l49;exp_component:ocean_month_rho2_1x1deg;'
+                                  'exp_name:ESM4_historical_D151;exp_time:18840101;'
+                                  'ocn_res:0.5l75;script_name:ESM4_historical_D151_ocean_month_rho2_1x1deg_18840101')})
         self.assertEqual(eq.get_jobs(annotations={'abc': '200'}, fmt='terse'), ['685016'])
 
     @db_session
@@ -685,9 +691,10 @@ class QueryAPI(unittest.TestCase):
         # op_root_procs = eq.op_roots(['685000', '685003', '685016'], 'op_sequence:1', fmt='orm')
         # l = eq.select((p.job.jobid, p.pid) for p in op_root_procs)[:]
         # self.assertEqual(l,
-        #                 [ ('685000', 6226), ('685000', 10042), ('685000', 10046), ('685000', 10058), ('685000', 10065),
-        #                   ('685000', 10066), ('685003', 29079), ('685003', 31184), ('685003', 31185), ('685003', 31191),
-        #                   ('685003', 31198), ('685003', 31199), ('685016', 122259), ('685016', 128848), ('685016', 128849),
+        #                 [ ('685000', 6226), ('685000', 10042), ('685000', 10046), ('685000', 10058),
+        #                   ('685000', 10065), ('685000', 10066), ('685003', 29079), ('685003', 31184),
+        #                   ('685003', 31185), ('685003', 31191), ('685003', 31198), ('685003', 31199),
+        #                   ('685016', 122259), ('685016', 128848), ('685016', 128849),
         #                   ('685016', 128855), ('685016', 128862), ('685016', 128863)])
         df = eq.op_roots(['685000', '685003', '685016'], 'op_sequence:1', fmt='pandas')
         self.assertIn(df.shape, ((18, 50), (18, 49)))
@@ -830,7 +837,9 @@ class QueryAPI(unittest.TestCase):
             {
                 'exit_code': 0,
                 'exit_reason': 'none',
-                'script_path': '/home/Jeffrey.Durachta/ESM4/DECK/ESM4_historical_D151/gfdl.ncrc4-intel16-prod-openmp/scripts/postProcess/ESM4_historical_D151_ocean_annual_rho2_1x1deg_18840101.tags',
+                'script_path': ('/home/Jeffrey.Durachta/ESM4/DECK/ESM4_historical_D151/'
+                                'gfdl.ncrc4-intel16-prod-openmp/scripts/postProcess/'
+                                'ESM4_historical_D151_ocean_annual_rho2_1x1deg_18840101.tags'),
                 'script_name': 'ESM4_historical_D151_ocean_annual_rho2_1x1deg_18840101'})
 
     @db_session
@@ -851,7 +860,7 @@ class QueryAPI(unittest.TestCase):
         self.assertEqual(len([e for e in errs['685000'] if 'rdtsc_duration' in e]), 9)
         self.assertEqual(len([e for e in errs['685000'] if 'invalid timestamp' in e]), 3)
         self.assertEqual(len([e for e in errs['685000'] if 'in the future' in e]), 1)
-        self.assertEqual(len([e for e in errs['685000'] if 'Process[{}]'.format(proc_id) in e]), 1)
+        self.assertEqual(len([e for e in errs['685000'] if f'Process[{proc_id}]' in e]), 1)
 
     def test_version(self):
         self.assertTrue(eq.version() > (1, 0, 0))

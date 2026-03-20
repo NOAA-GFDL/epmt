@@ -18,8 +18,8 @@ class EPMTLib(unittest.TestCase):
             sqlite3.sqlite_version_info > (
                 3,
                 9),
-            'SQLite version {0} is too old and does not have JSON1 extensions. You need version 3.9 or later (with JSON1 extensions enabled)'.format(
-                sqlite3.sqlite_version))
+            f'SQLite version {sqlite3.sqlite_version} is too old and does not have JSON1 extensions. '
+            'You need version 3.9 or later (with JSON1 extensions enabled)')
 
     def test_dict_filter(self):
         d = {'abc': 10, 'def': 20, '_ghi': 30, 'LS_COLORS': 'xyz'}

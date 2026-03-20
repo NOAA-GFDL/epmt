@@ -107,7 +107,7 @@ class Operation(dict):
             elif self.op_duration_method == "finish-minus-start":
                 self._duration = round((self.finish - self.start).total_seconds() * 1e6, 1)
             else:
-                raise ValueError("Do not know how to handle op_duration_method: {}".format(self.op_duration_method))
+                raise ValueError(f"Do not know how to handle op_duration_method: {self.op_duration_method}")
         return self._duration
 
     @property
@@ -115,6 +115,8 @@ class Operation(dict):
         if self._proc_sums is None:
             from epmt.epmt_query import get_op_metrics
             from epmt.epmtlib import sum_dicts_list
+            from logging import getLogger
+            logger = getLogger(__name__)
             logger.debug('getting op_metrics for jobs=%s, tags=%s', self.jobs, self.tags)
             op_metrics = get_op_metrics(
                 jobs=self.jobs,

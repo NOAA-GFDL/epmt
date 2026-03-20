@@ -66,7 +66,7 @@ def dump_config(outf, sep=":"):
     for key, value in sorted(settings.__dict__.items()):
         if not (key.startswith('__') or key.startswith('_') or key == 'ERROR'):
             if type(value) in [str, int, float, list, dict, bool]:
-                print("%s%s%s" % (key, sep, str(value)), file=outf)
+                print(f"{key}{sep}{str(value)}", file=outf)
     print("\nenvironment variables (overrides settings.py):", file=outf)
     env_var_list = [
         "PAPIEX_OSS_PATH", "PAPIEX_OUTPUT",
@@ -77,7 +77,7 @@ def dump_config(outf, sep=":"):
     #              ]:
     for v in env_var_list:
         if v in environ:
-            print("%s%s%s" % (v, sep, environ[v]), file=outf)
+            print(f"{v}{sep}{environ[v]}", file=outf)
 
 
 @logfn
@@ -217,7 +217,8 @@ def verify_papiex_options():
     retval = True
 
     # Check for any components
-    #    cmd = settings.install_prefix+"/bin/papi_component_avail 2>&1 "+"| sed -n -e '/Active/,$p' | grep perf_event >/dev/null 2>&1"
+    #    cmd = settings.install_prefix+"/bin/papi_component_avail 2>&1 "
+    #          +"| sed -n -e '/Active/,$p' | grep perf_event >/dev/null 2>&1"
     cmd = settings.install_prefix + "/bin/papi_component_avail 2>&1 " + \
         "| sed -e '/Active/,$p' | grep perf_event >/dev/null 2>&1"
     logger.info("\t%s", cmd)
@@ -237,9 +238,10 @@ def verify_papiex_options():
         # cmd = settings.install_prefix+"/bin/papi_command_line 2>&1 "+e+"| sed -n
         # -e '/PERF_COUNT_SW_CPU_CLOCK\ :/,$p' | grep PERF_COUNT_SW_CPU_CLOCK >
         # /dev/null 2>&1" # does not work for rocky-8.
+        # guessing... NOT TRIED YET TODO: TRY THIS INSTEAD OF ABOVE LINE
         cmd = settings.install_prefix + "/bin/papi_command_line 2>&1 " + e + \
-            "| sed -e '/PERF_COUNT_SW_CPU_CLOCK\\ :/,$p' | grep PERF_COUNT_SW_CPU_CLOCK > /dev/null 2>&1"  # guessing... NOT TRIED YET TODO: TRY THIS INSTEAD OF ABOVE LINE
-        logger.info("\t%s", cmd)
+            "| sed -e '/PERF_COUNT_SW_CPU_CLOCK\\ :/,$p' | grep PERF_COUNT_SW_CPU_CLOCK > /dev/null 2>&1"
+        logger.info("\t" + cmd)
         return_code = run(cmd, shell=True).returncode
         if return_code != 0:
             logger.error("%s failed", cmd)
@@ -265,7 +267,7 @@ def verify_db_params():
             PrintPass()
             return True
     except ImportError as e:
-        logger.error("Error setting up DB: %s", e)
+        logger.error("Error setting up DB: %s", str(e))
         PrintFail()
         return False
 
@@ -310,8 +312,8 @@ def verify_stage_command():
 
     tmp = environ.get('TMPDIR', '/tmp')
     tmpfile = 'test_stage_cmd'
-    inp = '/{0}/{1}'.format(tmp, tmpfile)
-    target = '{0}/{1}'.format(dest, tmpfile)
+    inp = f'/{tmp}/{tmpfile}'
+    target = f'{dest}/{tmpfile}'
     try:
         safe_rm(target)
         open(inp, 'a').close()
@@ -320,7 +322,7 @@ def verify_stage_command():
         print(str(e), file=stderr)
         PrintFail()
         if not path.exists(target):
-            raise FileNotFoundError("could not create output in {0}".format(dest)) from e
+            raise FileNotFoundError(f"could not create output in {dest}") from e
         return False
     finally:
         safe_rm(inp)
@@ -616,7 +618,7 @@ def epmt_dump_metadata(filelist, key=None):
                 logger.error('Did not find %s in tar file', "job_metadata")
                 return False
             else:
-                logger.info('%s is %s bytes in archive', info.name, info.size)
+                logger.info('%s is %d bytes in archive', info.name, info.size)
                 f = tar.extractfile(info)
                 metadata = read_job_metadata_direct(f)
         else:
@@ -628,7 +630,7 @@ def epmt_dump_metadata(filelist, key=None):
             print(metadata[key])
         else:
             for d in sorted(metadata.keys()):
-                print("%-24s%-56s" % (d, str(metadata[d])))
+                print(f"{d:<24}{str(metadata[d]):<56}")
     return rc_final
 
 
@@ -971,13 +973,17 @@ def epmt_source(slurm_prolog=False, papiex_debug=False, monitor_debug=False, run
 
     elif not run_cmd:
         # set up functions
-        cmd += "epmt_push_preload ()\n{\nif [ -z \"$PAPIEX_OLD_LD_PRELOAD\" ]; then export LD_PRELOAD=$PAPIEX_LD_PRELOAD ; else export LD_PRELOAD=$PAPIEX_LD_PRELOAD:$PAPIEX_OLD_LD_PRELOAD ; fi\n};\n"
-        cmd += "epmt_pop_preload ()\n{\nif [ -z \"$PAPIEX_OLD_LD_PRELOAD\" ]; then export -n LD_PRELOAD ; else export LD_PRELOAD=$PAPIEX_OLD_LD_PRELOAD ; fi\n};\n"
+        cmd += ("epmt_push_preload ()\n{\nif [ -z \"$PAPIEX_OLD_LD_PRELOAD\" ]; then"
+                " export LD_PRELOAD=$PAPIEX_LD_PRELOAD ; else"
+                " export LD_PRELOAD=$PAPIEX_LD_PRELOAD:$PAPIEX_OLD_LD_PRELOAD ; fi\n};\n")
+        cmd += ("epmt_pop_preload ()\n{\nif [ -z \"$PAPIEX_OLD_LD_PRELOAD\" ]; then"
+                " export -n LD_PRELOAD ; else export LD_PRELOAD=$PAPIEX_OLD_LD_PRELOAD ; fi\n};\n")
         cmd += "epmt_instrument () {\nexport MONITOR_DEBUG PAPIEX_OUTPUT PAPIEX_DEBUG PAPIEX_OPTIONS LD_PRELOAD;\n"
         cmd += "epmt_push_preload;\n};\n"
         cmd += "epmt_uninstrument () {\nexport -n MONITOR_DEBUG PAPIEX_OUTPUT PAPIEX_DEBUG PAPIEX_OPTIONS;\n"
         cmd += "epmt_pop_preload;\n};\n"
-        #cmd += "epmt () {\nepmt_pop_preload;\n cmd=`command epmt`;\nif [ $? -eq 0 ]; then $cmd $* ; else \"epmt not in \$PATH\"; fi\n;epmt_push_preload;\n};\n"
+        #cmd += "epmt () {\nepmt_pop_preload;\n cmd=`command epmt`;\nif [ $? -eq 0 ]; then"
+        #        " $cmd $* ; else \"epmt not in $PATH\"; fi\n;epmt_push_preload;\n};\n"
 
         # Now enable instrumentation
         cmd += "epmt_instrument;\n"
@@ -1385,7 +1391,7 @@ def extract_tar(tarfile, outdir='', check_metadata=False):
         except KeyError:
             logger.error('ERROR: Did not find %s in tar file', "job_metadata")
             return False
-        logger.info('%s is %s bytes in archive', info.name, info.size)
+        logger.info('%s is %d bytes in archive', info.name, info.size)
 
     from tempfile import mkdtemp, gettempdir
     outdir = outdir or mkdtemp(prefix='epmt_stage_', dir=gettempdir())
@@ -1393,7 +1399,7 @@ def extract_tar(tarfile, outdir='', check_metadata=False):
     try:
         tar.extractall(path=outdir)
     except Exception as e:
-        logger.error('Error extracting %s into %s: %s', tarfile, outdir, e)
+        logger.error('Error extracting %s into %s: %s', tarfile, outdir, str(e))
         # cleanup since we had an error
         rmtree(outdir, ignore_errors=True)
         return False
@@ -1464,7 +1470,7 @@ def submit_dir_or_tgz_to_db(inputf,
     status = False
     exc = None
     r = None
-    msg = "submit_dir_or_tgz_to_db({}): ".format(inputf)
+    msg = f"submit_dir_or_tgz_to_db({inputf}): "
 
     try:
         r = submit_to_db(inputf, pattern, dry_run=dry_run)
@@ -1514,7 +1520,7 @@ def submit_to_db(inputf, pattern, dry_run=True):
             logger.error('Did not find %s in tar file %s', "job_metadata", inputf)
             return (False, 'Did not find metadata in tar file ' + inputf, ())
         else:
-            logger.info('%s is %s bytes in tar file %s', info.name, info.size, inputf)
+            logger.info('%s is %d bytes in tar file %s', info.name, info.size, inputf)
             f = tar.extractfile(info)
             metadata = read_job_metadata_direct(f)
             filedict = get_filedict(None, settings.input_pattern, tar)
@@ -1823,7 +1829,9 @@ def epmt_entrypoint(args):
     # submit does the drop on its own, so here we handle... Ian: why was this sentence never finished??
     if args.command == 'drop':
         if not args.force:
-            confirm = input("This will drop the entire database. This action cannot be reversed. Are you sure (yes/NO): ")
+            confirm = input(
+                "This will drop the entire database. This action cannot be reversed."
+                " Are you sure (yes/NO): ")
             if confirm.upper() not in ('Y', 'YES'):
                 return 0
 

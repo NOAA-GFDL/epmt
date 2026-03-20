@@ -149,12 +149,9 @@ def parseLine(infile, line, masterHeader, masterHeaderFile, headerDelimCount, he
             logger.info("Master header set: %s", masterHeader)
             return (line, None, headerDelimCount, headerFound, masterHeader, masterHeaderFile)
         elif line != masterHeader:
-            msg = "Header mismatch: File {} does not match master file {}".format(infile, masterHeaderFile)
-            logger.error(msg)
-            msg = "Header: {}".format(line)
-            logger.error(msg)
-            msg = "Master: {}".format(masterHeader)
-            logger.error(msg)
+            logger.error("Header mismatch: File %s does not match master file %s", infile, masterHeaderFile)
+            logger.error("Header: %s", line)
+            logger.error("Master: %s", masterHeader)
             raise InvalidFileFormat()
         else:
             return (None, None, headerDelimCount, headerFound, masterHeader, masterHeaderFile)
@@ -174,7 +171,7 @@ def parseLine(infile, line, masterHeader, masterHeaderFile, headerDelimCount, he
         else:
             logger.error(
                 "File: %s, Header: %s delimiters, but this row has %s delimiters",
-                    infile, headerDelimCount, lineDelimCount)
+                infile, str(headerDelimCount), str(lineDelimCount))
             logger.error("Row: %s", line)
             logger.error("Master File: %s", masterHeaderFile)
             logger.error("Master header: %s", masterHeader)
@@ -208,13 +205,13 @@ def writeCSV(outfile, comments, masterHeader, dataList):
         # write comments
         with open(outfile, 'w') as f:
             for item in comments:
-                f.write("%s\n" % item)
+                f.write(f"{item}\n")
         # write header
-            f.write("%s" % masterHeader)
+            f.write(f"{masterHeader}")
             f.write("\n")
         # write data
             for item in dataList:
-                f.write("%s\n" % item)
+                f.write(f"{item}\n")
     except Exception as e:  # parent of IOError, OSError
         logger.error("Error writing output file %s, removing...: %s", outfile, str(e))
         remove(outfile)
@@ -241,9 +238,9 @@ def verifyOut(fileList, outfile):
     if result != outputLines:
         logger.error(
             "Output file %s smaller than expected, off by %s lines, expected %s",
-                outfile, result - outputLines, result)
-        logger.error("Input files %s have %s lines", fileList, lines)
-        logger.error("Total header lines removed - 1 %s", headers2Remove)
+            outfile, result - outputLines, result)
+        logger.error("Input files %s have %s lines", str(fileList), str(lines))
+        logger.error("Total header lines removed - 1 %s", str(headers2Remove))
         return False
 
     return True
@@ -309,8 +306,7 @@ def csvjoiner(indir,
     # String (Directory) Mode ##################################
     if isinstance(indir, str):
         if not path.isdir(indir):
-            msg = "{} does not exist or is not a directory".format(indir)
-            logger.error(msg)
+            logger.error("%s does not exist or is not a directory", indir)
             return False, None, badfiles
         logger.info("Collate in directory %s", indir)
         fileList = sorted(glob(indir + "/*.csv"))
@@ -332,8 +328,7 @@ def csvjoiner(indir,
                 return False, None, badfiles
 
     if len(fileList) == 0:
-        msg = "{} has no CSV files to concatenate".format(indir)
-        logger.warning(msg)
+        logger.warning("%s has no CSV files to concatenate", indir)
         return True, None, badfiles
 
     if any(("collated" in FL for FL in fileList)):

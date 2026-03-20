@@ -32,7 +32,7 @@ def version():
 
 
 def version_str(terse=False):
-    return __version__ if terse else "EPMT {0}".format(__version__)
+    return __version__ if terse else f"EPMT {__version__}"
 
 
 def get_username():
@@ -93,7 +93,9 @@ def epmt_logging_init(intlvl=0, check=False, log_pid=False):
 
     consoleHandler = logging.StreamHandler()
     consoleFormatter = logging.Formatter(
-        "[%(asctime)-19.19s, %(process)d] %(levelname)7.7s: %(name)s: %(message)s" if log_pid else "%(asctime)-19.19s %(levelname)7.7s: %(name)s: %(message)s")
+        ("[%(asctime)-19.19s, %(process)d] %(levelname)7.7s: %(name)s: %(message)s"
+         if log_pid else
+         "%(asctime)-19.19s %(levelname)7.7s: %(name)s: %(message)s"))
     consoleHandler.setFormatter(consoleFormatter)
     epmt_logger.addHandler(consoleHandler)
 
@@ -337,7 +339,7 @@ def tag_dict_to_string(tag, delim=';', sep=':'):
     '''
     if isinstance(tag, str):
         return tag
-    return delim.join(["{}{}{}".format(k, sep, tag[k]) for k in sorted(tag.keys())])
+    return delim.join([f"{k}{sep}{tag[k]}" for k in sorted(tag.keys())])
 
 
 def tags_list(tags):
@@ -748,7 +750,7 @@ def check_fix_metadata(raw_metadata):
 def check_pid(pid):
     """Check whether pid exists"""
     if pid < 0:
-        return (False, 'Invalid PID: {0}'.format(pid))
+        return (False, f'Invalid PID: {pid}')
     from os import kill
     try:
         kill(pid, 0)
@@ -756,7 +758,7 @@ def check_pid(pid):
         from errno import ESRCH, EPERM
         if err.errno == ESRCH:
             # ESRCH == No such process
-            return (False, 'No such process (PID: {0})'.format(pid))
+            return (False, f'No such process (PID: {pid})')
         elif err.errno == EPERM:
             # EPERM clearly means there's a process but we cannot
             # send a signal to it
@@ -803,7 +805,8 @@ def conv_to_datetime(t):
         try:
             retval = datetime.strptime(t, '%m/%d/%Y %H:%M')
         except Exception as e:
-            logger.error('could not convert string to datetime: %s', e)
+            logger = getLogger(__name__)
+            logger.error('could not convert string to datetime: %s', str(e))
             return None
     elif type(t) in (int, float):
         if t > 0:
@@ -929,7 +932,8 @@ def dframe_encode_features(df, features=[], reversible=False):
 
     if reversible:
         logger.warning(
-            'You have enabled "reversible". Be warned that the encoded feature columns can contain some very large integers')
+            'You have enabled "reversible". Be warned that the encoded feature '
+            'columns can contain some very large integers')
     encoded_df = df.copy()
     encoded_features = []
     logger.debug('encoding feature columns: %s', features)
@@ -991,7 +995,7 @@ def find_files_in_dir(path, pattern='*.tgz', recursive=False):
     RETURNS: List of files that match
     '''
     from glob import glob
-    pathname = '{}/{}{}'.format(path, '**/' if recursive else '', pattern)
+    pathname = f'{path}/{"**/" if recursive else ""}{pattern}'
     return glob(pathname, recursive=recursive)
 
 
@@ -1104,7 +1108,7 @@ def docs_module_index(mod, fmt=None):
     out_str = ""
     for section in sorted(sections.keys()):
         section_calls = sections[section]
-        out_str += "\n\nSection::{}\n".format(section)
+        out_str += f"\n\nSection::{section}\n"
         out_str += "\n".join([fmt_string.format(o[0], o[1]) for o in section_calls])
     return out_str
 
@@ -1145,10 +1149,10 @@ def logfn(func):
         # the module is prepended automatically by our logging format
         # as we use getLogger with the module name
         # logger.info('{}({}{}{})'.format(func.__name__,
-        args_str = ", ".join([str(x) for x in func_args])
-        kwargs_str = ",".join(["%s=%s" % (k, v) for (k, v) in func_kwargs.items()])
-        sep = "," if func_kwargs else ""
-        logger.debug('%s(%s%s%s)', func.__name__, args_str, sep, kwargs_str)
+        logger.debug('%s(%s%s%s)', func.__name__,
+                     ", ".join([str(x) for x in func_args]),
+                     "," if func_kwargs else "",
+                     ",".join([f"{k}={v}" for (k, v) in func_kwargs.items()]))
         # now call the actual function with its arguments (if any)
         return func(*func_args, **func_kwargs)
     return log_func
@@ -1198,7 +1202,7 @@ def csv_probe_format(f):
         # the second element is a list of CSV column names
         return ('1', s.split('\n')[0].split(','))
     # if we reached here, then we don't understand the CSV format
-    raise ValueError("CSV file -- {} -- has an unknown file format. Is it corrupted?".format(f.name))
+    raise ValueError(f"CSV file -- {f.name} -- has an unknown file format. Is it corrupted?")
 
 
 def set_signal_handlers(signals=[], handler=None):
