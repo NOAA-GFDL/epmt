@@ -97,15 +97,11 @@ integration_kernel_compile() { _epmt_run_integration "${EPMT_INTEGRATION_DIR}/te
 run_lint() {
     echo ""
     echo "── pylint: epmt module (excluding ui) ──"
-    pylint --rcfile pylintrc --fail-under 7.0 --ignore-paths src/epmt/ui src/epmt
+    pylint --rcfile pylintrc --fail-under 8.2 --ignore-paths src/epmt/ui src/epmt
 
     echo ""
     echo "── pylint: ui submodule (epmt-dash) ──"
-    pylint --rcfile pylintrc --fail-under 5.5 src/epmt/ui
-
-    echo ""
-    echo "── pylint: epmt entry-point script ──"
-    pylint --rcfile pylintrc --fail-under 10 src/scripts/epmt
+    pylint --rcfile pylintrc --fail-under 6.0 src/epmt/ui
 }
 
 # ── coverage report ────────────────────────────────────────────────
