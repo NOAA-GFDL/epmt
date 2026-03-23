@@ -7,7 +7,7 @@ package:
   name: epmt
   # Version is read from the git tag at build time.
   # When building locally without a tag, the version will be "develop".
-  version: '{{ environ.get("GIT_DESCRIBE_TAG", "pre5.0.0") }}'
+  version: '{{ environ.get("GIT_DESCRIBE_TAG", "pre5.0.1") }}'
 
 source:
   path: .
