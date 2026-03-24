@@ -18,22 +18,23 @@ For installation and quick-start instructions, see [README.md](./README.md).
     - [Data Collection with SLURM epilog and prolog](#data-collection-with-slurm-epilog-and-prolog)
   - [The Second Mode, Data Submission](#the-second-mode-data-submission)
     - [Manual Submission Example](#manual-submission-example)
-    - [Compressed Directory Submission Example](#compressed-directory-submission-exmple)
+    - [Compressed Directory Submission Exmple](#compressed-directory-submission-exmple)
     - [Internal-batch Job Submission Example](#internal-batch-job-submission-example)
     - [Data From Current Session Submission Example](#data-from-current-session-submission-example)
   - [The Third Mode, Data Analysis and Visualization](#the-third-mode-data-analysis-and-visualization)
 - [Debugging](#debugging)
 - [Performance Metrics Data Dictionary](#performance-metrics-data-dictionary)
   - [Addition of new metrics](#addition-of-new-metrics)
-- [Troubleshooting](#troubleshooting)
-  - [Error: `version GLIBC_x.xx not found`](#error-version-glibcxxx-not-found)
-  - [Virtual Environments](#virtual-environments)
 - [CI/CD Workflows and Caching](#cicd-workflows-and-caching)
   - [Workflows](#workflows)
   - [Caches and Invalidation](#caches-and-invalidation)
   - [Cache Invalidation Gap vs. `make`](#cache-invalidation-gap-vs-make)
   - [Forcing a Rebuild](#forcing-a-rebuild)
   - [Weekly Pre-warming](#weekly-pre-warming)
+- [Troubleshooting](#troubleshooting)
+  - [Virtual Environments:](#virtual-environments)
+  - [Common Error Messages](#common-error-messages)
+    - [`version GLIBC_x.xx not found`](#version-glibc_xxx-not-found)
 
 
 
@@ -501,26 +502,6 @@ $ papi_command_line CYCLES
 
 
 
-
-
-
-
-## Troubleshooting
-
-
-
-### Error: `version GLIBC_x.xx not found`
-The collector library may not have been built for the current environment or the release
-OS version does not match the current environment. 
-
-
-
-### Virtual Environments:
-Note that often in virtual environments, hardware counters are not often available in the VM.
-
-
-
-
 ## CI/CD Workflows and Caching
 `epmt`'s GitHub Actions CI is split into focused workflows that use
 `actions/cache` to avoid rebuilding expensive artifacts on every pull request
@@ -594,3 +575,21 @@ morning to pre-warm their respective caches before the working week begins.
 runs, skipping the expensive Docker compile steps. If the cache is missing (first
 run, eviction, or new key), `docker_build_test.yml` falls back to building the
 artifact inline so the pipeline never silently skips a required build step.
+
+
+
+
+## Troubleshooting
+
+
+
+### Virtual Environments:
+Note that often in virtual environments, hardware counters are not often available in the VM.
+
+
+
+### Common Error Messages
+
+#### `version GLIBC_x.xx not found`
+The collector library may not have been built for the current environment or the release
+OS version does not match the current environment.
