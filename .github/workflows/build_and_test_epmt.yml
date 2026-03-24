@@ -151,12 +151,12 @@ jobs:
       # compile_papiex.sh always exits 0 on graceful skips (missing tools, network
       # errors), and setup.py catches non-zero exits and warns without failing the
       # install — so pip install ./src should always succeed.
-      - name: pip install ./src (papiex compiled via compile_papiex.sh)
+      - name: Test pip install ./src (papiex compiled via compile_papiex.sh)
         run: |
           # Remove any pre-copied .so files to exercise the compilation path
           rm -rf src/epmt/lib/
           # Install directly from source; setup.py invokes compile_papiex.sh
-          python3 -m pip install ./src
+          python3 -m pip install -v -v ./src
           SITE_PACKAGES=$(python3 -c "import site; print(site.getsitepackages()[0])")
           if ls ${SITE_PACKAGES}/epmt/lib/*.so* 2>/dev/null | head -1 | grep -q .; then
             echo "papiex shared libraries found — compile_papiex.sh succeeded"
@@ -222,6 +222,12 @@ jobs:
           TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/test_cmds.py
         env:
           COVERAGE_FILE: .coverage.cmds
+
+      - name: test_dbcare
+        run: |
+          TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/test_dbcare.py
+        env:
+          COVERAGE_FILE: .coverage.dbcare
 
       - name: test_db_migration
         run: |
@@ -512,7 +518,7 @@ jobs:
 
       - name: run pylint on epmt module, ignoring ui (epmt-dash)
         run: |
-          pylint --rcfile pylintrc --fail-under 7.1 --ignore-paths src/epmt/ui src/epmt
+          pylint --rcfile pylintrc --fail-under 8.1 --ignore-paths src/epmt/ui src/epmt
 
       - name: run pylint on ui submodule (epmt-dash)
         run: |

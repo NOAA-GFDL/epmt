@@ -47,16 +47,16 @@ def find_diffs_in_envs(start_env, stop_env):
     for e in start_env.keys():
         if e in stop_env.keys():
             if start_env[e] == stop_env[e]:
-                logger.debug("Found " + e)
+                logger.debug("Found %s", e)
             else:
-                logger.debug("Different " + e)
+                logger.debug("Different %s", e)
                 env[e] = stop_env[e]
         else:
-            logger.debug("Deleted " + e)
+            logger.debug("Deleted %s", e)
             env[e] = start_env[e]
     for e in stop_env.keys():
         if e not in start_env.keys():
-            logger.debug("Added " + e)
+            logger.debug("Added %s", e)
             env[e] = stop_env[e]
     return env
 
@@ -66,7 +66,7 @@ def dump_config(outf, sep=":"):
     for key, value in sorted(settings.__dict__.items()):
         if not (key.startswith('__') or key.startswith('_') or key == 'ERROR'):
             if type(value) in [str, int, float, list, dict, bool]:
-                print("%s%s%s" % (key, sep, str(value)), file=outf)
+                print(f"{key}{sep}{str(value)}", file=outf)
     print("\nenvironment variables (overrides settings.py):", file=outf)
     env_var_list = [
         "PAPIEX_OSS_PATH", "PAPIEX_OUTPUT",
@@ -77,7 +77,7 @@ def dump_config(outf, sep=":"):
     #              ]:
     for v in env_var_list:
         if v in environ:
-            print("%s%s%s" % (v, sep, environ[v]), file=outf)
+            print(f"{v}{sep}{environ[v]}", file=outf)
 
 
 @logfn
@@ -89,7 +89,7 @@ def read_job_metadata_direct(file):
         logger.debug("doing special unpickling for job metadata pickled using python2")
         data = conv_dict_byte2str(pickle.load(file, encoding='bytes'))
     except Exception as e:
-        logger.error("Error unpickling job metadata file: {}".format(e))
+        logger.error("Error unpickling job metadata file: %s", e)
         raise
     logger.debug("Unpickled ")
     return data
@@ -97,7 +97,7 @@ def read_job_metadata_direct(file):
 
 @logfn
 def read_job_metadata(jobdatafile):
-    logger.info("Unpickling from " + jobdatafile)
+    logger.info("Unpickling from %s", jobdatafile)
     try:
         with open(jobdatafile, 'rb') as file:
             return read_job_metadata_direct(file)
@@ -109,7 +109,7 @@ def read_job_metadata(jobdatafile):
 def write_job_epilog(jobdatafile, metadata):
     with open(jobdatafile, 'w+b') as file:
         pickle.dump(metadata, file)
-        logger.debug("Pickled to " + jobdatafile)
+        logger.debug("Pickled to %s", jobdatafile)
         return True
     return False
 
@@ -133,7 +133,7 @@ def verify_install_prefix():
     retval = True
     # Check for bad stuff and shortcut
     if "*" in install_prefix or "?" in install_prefix:
-        logger.error("Found wildcards in install_prefix: {}".format(install_prefix))
+        logger.error("Found wildcards in install_prefix: %s", install_prefix)
         PrintFail()
         return False
     papiex_shared_obj_file_list = [
@@ -145,7 +145,7 @@ def verify_install_prefix():
     ]
     for e in papiex_shared_obj_file_list:
         cmd = "ls -l " + install_prefix + e + ">/dev/null 2>&1"
-        logger.info("\t" + cmd)
+        logger.info("\t%s", cmd)
         return_code = run(cmd, shell=True).returncode
         if return_code != 0:
             logger.error("%s failed", cmd)
@@ -173,7 +173,7 @@ def verify_epmt_output_prefix():
 
     # Print and create dir
     def testdir(str2):
-        logger.info("\tmkdir -p " + str2)
+        logger.info("\tmkdir -p %s", str2)
         return create_job_dir(str2)
 
     # Test create (or if it exists)
@@ -186,14 +186,14 @@ def verify_epmt_output_prefix():
 
     # Test to make sure we can access it
     cmd = "ls -lR " + opf + " >/dev/null"
-    logger.info("\t" + cmd)
+    logger.info("\t%s", cmd)
     return_code = run(cmd, shell=True).returncode
     if return_code != 0:
         retval = False
 
     # Remove the created tmp dir
     cmd = "rm -rf " + opf + "tmp"
-    logger.info("\t" + cmd)
+    logger.info("\t%s", cmd)
     return_code = run(cmd, shell=True).returncode
     if return_code != 0:
         retval = False
@@ -212,15 +212,16 @@ def verify_papiex_options():
     environments where perf_event_open() is restricted.'''
     s = get_papiex_options(settings)
     print("papiex_options =",s, end='')
-    logger.info(f'papiex_options = {s}')
-    logger.info(f'settings.install_prefix = {settings.install_prefix}')
+    logger.info('papiex_options = %s', s)
+    logger.info('settings.install_prefix = %s', settings.install_prefix)
     retval = True
 
     # Check for any components
-    #    cmd = settings.install_prefix+"/bin/papi_component_avail 2>&1 "+"| sed -n -e '/Active/,$p' | grep perf_event >/dev/null 2>&1"
+    #    cmd = settings.install_prefix+"/bin/papi_component_avail 2>&1 "
+    #          +"| sed -n -e '/Active/,$p' | grep perf_event >/dev/null 2>&1"
     cmd = settings.install_prefix + "/bin/papi_component_avail 2>&1 " + \
         "| sed -e '/Active/,$p' | grep perf_event >/dev/null 2>&1"
-    logger.info("\t" + cmd)
+    logger.info("\t%s", cmd)
     return_code = run(cmd, shell=True).returncode
     if return_code != 0:
         logger.error("%s failed", cmd)
@@ -237,8 +238,9 @@ def verify_papiex_options():
         # cmd = settings.install_prefix+"/bin/papi_command_line 2>&1 "+e+"| sed -n
         # -e '/PERF_COUNT_SW_CPU_CLOCK\ :/,$p' | grep PERF_COUNT_SW_CPU_CLOCK >
         # /dev/null 2>&1" # does not work for rocky-8.
+        # guessing... NOT TRIED YET TODO: TRY THIS INSTEAD OF ABOVE LINE
         cmd = settings.install_prefix + "/bin/papi_command_line 2>&1 " + e + \
-            "| sed -e '/PERF_COUNT_SW_CPU_CLOCK\\ :/,$p' | grep PERF_COUNT_SW_CPU_CLOCK > /dev/null 2>&1"  # guessing... NOT TRIED YET TODO: TRY THIS INSTEAD OF ABOVE LINE
+            "| sed -e '/PERF_COUNT_SW_CPU_CLOCK\\ :/,$p' | grep PERF_COUNT_SW_CPU_CLOCK > /dev/null 2>&1"
         logger.info("\t" + cmd)
         return_code = run(cmd, shell=True).returncode
         if return_code != 0:
@@ -265,7 +267,7 @@ def verify_db_params():
             PrintPass()
             return True
     except ImportError as e:
-        logger.error("Error setting up DB: {}".format(str(e)))
+        logger.error("Error setting up DB: %s", str(e))
         PrintFail()
         return False
 
@@ -310,8 +312,8 @@ def verify_stage_command():
 
     tmp = environ.get('TMPDIR', '/tmp')
     tmpfile = 'test_stage_cmd'
-    inp = '/{0}/{1}'.format(tmp, tmpfile)
-    target = '{0}/{1}'.format(dest, tmpfile)
+    inp = f'/{tmp}/{tmpfile}'
+    target = f'{dest}/{tmpfile}'
     try:
         safe_rm(target)
         open(inp, 'a').close()
@@ -320,7 +322,7 @@ def verify_stage_command():
         print(str(e), file=stderr)
         PrintFail()
         if not path.exists(target):
-            raise FileNotFoundError("could not create output in {0}".format(dest)) from e
+            raise FileNotFoundError(f"could not create output in {dest}") from e
         return False
     finally:
         safe_rm(inp)
@@ -593,7 +595,7 @@ def epmt_dump_metadata(filelist, key=None):
         return False
 
     for f in filelist:
-        logger.info('Processing {}'.format(f))
+        logger.info('Processing %s', f)
 
         if not path.exists(f):
             if ('/' in f) or ('.tgz' in f):
@@ -601,7 +603,7 @@ def epmt_dump_metadata(filelist, key=None):
                 return False
 
             # if the file does not exist then we check the DB
-            logger.debug('{} was not found in the file-system. Checking database..'.format(f))
+            logger.debug('%s was not found in the file-system. Checking database..', f)
             from epmt.epmt_cmd_show import epmt_show_job
             rc = epmt_show_job(f, key=key)
             if not rc:
@@ -613,10 +615,10 @@ def epmt_dump_metadata(filelist, key=None):
             try:
                 info = tar.getmember("./job_metadata")
             except KeyError:
-                logger.error('Did not find %s in tar file ' % "job_metadata")
+                logger.error('Did not find %s in tar file', "job_metadata")
                 return False
             else:
-                logger.info('%s is %d bytes in archive' % (info.name, info.size))
+                logger.info('%s is %d bytes in archive', info.name, info.size)
                 f = tar.extractfile(info)
                 metadata = read_job_metadata_direct(f)
         else:
@@ -628,7 +630,7 @@ def epmt_dump_metadata(filelist, key=None):
             print(metadata[key])
         else:
             for d in sorted(metadata.keys()):
-                print("%-24s%-56s" % (d, str(metadata[d])))
+                print(f"{d:<24}{str(metadata[d]):<56}")
     return rc_final
 
 
@@ -657,12 +659,12 @@ def annotate_metadata(metadatafile, annotations, replace=False):
     where possible.
     '''
     if not path.isfile(metadatafile):
-        logger.error('{} does not exist'.format(metadatafile))
+        logger.error('%s does not exist', metadatafile)
         return False
 
     metadata = read_job_metadata(metadatafile)
     if not metadata:
-        logger.error('Error reading metadata from {}'.format(metadatafile))
+        logger.error('Error reading metadata from %s', metadatafile)
         return False
 
     # get existing annotations unless replace is set
@@ -670,7 +672,7 @@ def annotate_metadata(metadatafile, annotations, replace=False):
 
     # now merge in the new annotations, where the new annotations will override existing annotations if keys are common
     ann.update(annotations)
-    logger.debug('Updated annotations: {}'.format(ann))
+    logger.debug('Updated annotations: %s', ann)
     metadata['annotations'] = ann
     return write_job_metadata(metadatafile, metadata)
 
@@ -716,7 +718,7 @@ def epmt_annotate(argslist, replace=False):
         annotations = get_annotations_from_kwargs(argslist)
         if not annotations:
             return False
-        logger.info('annotating a job in the batch environment: {}'.format(annotations))
+        logger.info('annotating a job in the batch environment: %s', annotations)
         jobid, datadir, metadatafile = setup_vars()
         if not (jobid and datadir and metadatafile):
             logger.error("jobid, datadir and metadatafile MUST be set in the environment")
@@ -747,17 +749,17 @@ def epmt_annotate(argslist, replace=False):
         if arg0.endswith('.tgz'):
             # staged file form
             staged_file = arg0
-            logger.info('annotating staged job file {0}: {1}'.format(staged_file, annotations))
+            logger.info('annotating staged job file %s: %s', staged_file, annotations)
             tempdir = extract_tar(staged_file, check_metadata=True)
             if not tempdir:
-                logger.error('Error extracting {}'.format(staged_file))
+                logger.error('Error extracting %s', staged_file)
                 return False
             metadatafile = tempdir + "/job_metadata"
 
         elif path.isdir(arg0):
             # job directory form
             job_dir = arg0
-            logger.info('annotating dir {}: {}'.format(job_dir, annotations))
+            logger.info('annotating dir %s: %s', job_dir, annotations)
             if path.exists(stopped_metadata_file(job_dir + "/job_metadata")):
                 metadatafile = stopped_metadata_file(job_dir + "/job_metadata")
                 logger.debug("job %s has been stopped", job_dir)
@@ -771,16 +773,16 @@ def epmt_annotate(argslist, replace=False):
         else:
             # database jobid form
             jobid = argslist[0]
-            logger.info('annotating job {0} in db: {1}'.format(jobid, annotations))
+            logger.info('annotating job %s in db: %s', jobid, annotations)
             from epmt.epmt_query import annotate_job
             updated_ann = annotate_job(jobid, annotations, replace)
-            logger.debug('updated annotations: {}'.format(updated_ann))
+            logger.debug('updated annotations: %s', updated_ann)
             if settings.job_tags_env in annotations:
                 # we need to set <job>.tags to the value of EPMT_JOB_TAGS
                 from epmt.epmt_query import tag_job
                 # we have to overwrite the existing tags (not merge it in)
                 r = tag_job(jobid, annotations[settings.job_tags_env], True)
-                logger.debug('Updated tags for job {} to {}'.format(jobid, r))
+                logger.debug('Updated tags for job %s to %s', jobid, r)
             return annotations.items() <= updated_ann.items()
 
     # below we handle annotation update in the metadata file
@@ -789,7 +791,7 @@ def epmt_annotate(argslist, replace=False):
     # we also need to recreate the tar.
     retval = annotate_metadata(metadatafile, annotations, replace=replace)
     if not retval:
-        logger.error('Could not annotate metadatafile: ' + metadatafile)
+        logger.error('Could not annotate metadatafile: %s', metadatafile)
 
     # for staged file case we need to recreate the .tgz file
     # but do not call stage! create_tar will log an error if it failed
@@ -971,13 +973,17 @@ def epmt_source(slurm_prolog=False, papiex_debug=False, monitor_debug=False, run
 
     elif not run_cmd:
         # set up functions
-        cmd += "epmt_push_preload ()\n{\nif [ -z \"$PAPIEX_OLD_LD_PRELOAD\" ]; then export LD_PRELOAD=$PAPIEX_LD_PRELOAD ; else export LD_PRELOAD=$PAPIEX_LD_PRELOAD:$PAPIEX_OLD_LD_PRELOAD ; fi\n};\n"
-        cmd += "epmt_pop_preload ()\n{\nif [ -z \"$PAPIEX_OLD_LD_PRELOAD\" ]; then export -n LD_PRELOAD ; else export LD_PRELOAD=$PAPIEX_OLD_LD_PRELOAD ; fi\n};\n"
+        cmd += ("epmt_push_preload ()\n{\nif [ -z \"$PAPIEX_OLD_LD_PRELOAD\" ]; then"
+                " export LD_PRELOAD=$PAPIEX_LD_PRELOAD ; else"
+                " export LD_PRELOAD=$PAPIEX_LD_PRELOAD:$PAPIEX_OLD_LD_PRELOAD ; fi\n};\n")
+        cmd += ("epmt_pop_preload ()\n{\nif [ -z \"$PAPIEX_OLD_LD_PRELOAD\" ]; then"
+                " export -n LD_PRELOAD ; else export LD_PRELOAD=$PAPIEX_OLD_LD_PRELOAD ; fi\n};\n")
         cmd += "epmt_instrument () {\nexport MONITOR_DEBUG PAPIEX_OUTPUT PAPIEX_DEBUG PAPIEX_OPTIONS LD_PRELOAD;\n"
         cmd += "epmt_push_preload;\n};\n"
         cmd += "epmt_uninstrument () {\nexport -n MONITOR_DEBUG PAPIEX_OUTPUT PAPIEX_DEBUG PAPIEX_OPTIONS;\n"
         cmd += "epmt_pop_preload;\n};\n"
-        #cmd += "epmt () {\nepmt_pop_preload;\n cmd=`command epmt`;\nif [ $? -eq 0 ]; then $cmd $* ; else \"epmt not in \$PATH\"; fi\n;epmt_push_preload;\n};\n"
+        #cmd += "epmt () {\nepmt_pop_preload;\n cmd=`command epmt`;\nif [ $? -eq 0 ]; then"
+        #        " $cmd $* ; else \"epmt not in $PATH\"; fi\n;epmt_push_preload;\n};\n"
 
         # Now enable instrumentation
         cmd += "epmt_instrument;\n"
@@ -986,9 +992,6 @@ def epmt_source(slurm_prolog=False, papiex_debug=False, monitor_debug=False, run
 
 @logfn
 def epmt_run(cmdline, wrapit=False, dry_run=False, debug=False):
-    # logger.setLevel(DEBUG)
-    # logger.warning('HELLO')
-    # logger.debug("epmt_run(%s, %s, %s, %s, %s)", cmdline, str(wrapit), str(dry_run), str(debug))
 
     if not cmdline:
         logger.error("No command given")
@@ -1301,7 +1304,7 @@ def copy_files(src_dir, dest_dir='', patterns=['*'], prefix=''):
     if not files:
         logger.debug('No files to copy!')
         return False
-    logger.debug('Copying {} to {}'.format(files, dest_dir))
+    logger.debug('Copying %s to %s', files, dest_dir)
     for f in files:
         filename = path.basename(f)
         target = dest_dir + "/" + filename
@@ -1338,7 +1341,7 @@ def create_tar(tarfile, indir, remove_dir=False):
     True on success, False on error
     '''
     if not path.isdir(indir):
-        logger.error('{} does not exist'.format(indir))
+        logger.error('%s does not exist', indir)
     cmd = "tar -C " + indir + " -cz -f " + tarfile + " ."
     logger.debug(cmd)
     retval = run(cmd, shell=True).returncode
@@ -1386,17 +1389,17 @@ def extract_tar(tarfile, outdir='', check_metadata=False):
         try:
             info = tar.getmember("./job_metadata")
         except KeyError:
-            logger.error('ERROR: Did not find %s in tar file' % "job_metadata")
+            logger.error('ERROR: Did not find %s in tar file', "job_metadata")
             return False
-        logger.info('%s is %d bytes in archive' % (info.name, info.size))
+        logger.info('%s is %d bytes in archive', info.name, info.size)
 
     from tempfile import mkdtemp, gettempdir
     outdir = outdir or mkdtemp(prefix='epmt_stage_', dir=gettempdir())
-    logger.debug('extracting {0} to {1}'.format(tarfile, outdir))
+    logger.debug('extracting %s to %s', tarfile, outdir)
     try:
         tar.extractall(path=outdir)
     except Exception as e:
-        logger.error('Error extracting {} into {}: {}'.format(tarfile, outdir, str(e)))
+        logger.error('Error extracting %s into %s: %s', tarfile, outdir, str(e))
         # cleanup since we had an error
         rmtree(outdir, ignore_errors=True)
         return False
@@ -1417,7 +1420,7 @@ def open_compressed_tar(inputf):
     try:
         tar = tarfile.open(inputf, flags)
     except Exception as e:
-        logger.error('error opening compressed tar ' + inputf + ":" + str(e))
+        logger.error('error opening compressed tar %s:%s', inputf, e)
         return True, None
 
     return False, tar
@@ -1467,7 +1470,7 @@ def submit_dir_or_tgz_to_db(inputf,
     status = False
     exc = None
     r = None
-    msg = "submit_dir_or_tgz_to_db({}): ".format(inputf)
+    msg = f"submit_dir_or_tgz_to_db({inputf}): "
 
     try:
         r = submit_to_db(inputf, pattern, dry_run=dry_run)
@@ -1514,10 +1517,10 @@ def submit_to_db(inputf, pattern, dry_run=True):
         try:
             info = tar.getmember("./job_metadata")
         except KeyError:
-            logger.error('Did not find %s in tar file %s' % ("job_metadata", inputf))
+            logger.error('Did not find %s in tar file %s', "job_metadata", inputf)
             return (False, 'Did not find metadata in tar file ' + inputf, ())
         else:
-            logger.info('%s is %d bytes in tar file %s' % (info.name, info.size, inputf))
+            logger.info('%s is %d bytes in tar file %s', info.name, info.size, inputf)
             f = tar.extractfile(info)
             metadata = read_job_metadata_direct(f)
             filedict = get_filedict(None, settings.input_pattern, tar)
@@ -1573,14 +1576,14 @@ def stage_job(indir, collate=True, compress_and_tar=True, keep_going=True):
         # no need to cleanup as copy_files will clean
         # up temp dir if it created one using mkdtemp
         if not tempdir:
-            logger.error("No job metadata found in " + indir)
+            logger.error("No job metadata found in %s", indir)
             return False
 
         tsv_files = glob(indir + '/*.tsv')
         if tsv_files:
             copied_to = copy_files(indir, dest_dir=tempdir, patterns=['*.tsv'])
             if not copied_to:
-                logger.error('No job performance data found in {}'.format(indir))
+                logger.error('No job performance data found in %s', indir)
                 rmtree(tempdir, ignore_errors=True)
                 return False
         else:
@@ -1711,8 +1714,6 @@ def epmt_entrypoint(args):
                       check=True,
                       log_pid=(hasattr(args, 'num_cpus') and (args.num_cpus > 1)))
 
-    # initialize logger ... inl: after epmt_logging_init? shouldnt that one function call do it?
-    logger = getLogger(__name__)
     init_settings(settings)
 
     # Here it's up to each command to validate what it is looking for
@@ -1828,7 +1829,9 @@ def epmt_entrypoint(args):
     # submit does the drop on its own, so here we handle... Ian: why was this sentence never finished??
     if args.command == 'drop':
         if not args.force:
-            confirm = input("This will drop the entire database. This action cannot be reversed. Are you sure (yes/NO): ")
+            confirm = input(
+                "This will drop the entire database. This action cannot be reversed."
+                " Are you sure (yes/NO): ")
             if confirm.upper() not in ('Y', 'YES'):
                 return 0
 

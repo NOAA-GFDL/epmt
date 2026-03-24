@@ -19,8 +19,8 @@ def do_cleanup():
 def setUpModule():
     setup_db(settings)
     do_cleanup()
-    datafiles = '{}/test/data/query/68500[03].tgz'.format(install_root)
-    print('setUpModdule: importing {0}'.format(datafiles))
+    datafiles = f'{install_root}/test/data/query/68500[03].tgz'
+    print(f'setUpModdule: importing {datafiles}')
     epmt_submit(sorted(glob(datafiles)), dry_run=False)
 
 

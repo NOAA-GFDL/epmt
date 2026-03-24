@@ -15,13 +15,15 @@ from pwd import getpwuid
 from subprocess import call
 from time import time
 
+logger = getLogger(__name__)
+
 # semantic version
 # first element is the major version number
 # second element is the minor version number
 # third element is the patch or bugfix number
 # Since we are saving as a tuple you can do a simple
 # compare of two version tuples and python will do the right thing
-_version = (4, 11, 0)
+_version = (5, 0, 1)
 __version__ = ".".join([str(i) for i in _version])
 
 
@@ -30,7 +32,7 @@ def version():
 
 
 def version_str(terse=False):
-    return __version__ if terse else "EPMT {0}".format(__version__)
+    return __version__ if terse else f"EPMT {__version__}"
 
 
 def get_username():
@@ -39,7 +41,13 @@ def get_username():
 
 def epmt_logging_init(intlvl=0, check=False, log_pid=False):
     '''
-    if check is set, then we will bail if logging has already been initialized
+    Configure logging for the ``epmt`` package.
+
+    Handlers are attached to the ``epmt`` package logger (not the root
+    logger) so that third-party libraries are unaffected.
+
+    If *check* is set, then we will bail if logging has already been
+    initialized.
     '''
     import logging
     import epmt.epmt_settings as settings
@@ -61,43 +69,38 @@ def epmt_logging_init(intlvl=0, check=False, log_pid=False):
     else:  # intlvl >= 2:
         level = DEBUG  # 10
 
-    # Set level and remove all existing handlers
-    # rootLogger = getLogger(__name__) # thank you! @ ericzhou13
-    rootLogger = getLogger()
-    rootLogger.debug("epmt_logging_init(%d,%s,%s): %d handlers", intlvl, check, log_pid, len(rootLogger.handlers))
-    for handler in rootLogger.handlers:
-        rootLogger.removeHandler(handler)
-    rootLogger.setLevel(level)
+    # Configure the 'epmt' package logger instead of the root logger.
+    # All epmt.* module loggers inherit from this logger, and third-party
+    # loggers (matplotlib, numba, parso, etc.) are no longer affected.
+    epmt_logger = getLogger('epmt')
+    epmt_logger.debug("epmt_logging_init(%d,%s,%s): %d handlers", intlvl, check, log_pid, len(epmt_logger.handlers))
+    for handler in epmt_logger.handlers[:]:
+        epmt_logger.removeHandler(handler)
+    epmt_logger.setLevel(level)
+    # Prevent log messages from propagating to the root logger, which
+    # would cause duplicate output if the root has its own handlers.
+    epmt_logger.propagate = False
 
     # only log to file if stdout is not a tty
     from sys import stdout
     if not stdout.isatty():
-        # basicConfig(filename='epmt.log', filemode='a', level=level)
         logFormatter = logging.Formatter("[%(asctime)-19.19s, %(process)6d] %(levelname)-7.7s %(name)s:%(message)s")
         fileHandler = logging.FileHandler(settings.logfile)
         fileHandler.setFormatter(logFormatter)
         fileHandler.setLevel(level)
-        rootLogger.debug("epmt_logging_init(): not_a_tty: adding handler for settings.logfile=%s", settings.logfile)
-        rootLogger.addHandler(fileHandler)
+        epmt_logger.debug("epmt_logging_init(): not_a_tty: adding handler for settings.logfile=%s", settings.logfile)
+        epmt_logger.addHandler(fileHandler)
 
     consoleHandler = logging.StreamHandler()
     consoleFormatter = logging.Formatter(
-        "[%(asctime)-19.19s, %(process)d] %(levelname)7.7s: %(name)s: %(message)s" if log_pid else "%(asctime)-19.19s %(levelname)7.7s: %(name)s: %(message)s")
+        ("[%(asctime)-19.19s, %(process)d] %(levelname)7.7s: %(name)s: %(message)s"
+         if log_pid else
+         "%(asctime)-19.19s %(levelname)7.7s: %(name)s: %(message)s"))
     consoleHandler.setFormatter(consoleFormatter)
-    rootLogger.addHandler(consoleHandler)
+    epmt_logger.addHandler(consoleHandler)
 
-    # matplotlib generates a ton of debug messages
-    mpl_logger = logging.getLogger('matplotlib')
-    mpl_logger.setLevel(logging.WARNING)
-
-    # numba.byteflow generates a ton of debug messages
-    numba_logger = logging.getLogger('numba')
-    numba_logger.setLevel(logging.WARNING)
-
-    # ipython's parso logger has too many debug messages
-    parso_logger = logging.getLogger('parso')
-    parso_logger.setLevel(logging.WARNING)
-
+    # Alembic's logger lives outside the epmt hierarchy, so we still
+    # need to set its level explicitly.
     alembic_logger = logging.getLogger('alembic')
     alembic_logger.setLevel(level)
 
@@ -108,8 +111,6 @@ def epmt_logging_init(intlvl=0, check=False, log_pid=False):
     # to show the sqlalchemy's INFO level messages (but instead
     # a level higher).
     sqlalchemy_logger = logging.getLogger('sqlalchemy')
-    #sqlalchemy_logger.setLevel(level + 10)
-    #sqlalchemy_logger.setLevel(level + 20)
     sqlalchemy_logger.setLevel(level + 30)
 
 
@@ -118,7 +119,6 @@ def init_settings(settings):
         return
     init_settings.initialized = True
 
-    logger = getLogger('init_settings')
     err_msg = ""
 
     if environ.get("PAPIEX_OUTPUT"):
@@ -256,7 +256,6 @@ def safe_rm(f):
 
 
 def timing(f):
-    logger = getLogger(__name__)
 
     @wraps(f)
     def wrap(*args, **kw):
@@ -264,7 +263,7 @@ def timing(f):
         result = f(*args, **kw)
         te = time()
         if result:
-            logger.debug('%r took: %2.5f sec' % (f.__name__, te - ts))
+            logger.debug('%r took: %2.5f sec', f.__name__, te - ts)
         return result
     return wrap
 
@@ -314,7 +313,6 @@ def tag_from_string(s, delim=';', sep=':', tag_default_value='1'):
     if not s:
         return (None if s is None else {})
 
-    logger = getLogger(__name__)
     tag = {}
     for t in s.split(delim):
         t = t.strip()
@@ -325,7 +323,7 @@ def tag_from_string(s, delim=';', sep=':', tag_default_value='1'):
                 v = v.strip()
                 tag[k] = v
             except Exception as e:
-                logger.warning('ignoring key/value pair as it has an invalid format: {0}'.format(t))
+                logger.warning('ignoring key/value pair as it has an invalid format: %s', t)
                 logger.warning("%s", e)
                 continue
         else:
@@ -341,7 +339,7 @@ def tag_dict_to_string(tag, delim=';', sep=':'):
     '''
     if isinstance(tag, str):
         return tag
-    return delim.join(["{}{}{}".format(k, sep, tag[k]) for k in sorted(tag.keys())])
+    return delim.join([f"{k}{sep}{tag[k]}" for k in sorted(tag.keys())])
 
 
 def tags_list(tags):
@@ -648,7 +646,6 @@ def compare_dicts(d1, d2):
 
 
 def get_batch_envvar(var, where):
-    logger = getLogger(__name__)
     key2slurm = {
         "JOB_NAME": "SLURM_JOB_NAME",
         "JOB_USER": "SLURM_JOB_USER"
@@ -666,7 +663,6 @@ def get_batch_envvar(var, where):
 
 
 def get_metadata_env_changes(metadata):
-    logger = getLogger(__name__)
     start_env = metadata['job_pl_env']
     stop_env = metadata['job_el_env']
     (added, removed, modified, same) = compare_dicts(stop_env, start_env)
@@ -697,7 +693,6 @@ def check_fix_metadata(raw_metadata):
         return raw_metadata
 
     import epmt.epmt_settings as settings
-    logger = getLogger(__name__)
 
     # First check what should be here
     try:
@@ -744,7 +739,7 @@ def check_fix_metadata(raw_metadata):
         # we can ignore all the fields returned except the first
         env_changes = get_metadata_env_changes(raw_metadata)[0]
         if env_changes:
-            logger.debug('start/stop environment changed: {0}'.format(env_changes))
+            logger.debug('start/stop environment changed: %s', env_changes)
         metadata['job_env_changes'] = env_changes
 
     # mark the metadata as checked so we don't check it again unnecessarily
@@ -755,7 +750,7 @@ def check_fix_metadata(raw_metadata):
 def check_pid(pid):
     """Check whether pid exists"""
     if pid < 0:
-        return (False, 'Invalid PID: {0}'.format(pid))
+        return (False, f'Invalid PID: {pid}')
     from os import kill
     try:
         kill(pid, 0)
@@ -763,7 +758,7 @@ def check_pid(pid):
         from errno import ESRCH, EPERM
         if err.errno == ESRCH:
             # ESRCH == No such process
-            return (False, 'No such process (PID: {0})'.format(pid))
+            return (False, f'No such process (PID: {pid})')
         elif err.errno == EPERM:
             # EPERM clearly means there's a process but we cannot
             # send a signal to it
@@ -811,7 +806,7 @@ def conv_to_datetime(t):
             retval = datetime.strptime(t, '%m/%d/%Y %H:%M')
         except Exception as e:
             logger = getLogger(__name__)
-            logger.error('could not convert string to datetime: %s' % str(e))
+            logger.error('could not convert string to datetime: %s', str(e))
             return None
     elif type(t) in (int, float):
         if t > 0:
@@ -922,13 +917,12 @@ def dframe_encode_features(df, features=[], reversible=False):
 
     NOTE: If encoded_features is empty, no features were encoded.
     '''
-    logger = getLogger(__name__)
     if not features:
         import epmt.epmt_settings as settings
         logger.debug('Selecting non-numeric columns from dataframe and then pruning out blacklisted features')
         obj_features = list(df.select_dtypes(include='object').columns.values)
-        logger.debug('Non-numeric features in dataframe: {}'.format(obj_features))
-        logger.debug('Blacklisted features to prune: {}'.format(settings.outlier_features_blacklist))
+        logger.debug('Non-numeric features in dataframe: %s', obj_features)
+        logger.debug('Blacklisted features to prune: %s', settings.outlier_features_blacklist)
         features = list(set(df.select_dtypes(include='object').columns.values) -
                         set(settings.outlier_features_blacklist))
 
@@ -938,17 +932,18 @@ def dframe_encode_features(df, features=[], reversible=False):
 
     if reversible:
         logger.warning(
-            'You have enabled "reversible". Be warned that the encoded feature columns can contain some very large integers')
+            'You have enabled "reversible". Be warned that the encoded feature '
+            'columns can contain some very large integers')
     encoded_df = df.copy()
     encoded_features = []
-    logger.debug('encoding feature columns: {}'.format(features))
+    logger.debug('encoding feature columns: %s', features)
     for c in features:
         str_vec = df[c].to_numpy()
         int_vec = encode2ints(str_vec) if reversible else hash_strings(str_vec)
         encoded_df[c] = int_vec
-        logger.debug('mapped feature {}: {} -> {}'.format(c, str_vec, int_vec))
+        logger.debug('mapped feature %s: %s -> %s', c, str_vec, int_vec)
         encoded_features.append(c)
-    logger.info('Encoded features: {}'.format(encoded_features))
+    logger.info('Encoded features: %s', encoded_features)
     return (encoded_df, encoded_features)
 
 
@@ -972,21 +967,20 @@ def dframe_decode_features(df, features):
               calling dframe_encode_features, as otherwise the strings
               are hashed and not encoded (hashed strings cannot be decoded).
     '''
-    logger = getLogger(__name__)
     decoded_df = df.copy()
     decoded_features = []
     for c in features:
         int_vec = df[c].to_numpy()
         str_vec = decode2strings(int_vec)
         decoded_df[c] = str_vec
-        logger.debug('decoded {}: {} -> {}'.format(c, int_vec, str_vec))
+        logger.debug('decoded %s: %s -> %s', c, int_vec, str_vec)
         decoded_features.append(c)
     if decoded_features != features:
         logger.warning('decoded features list is not identical to requested features')
     if not decoded_features:
         logger.warning('No features were decoded')
     else:
-        logger.info('Decoded features: {}'.format(decoded_features))
+        logger.info('Decoded features: %s', decoded_features)
     return (decoded_df, decoded_features)
 
 
@@ -1001,7 +995,7 @@ def find_files_in_dir(path, pattern='*.tgz', recursive=False):
     RETURNS: List of files that match
     '''
     from glob import glob
-    pathname = '{}/{}{}'.format(path, '**/' if recursive else '', pattern)
+    pathname = f'{path}/{"**/" if recursive else ""}{pattern}'
     return glob(pathname, recursive=recursive)
 
 
@@ -1114,7 +1108,7 @@ def docs_module_index(mod, fmt=None):
     out_str = ""
     for section in sorted(sections.keys()):
         section_calls = sections[section]
-        out_str += "\n\nSection::{}\n".format(section)
+        out_str += f"\n\nSection::{section}\n"
         out_str += "\n".join([fmt_string.format(o[0], o[1]) for o in section_calls])
     return out_str
 
@@ -1128,7 +1122,6 @@ def get_install_root():
     >>> '/abc/def/ghi.py'.rsplit('/',1)
     ['/abc/def', 'ghi.py']
     '''
-    # logger = getLogger(__name__)
     install_root = __file__.rsplit('/', 2)[0]
     # handle pip packaging here -- even when "manually" installed ala 4.9.6, our install_dir should always end in /epmt.
     # XXX THIS IS STILL HOKEY and i'm not sure how to make it work for all possible installations.
@@ -1156,10 +1149,10 @@ def logfn(func):
         # the module is prepended automatically by our logging format
         # as we use getLogger with the module name
         # logger.info('{}({}{}{})'.format(func.__name__,
-        logger.debug('{}({}{}{})'.format(func.__name__,
-                                         ", ".join([str(x) for x in func_args]),
-                                         "," if func_kwargs else "",
-                                         ",".join(["{}={}".format(k, v) for (k, v) in func_kwargs.items()])))
+        logger.debug('%s(%s%s%s)', func.__name__,
+                     ", ".join([str(x) for x in func_args]),
+                     "," if func_kwargs else "",
+                     ",".join([f"{k}={v}" for (k, v) in func_kwargs.items()]))
         # now call the actual function with its arguments (if any)
         return func(*func_args, **func_kwargs)
     return log_func
@@ -1209,7 +1202,7 @@ def csv_probe_format(f):
         # the second element is a list of CSV column names
         return ('1', s.split('\n')[0].split(','))
     # if we reached here, then we don't understand the CSV format
-    raise ValueError("CSV file -- {} -- has an unknown file format. Is it corrupted?".format(f.name))
+    raise ValueError(f"CSV file -- {f.name} -- has an unknown file format. Is it corrupted?")
 
 
 def set_signal_handlers(signals=[], handler=None):
@@ -1220,7 +1213,6 @@ def set_signal_handlers(signals=[], handler=None):
     to the default)
     '''
     from signal import SIGHUP, SIGTERM, SIGINT, signal, SIG_DFL
-    logger = getLogger(__name__)
 
     # set defaults
     signals = signals or [SIGHUP, SIGTERM, SIGINT]

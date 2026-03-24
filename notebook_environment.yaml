@@ -15,7 +15,7 @@
 # After pulling new commits, re-run the pip install line above if
 # pyproject.toml dependencies changed.
 
-name: epmt
+name: epmt_notebook
 
 channels:
   - conda-forge
@@ -48,34 +48,18 @@ dependencies:
   - conda-forge::pylint
   - pip
   
-#  # --- notebook extras -------------------------------------------------- (TESTED, WORKS!)
-#  - conda-forge::ipykernel
-#  - conda-forge::ipython
-#  - conda-forge::ipywidgets
-#  - conda-forge::jupyter
-#  - conda-forge::jupyter_client
-#  - conda-forge::jupyter_console
-#  - conda-forge::jupyter_core
-#  - conda-forge::jupyter_server<2
-#  - conda-forge::notebook<7
-#  - conda-forge::jupyterlab<4        # must stay <4 while notebook is <7  
-#  - conda-forge::qtconsole
-
-#  # --- ui extras -------------------------------------------------- (NOT TESTED)
-#  - conda-forge::dash
-#  - conda-forge::dash_bootstrap_components
-#  - conda-forge::dash_daq
-#  - conda-forge::dash_table
-
-#  # --- docs extras -------------------------------------------------- (NOT TESTED)
-#  - conda-forge::livereload
-#  - conda-forge::mkdocs
-#  - conda-forge::mkdocs_git_committers_plugin
-#  - conda-forge::mkdocs_theme_bootstrap4
-
-#   # --- build extras -------------------------------------------------- (NOT TESTED)
-#   - conda-forge::pyinstaller==5.7.0
-#   - conda-forge::pyinstaller-hooks-contrib==2023.11
+  # --- notebook extras -------------------------------------------------- (TESTED, WORKS!)
+  - conda-forge::ipykernel
+  - conda-forge::ipython
+  - conda-forge::ipywidgets
+  - conda-forge::jupyter
+  - conda-forge::jupyter_client
+  - conda-forge::jupyter_console
+  - conda-forge::jupyter_core
+  - conda-forge::jupyter_server<2
+  - conda-forge::notebook<7
+  - conda-forge::jupyterlab<4        # must stay <4 while notebook is <7  
+  - conda-forge::qtconsole
 
   - pip:
-    - src/              # editable install of epmt into this environment
+    - -e src/              # editable install of epmt into this environment

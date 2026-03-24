@@ -52,7 +52,9 @@ notebook = [
     "jupyter-client",
     "jupyter-console",
     "jupyter-core",
+	"jupyter-server<2",
     "notebook<7",
+	"jupyterlab<4",
     "qtconsole",
 ]
 # Dash-based web UI
@@ -69,16 +71,9 @@ docs = [
     "mkdocs-git-committers-plugin",
     "mkdocs-theme-bootstrap4",
 ]
-# Linting and static analysis
-dev = [
-    "astroid",
-    "isort",
-    "lazy-object-proxy",
-    "mccabe",
-    "wrapt",
-]
-# Test runner
-test = [
+# testing, linting and static analysis
+devtest = [
+    "pylint",
     "pytest",
 ]
 # 20231102 caw: pyinstaller is pinned at 5.7.0, latest version doesn't allow the settings.py tactic.
@@ -88,7 +83,7 @@ build = [
 ]
 # Shorthand: install everything (mirrors the old flat dependency list)
 all = [
-    "epmt[notebook,ui,docs,dev,test,build]",
+    "epmt[notebook,ui,docs,devtest,build]",
 ]
 
 [project.scripts]

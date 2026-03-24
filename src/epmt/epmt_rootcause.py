@@ -91,7 +91,7 @@ def rootcause(ref, input, features, methods=[rootcause_zscore]):
 if __name__ == "__main__":
     # Synthesize 10 feature names
     n_features = 6
-    features = ['%c' % x for x in range(97, 97 + n_features)]
+    features = [f'{x:c}' for x in range(97, 97 + n_features)]
     print("Features:\n", features)
 
     def multiple():
