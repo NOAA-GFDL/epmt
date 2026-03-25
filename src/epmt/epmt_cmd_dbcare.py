@@ -24,8 +24,9 @@ def _get_dead_row_stats():
         "ORDER BY relname"
     )
     result = orm_raw_sql(sql)
-    rows = result.fetchall()
-    return rows
+    logger.debug('result = %s', result)
+    #logger.debug('type(result) = %s', type(result))
+    return result
 
 
 def _vacuum_tables():
@@ -47,7 +48,9 @@ def _vacuum_tables():
                         'last_vacuum=%s last_autovacuum=%s',
                         row[0], row[1], row[2], row[3], row[4])
     except Exception as e:
-        logger.warning('could not query dead row stats: %s', e)
+        logger.error('could not query dead row stats: %s', e)
+        raise Exception from e
+
 
     # VACUUM requires autocommit — use a raw DBAPI connection
     raw_conn = engine.raw_connection()
