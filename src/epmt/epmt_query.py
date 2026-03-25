@@ -1362,8 +1362,16 @@ enabled: boolean, optional
 '''
 # returns the number of models deleted.
 #jobs, computed, info_dict, and enabled can all be retrieved from the ReferenceModel object
-def save_refmodel(ReferenceModel, jobs, computed, info_dict, enabled, name=None, tags={}, op_tags=[], fmt='dict'):
-    r = orm_create(ReferenceModel, jobs=jobs, computed=computed, info_dict = info_dict, enabled=enabled, name=name, tags=tags, op_tags=op_tags)
+@db_session
+def save_refmodel(ReferenceModel, jobs, computed, info_dict, enabled, name=None, tags=None, tag=None, op_tags=None, fmt='dict'):
+    # Accept either `tag` or `tags` (tests call `tag=...`). Normalize to `tags`.
+    if tags is None and tag is not None:
+        tags = tag
+    if tags is None:
+        tags = {}
+    if op_tags is None:
+        op_tags = []
+    r = orm_create(ReferenceModel, jobs=jobs, computed=computed, info_dict=info_dict, enabled=enabled, name=name, tags=tags, op_tags=op_tags)
     orm_commit()
     if fmt == 'orm':
         return r
