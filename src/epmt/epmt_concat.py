@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 '''
 Data Flow:
 Always Check for and Store comments
@@ -18,7 +17,6 @@ Hostname is determined from csv file name
   Jobid: `goodSample_123`
 '''
 
-from __future__ import unicode_literals
 from epmt.epmtlib import epmt_logging_init, logfn
 
 from sys import exit as sysexit
@@ -375,35 +373,3 @@ def csvjoiner(indir,
     return False, None, badfiles_renamed
 
 
-if __name__ == '__main__':
-    # inl: remove this entry point?
-    from argparse import ArgumentParser
-    parser = ArgumentParser(description="Concatenate CSV files. It returns 0 on success and < 0 on error")
-    parser.add_argument(
-        'files', nargs='+', metavar='FILE',
-        help='Two or more CSV files to concatenate OR a directory containing CSV files')
-    parser.add_argument(
-        '-v', '--verbose',
-        action="count",
-        default=0,
-        help="increase verbosity")
-    parser.add_argument(
-        '-o', '--output-file',
-        help="Name of the output file, determined from input if not specified",
-        default='')
-    parser.add_argument(
-        '-e', '--error',
-        action='store_true',
-        help="Exit at the first sign of trouble",
-        default=False)
-    parser.add_argument(
-        '-E', '--error-dir',
-        help="Name of the directory to save files with errors, disabled if not specified",
-        default='')
-    args = parser.parse_args()
-    retval, of, bf = csvjoiner(debug=args.verbose,
-                               indir=(args.files[0] if len(args.files) == 1 else args.files),
-                               outfile=args.output_file,
-                               keep_going=not args.error,
-                               errdir=args.error_dir)
-    sysexit(0 if retval else -1)
