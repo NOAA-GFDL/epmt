@@ -2,7 +2,6 @@
 EPMT list command module - handles job listing functionality.
 """
 
-# from __future__ import print_function
 from sys import stderr
 from logging import getLogger
 

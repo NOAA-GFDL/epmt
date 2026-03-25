@@ -1,7 +1,7 @@
 """
 EPMT daemon module - handles background daemon functionality.
 """
-# from __future__ import print_function
+
 from getpass import getuser
 from os import path, kill, unlink, getppid
 from sys import exit as sysexit

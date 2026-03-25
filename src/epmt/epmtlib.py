@@ -1224,7 +1224,3 @@ def set_signal_handlers(signals=[], handler=None):
         logger.debug('Finished restoring signal handlers to defaults')
     else:
         logger.debug('Finished setting up signal handlers')
-
-
-if __name__ == "__main__":
-    print(version_str(True))

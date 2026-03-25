@@ -2,11 +2,11 @@
 EPMT show command module - handles job display functionality.
 """
 
-# from __future__ import print_function
 from logging import getLogger
-logger = getLogger(__name__)
 
 import epmt.epmt_query as eq
+
+logger = getLogger(__name__)
 
 def epmt_show_job(jobid, key=None):
     if isinstance(jobid, list):
