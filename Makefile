@@ -161,10 +161,14 @@ $(EPMT_RELEASE) dist:
 	@echo "**********************************************************"
 	tar -czf $(EPMT_RELEASE) epmt-install
 
-# runs setuptools
-# note that this step requires EPMT_RELEASE and PAPIEX_RELEASE, but we don't explicitly state it here, b.c.
-# when we go in the docker container, the time-zone changes and therefore thet timestamp comparison triggers re-making
-# targets that do not need to be remade
+# runs setuptools to build the sdist.
+# Used in the Docker release flow: make papiex-dist (Docker path) builds the papiex
+# tarball, then python-dist extracts the pre-compiled .so files into epmt/lib/ before
+# building the sdist. For bare-metal installs, papiex is compiled at pip install time
+# via compile_papiex.sh instead.
+# NOTE: we don't explicitly list EPMT_RELEASE and PAPIEX_RELEASE as dependencies, b.c.
+# when we go in the docker container, the time-zone changes and therefore the timestamp
+# comparison triggers re-making targets that do not need to be remade
 python-dist:
 	@echo "(python-dist) whoami: $(shell whoami)"
 	@echo "**********************************************************"
@@ -173,6 +177,7 @@ python-dist:
 	cd src && echo "GOOD: cd src" || echo "I FAILED: cd src" ; \
 	tar zxf ../$(PAPIEX_RELEASE) && echo "GOOD: tar -zxf ../PAPIEX_RELEASE" || echo "I FAILED: tar zxf ../PAPIEX_RELEASE" ; \
 	mkdir -p epmt/lib && cp -a papiex-epmt-install/lib/*.so* epmt/lib/ && echo "GOOD: cp papiex libs to epmt/lib" || echo "I FAILED: cp papiex libs to epmt/lib" ; \
+	rm -rf papiex-epmt-install && echo "GOOD: rm papiex-epmt-install" || echo "I FAILED: rm papiex-epmt-install" ; \
 	pip3 install --quiet build && echo "GOOD: pip3 install build" || echo "I FAILED: pip3 install build" ; \
 	python3 -m build --sdist && echo "GOOD: python3 -m build --sdist" || echo "I FAILED: python3 -m build --sdist" ; \
 	chmod a+r dist/* && echo "GOOD: chmod a+r dist/*" || echo "I FAILED: chmod a+r dist/*"
@@ -282,15 +287,7 @@ $(PAPIEX_SRC)/$(PAPIEX_RELEASE): $(PAPIEX_SRC)
 	@echo
 	@echo
 	@echo "################### BEGIN MAKE PAPIEX TARBALL : papiex-dist ########################################"
-	if [ -n "${OUTSIDE_DOCKER}" ]; then \
-	echo "within docker. make and make check within PAPIEX_SRC/PAPIEX_RELEASE target" ; \
-	make -C $(PAPIEX_SRC) CONFIG_PAPIEX_PAPI=$(CONFIG_PAPIEX_PAPI) CONFIG_PAPIEX_DEBUG=$(CONFIG_PAPIEX_DEBUG) OS_TARGET=$(OS_TARGET) distclean install dist ; \
-	make -C $(PAPIEX_SRC) CONFIG_PAPIEX_PAPI=$(CONFIG_PAPIEX_PAPI) CONFIG_PAPIEX_DEBUG=$(CONFIG_PAPIEX_DEBUG) OS_TARGET=$(OS_TARGET) dist-test ; \
-	make -C $(PAPIEX_SRC) CONFIG_PAPIEX_PAPI=$(CONFIG_PAPIEX_PAPI) CONFIG_PAPIEX_DEBUG=$(CONFIG_PAPIEX_DEBUG) OS_TARGET=$(OS_TARGET) check ; \
-	else \
-	echo "outside docker. making docker-dist within PAPIEX_SRC/PAPIEX_RELEASE target" ; \
-	make -C $(PAPIEX_SRC) CONFIG_PAPIEX_PAPI=$(CONFIG_PAPIEX_PAPI) CONFIG_PAPIEX_DEBUG=$(CONFIG_PAPIEX_DEBUG) OS_TARGET=$(OS_TARGET) DOCKER_RUN_OPTS="$(DOCKER_RUN_OPTS)" docker-dist ; \
-	fi
+	make -C $(PAPIEX_SRC) CONFIG_PAPIEX_PAPI=$(CONFIG_PAPIEX_PAPI) CONFIG_PAPIEX_DEBUG=$(CONFIG_PAPIEX_DEBUG) OS_TARGET=$(OS_TARGET) DOCKER_RUN_OPTS="$(DOCKER_RUN_OPTS)" docker-dist
 
 $(PAPIEX_SRC): $(PAPIEX_SRC_TARBALL)
 	@echo "(PAPIEX_SRC) whoami: $(shell whoami)"

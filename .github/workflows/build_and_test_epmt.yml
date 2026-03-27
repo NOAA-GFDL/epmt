@@ -138,22 +138,10 @@ jobs:
         run: |
           make epmt-dash
 
-      # ── papiex tarball (OUTSIDE_DOCKER): cached across runs ────────────────
-      # Cache key: version + OS target + "outside-docker" suffix to distinguish
-      # from the Docker-built variant cached by docker_build_test.
-      # The weekly_tarball_build workflow pre-warms this cache every Monday;
-      # the build below is a fallback for cache misses.
-      - name: Check Cache for papiex tarball (OUTSIDE_DOCKER)
-        id: cache-papiex
-        uses: actions/cache@v4
-        with:
-          path: papiex-epmt-${{ env.PAPIEX_VERSION }}-${{ env.OS_TARGET }}.tgz
-          key: papiex-outside-docker-${{ env.PAPIEX_VERSION }}-${{ env.OS_TARGET }}
-
-      - name: make papiex tarball
-        if: steps.cache-papiex.outputs.cache-hit != 'true'
-        run: |
-          make OUTSIDE_DOCKER='YUP' papiex-dist
+      # ── papiex compilation is handled by compile_papiex.sh at pip install time ──
+      # For bare-metal (non-Docker) installs, setup.py invokes compile_papiex.sh
+      # which downloads and compiles papiex from source. The Docker release path
+      # still uses the Makefile's papiex-dist target (via docker-dist).
 
       # ── Test pip install ./src with papiex compilation via compile_papiex.sh ──
       # This exercises the new setup.py hook: compile_papiex.sh downloads
@@ -177,17 +165,6 @@ jobs:
             echo "         (compile_papiex.sh may have skipped or failed gracefully)"
           fi
           epmt -v check || true
-          # Uninstall before the sdist-based install below
-          python3 -m pip uninstall -y epmt || true
-
-      - name: make epmt pip-packaging
-        run: |
-          make dist python-dist dist-test
-
-      - name: pip install epmt pip-package
-        run: |
-          ls src/dist/epmt*gz
-          python3 -m pip install src/dist/epmt*gz
 
       - name: adjust path
         run: |
