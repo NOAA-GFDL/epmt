@@ -42,25 +42,6 @@ class bcolors:
 
 
 
-def find_diffs_in_envs(start_env, stop_env):
-    env = {}
-    for e in start_env.keys():
-        if e in stop_env.keys():
-            if start_env[e] == stop_env[e]:
-                logger.debug("Found %s", e)
-            else:
-                logger.debug("Different %s", e)
-                env[e] = stop_env[e]
-        else:
-            logger.debug("Deleted %s", e)
-            env[e] = start_env[e]
-    for e in stop_env.keys():
-        if e not in start_env.keys():
-            logger.debug("Added %s", e)
-            env[e] = stop_env[e]
-    return env
-
-
 def dump_config(outf, sep=":"):
     print("\nsettings.py:", file=outf)
     for key, value in sorted(settings.__dict__.items()):

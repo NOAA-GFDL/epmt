@@ -384,8 +384,3 @@ def extract_jobid_from_collated_csv(collated_csv):
     '''
     return collated_csv.split('papiex')[-1].split('-')[1]
 
-
-if __name__ == "__main__":
-    import sys
-    epmt_logging_init(intlvl=2)
-    convert_csv_in_tar(sys.argv[1], sys.argv[2] if len(sys.argv) > 2 else '')
