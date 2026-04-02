@@ -29,7 +29,7 @@ def do_cleanup():
 def setUpModule():
     setup_db(settings)
     do_cleanup()
-    datafiles = '{}/test/data/outliers/*.tgz'.format(install_root)
+    datafiles = f'{install_root}/test/data/outliers/*.tgz'
 #    print('setUpModule: importing {0}'.format(datafiles))
     environ['EPMT_TZ'] = 'Asia/Kolkata'
     with capture() as (out, err):
@@ -69,15 +69,16 @@ class OutliersAPI(unittest.TestCase):
         jobs = eq.get_jobs(tags='exp_name:linux_kernel', fmt='terse')
         fdist = eod.get_feature_distributions(jobs, features=[])
         self.assertEqual(list(zip(fdist.keys(), fdist.values())),
-                         [('PERF_COUNT_SW_CPU_CLOCK', 'unknown'), ('cancelled_write_bytes', 'unknown'), ('cpu_time', 'unknown'),
-                          ('delayacct_blkio_time', 'unknown'), ('duration', 'unknown'), ('exitcode', 'unknown'),
-                          ('guest_time', 'unknown'), ('inblock', 'norm'), ('invol_ctxsw', 'unknown'),
-                          ('majflt', 'unknown'), ('minflt', 'norm'), ('num_procs', 'unknown'),
-                          ('num_threads', 'unknown'), ('outblock', 'unknown'), ('processor', 'unknown'),
-                          ('rchar', 'norm'), ('rdtsc_duration', 'unknown'), ('read_bytes', 'norm'),
-                          ('rssmax', 'norm'), ('syscr', 'norm'), ('syscw', 'norm'),
+                         [('PERF_COUNT_SW_CPU_CLOCK', 'unknown'), ('cancelled_write_bytes', 'unknown'),
+                          ('cpu_time', 'unknown'), ('delayacct_blkio_time', 'unknown'), ('duration', 'unknown'),
+                          ('exitcode', 'unknown'), ('guest_time', 'unknown'), ('inblock', 'norm'),
+                          ('invol_ctxsw', 'unknown'), ('majflt', 'unknown'), ('minflt', 'norm'),
+                          ('num_procs', 'unknown'), ('num_threads', 'unknown'), ('outblock', 'unknown'),
+                          ('processor', 'unknown'), ('rchar', 'norm'), ('rdtsc_duration', 'unknown'),
+                          ('read_bytes', 'norm'), ('rssmax', 'norm'), ('syscr', 'norm'), ('syscw', 'norm'),
                           ('systemtime', 'unknown'), ('time_oncpu', 'unknown'), ('time_waiting', 'unknown'),
-                          ('timeslices', 'unknown'), ('usertime', 'unknown'), ('vol_ctxsw', 'norm'), ('wchar', 'norm'), ('write_bytes', 'norm')])
+                          ('timeslices', 'unknown'), ('usertime', 'unknown'), ('vol_ctxsw', 'norm'),
+                          ('wchar', 'norm'), ('write_bytes', 'norm')])
 
     @db_session
     def test_outlier_jobs(self):
@@ -215,8 +216,9 @@ class OutliersAPI(unittest.TestCase):
         # let's test using IQR and z-score
         import epmt.epmt_stat as es
         for m in [es.iqr, es.z_score]:
-            r = eq.create_refmodel(['kern-6656-20190614-190245', 'kern-6656-20190614-191138', 'kern-6656-20190614-194024'],
-                                   methods = [m], fmt='orm')
+            r = eq.create_refmodel(
+                ['kern-6656-20190614-190245', 'kern-6656-20190614-191138', 'kern-6656-20190614-194024'],
+                methods = [m], fmt='orm')
             df, _ = eod.detect_outlier_jobs(['kern-6656-20190614-190245', 'kern-6656-20190614-191138',
                                              'kern-6656-20190614-192044-outlier', 'kern-6656-20190614-194024'],
                                             methods = [m], trained_model=r.id)
@@ -231,7 +233,8 @@ class OutliersAPI(unittest.TestCase):
         r = eq.create_refmodel( ['kern-6656-20190614-190245', 'kern-6656-20190614-191138','kern-6656-20190614-194024'],
                                 methods = mvod_classifiers(), fmt='orm' )
         (df, _) = eod.detect_outlier_jobs(
-            ['kern-6656-20190614-190245', 'kern-6656-20190614-191138', 'kern-6656-20190614-192044-outlier', 'kern-6656-20190614-194024'],
+            ['kern-6656-20190614-190245', 'kern-6656-20190614-191138',
+             'kern-6656-20190614-192044-outlier', 'kern-6656-20190614-194024'],
             trained_model = r.id, methods = mvod_classifiers())
         df.sort_values(by=['jobid'], inplace=True)
         # MCD succeeds on Python 3.10+ but not 3.9, so the outlier count
@@ -285,8 +288,10 @@ class OutliersAPI(unittest.TestCase):
         self.assertEqual(uniq_tags, sorted_tags)
 
         parts = {frozen_dict(loads(k)): v for k, v in parts.items()}
-        self.assertEqual(parts[frozen_dict({"op_instance": "4", "op_sequence": "4", "op": "build"})], (set(
-            ['kern-6656-20190614-194024', 'kern-6656-20190614-190245', 'kern-6656-20190614-191138']), set(['kern-6656-20190614-192044-outlier'])))
+        self.assertEqual(
+            parts[frozen_dict({"op_instance": "4", "op_sequence": "4", "op": "build"})],
+            (set(['kern-6656-20190614-194024', 'kern-6656-20190614-190245', 'kern-6656-20190614-191138']),
+             set(['kern-6656-20190614-192044-outlier'])))
 
         # now also use the outlier job while creating the refmodel
         # this way, there should be NO outlier ops
@@ -302,15 +307,18 @@ class OutliersAPI(unittest.TestCase):
         self.assertEqual(df.shape, (4, 5))
         self.assertEqual(len(parts), 1)
         parts = {frozen_dict(loads(k)): v for k, v in parts.items()}
-        self.assertEqual(parts[frozen_dict({"op_instance": "4", "op_sequence": "4", "op": "build"})], (set(
-            ['kern-6656-20190614-194024', 'kern-6656-20190614-190245', 'kern-6656-20190614-191138']), set(['kern-6656-20190614-192044-outlier'])))
+        self.assertEqual(
+            parts[frozen_dict({"op_instance": "4", "op_sequence": "4", "op": "build"})],
+            (set(['kern-6656-20190614-194024', 'kern-6656-20190614-190245', 'kern-6656-20190614-191138']),
+             set(['kern-6656-20190614-192044-outlier'])))
 
     @db_session
     def test_outlier_ops_trained_mvod(self):
         from epmt.epmt_stat import mvod_classifiers
         jobs = eq.get_jobs(tags='exp_name:linux_kernel', fmt='terse')
         model_jobs = [ j for j in jobs if not 'outlier' in j ]
-        self.assertEqual(set(model_jobs), set(['kern-6656-20190614-190245', 'kern-6656-20190614-191138', 'kern-6656-20190614-194024']))
+        self.assertEqual(set(model_jobs),
+                         set(['kern-6656-20190614-190245', 'kern-6656-20190614-191138', 'kern-6656-20190614-194024']))
         r = eq.create_refmodel(model_jobs, op_tags='*', methods = mvod_classifiers(), fmt='orm')
         self.assertEqual(set([j.jobid for j in r.jobs]), set(model_jobs))
         df, part = eod.detect_outlier_ops(jobs, methods = mvod_classifiers(), trained_model = r.id)
@@ -333,15 +341,25 @@ class OutliersAPI(unittest.TestCase):
         part_stable = {tag: _exclude_mcd(clfs) for tag, clfs in part.items()}
         self.assertEqual(part_stable,
                          {'{"op": "build", "op_instance": "4", "op_sequence": "4"}':
-                          {'pyod.models.cof': [0, 0, 1, 0], 'pyod.models.hbos': [0, 0, 1, 0], 'pyod.models.ocsvm': [0, 0, 0, 0]},
+                          {'pyod.models.cof': [0, 0, 1, 0],
+                           'pyod.models.hbos': [0, 0, 1, 0],
+                           'pyod.models.ocsvm': [0, 0, 0, 0]},
                           '{"op": "clean", "op_instance": "5", "op_sequence": "5"}':
-                          {'pyod.models.cof': [0, 0, 1, 0], 'pyod.models.hbos': [0, 0, 1, 0], 'pyod.models.ocsvm': [0, 0, 0, 0]},
+                          {'pyod.models.cof': [0, 0, 1, 0],
+                           'pyod.models.hbos': [0, 0, 1, 0],
+                           'pyod.models.ocsvm': [0, 0, 0, 0]},
                           '{"op": "configure", "op_instance": "3", "op_sequence": "3"}':
-                          {'pyod.models.cof': [0, 0, 1, 0], 'pyod.models.hbos': [0, 0, 1, 0], 'pyod.models.ocsvm': [0, 0, 0, 0]},
+                          {'pyod.models.cof': [0, 0, 1, 0],
+                           'pyod.models.hbos': [0, 0, 1, 0],
+                           'pyod.models.ocsvm': [0, 0, 0, 0]},
                           '{"op": "download", "op_instance": "1", "op_sequence": "1"}':
-                          {'pyod.models.cof': [0, 0, 1, 0], 'pyod.models.hbos': [0, 0, 1, 0], 'pyod.models.ocsvm': [0, 0, 0, 0]},
+                          {'pyod.models.cof': [0, 0, 1, 0],
+                           'pyod.models.hbos': [0, 0, 1, 0],
+                           'pyod.models.ocsvm': [0, 0, 0, 0]},
                           '{"op": "extract", "op_instance": "2", "op_sequence": "2"}':
-                          {'pyod.models.cof': [0, 0, 1, 0], 'pyod.models.hbos': [0, 0, 1, 0], 'pyod.models.ocsvm': [0, 0, 0, 0]}})
+                          {'pyod.models.cof': [0, 0, 1, 0],
+                           'pyod.models.hbos': [0, 0, 1, 0],
+                           'pyod.models.ocsvm': [0, 0, 0, 0]}})
 
     @db_session
     def test_outlier_ops(self):
@@ -390,9 +408,11 @@ class OutliersAPI(unittest.TestCase):
     def test_ops_refmodel_mvod(self):
         from epmt.epmt_stat import mvod_classifiers
         with capture() as (out, err):
-            r = eq.create_refmodel( ['kern-6656-20190614-190245', 'kern-6656-20190614-191138', 'kern-6656-20190614-194024'],
-                                    op_tags = [{'op': 'build'}, {'op': 'configure'}], features = ['cpu_time', 'num_procs', 'duration'],
-                                    methods = mvod_classifiers(), fmt='orm')
+            r = eq.create_refmodel(
+                ['kern-6656-20190614-190245', 'kern-6656-20190614-191138', 'kern-6656-20190614-194024'],
+                op_tags = [{'op': 'build'}, {'op': 'configure'}],
+                features = ['cpu_time', 'num_procs', 'duration'],
+                methods = mvod_classifiers(), fmt='orm')
         self.assertEqual(r.op_tags,
                          [{'op': 'build'}, {'op': 'configure'}])
         self.assertEqual(set([j.jobid for j in r.jobs]),
@@ -402,10 +422,12 @@ class OutliersAPI(unittest.TestCase):
         # MCD scores are version-dependent: NaN on Python 3.9, valid but
         # varying values on 3.10/3.11.  Filter it out so the assertion is
         # stable across all supported Python versions.
-        scores = { k: v['cpu_time,duration,num_procs'][0] for (k,v) in _exclude_mcd(r.computed['{"op": "configure"}']).items() }
+        scores = { k: v['cpu_time,duration,num_procs'][0]
+                   for (k,v) in _exclude_mcd(r.computed['{"op": "configure"}']).items() }
         self.assertEqual( scores,
                           {'pyod.models.cof': 1.3176, 'pyod.models.hbos': 9.9656, 'pyod.models.ocsvm': -0.0})
-        scores = { k: v['cpu_time,duration,num_procs'][0] for (k,v) in _exclude_mcd(r.computed['{"op": "build"}']).items() }
+        scores = { k: v['cpu_time,duration,num_procs'][0]
+                   for (k,v) in _exclude_mcd(r.computed['{"op": "build"}']).items() }
         self.assertEqual(scores,
                          {'pyod.models.cof': 1.0355, 'pyod.models.hbos': 9.9657, 'pyod.models.ocsvm': -0.0})
         self.assertEqual( _exclude_mcd(r.computed['{"op": "build"}']),
@@ -419,9 +441,9 @@ class OutliersAPI(unittest.TestCase):
                                                                                  [381619141.0, 2203839312.0, 9549.0],
                                                                                  [381227732.0, 2253935203.0, 9549.0]]]},
                            'pyod.models.ocsvm': {'cpu_time,duration,num_procs': [-0.0,
-                                                                                 [[380807266.0, 2158730624.0, 9549.0],
-                                                                                  [381619141.0, 2203839312.0, 9549.0],
-                                                                                  [381227732.0, 2253935203.0, 9549.0]]]}})
+                               [[380807266.0, 2158730624.0, 9549.0],
+                                [381619141.0, 2203839312.0, 9549.0],
+                                [381227732.0, 2253935203.0, 9549.0]]]}})
         self.assertEqual(_exclude_mcd(r.computed['{"op": "configure"}']),
                          {
                           'pyod.models.cof': {'cpu_time,duration,num_procs': [1.3176,
@@ -514,7 +536,8 @@ class OutliersAPI(unittest.TestCase):
         parts = {frozen_dict(loads(k)): v for k, v in parts.items()}
         self.assertEqual(parts[frozen_dict({"op_instance": "4", "op_sequence": "4", "op": "build"})],
                          (set(['kern-6656-20190614-190245', 'kern-6656-20190614-191138', 'kern-6656-20190614-194024']),
-                          set(['kern-6656-20190614-192044-outlier'])), "wrong partitioning when supplying a single tag string")
+                          set(['kern-6656-20190614-192044-outlier'])),
+                         "wrong partitioning when supplying a single tag string")
         parts = eod.partition_jobs_by_ops(
             jobs, tags=[
                 'op:build;op_instance:4;op_sequence:4', {
@@ -588,54 +611,58 @@ class OutliersAPI(unittest.TestCase):
         self.assertEqual(features_df.shape, (2, 29))
         # check the first row of the dataframe
         self.assertEqual(set(zip(abs(features_df).iloc[0].index.values, abs(features_df).iloc[0].values.round(4))),
-                         {('duration', 0.2618), ('time_oncpu', 0.2612), ('outblock', 0.0), ('systemtime', 0.2621), ('syscr', 0.2351),
-                          ('cancelled_write_bytes', 0.261), ('syscw', 0.2166), ('rssmax',
-                                                                                0.2392), ('processor', 0.0), ('exitcode', 0.0),
-                          ('wchar', 0.0813), ('time_waiting', 0.2619), ('majflt',
-                                                                        0.0), ('cpu_time', 0.2612), ('num_procs', 0.0),
-                          ('rdtsc_duration', 0.2612), ('invol_ctxsw', 0.2605), ('inblock',
-                                                                                0.1209), ('PERF_COUNT_SW_CPU_CLOCK', 0.2612),
-                          ('minflt', 0.0422), ('guest_time', 0.0), ('num_threads',
-                                                                    0.0), ('vol_ctxsw', 0.2265), ('usertime', 0.261),
-                          ('write_bytes', 0.0822), ('timeslices', 0.2594), ('rchar', 0.061), ('delayacct_blkio_time', 0.0), ('read_bytes', 0.0758)})
+                         {('duration', 0.2618), ('time_oncpu', 0.2612), ('outblock', 0.0), ('systemtime', 0.2621),
+                          ('syscr', 0.2351), ('cancelled_write_bytes', 0.261), ('syscw', 0.2166), ('rssmax', 0.2392),
+                          ('processor', 0.0), ('exitcode', 0.0), ('wchar', 0.0813), ('time_waiting', 0.2619),
+                          ('majflt', 0.0), ('cpu_time', 0.2612), ('num_procs', 0.0), ('rdtsc_duration', 0.2612),
+                          ('invol_ctxsw', 0.2605), ('inblock', 0.1209), ('PERF_COUNT_SW_CPU_CLOCK', 0.2612),
+                          ('minflt', 0.0422), ('guest_time', 0.0), ('num_threads', 0.0), ('vol_ctxsw', 0.2265),
+                          ('usertime', 0.261), ('write_bytes', 0.0822), ('timeslices', 0.2594), ('rchar', 0.061),
+                          ('delayacct_blkio_time', 0.0), ('read_bytes', 0.0758)})
         # check the second row of the dataframe
         self.assertEqual(set(zip(abs(features_df).iloc[1].index.values, abs(features_df).iloc[1].values.round(4))),
-                         {('duration', 0.062), ('time_waiting', 0.0575), ('outblock', 0.0), ('vol_ctxsw', 0.0195), ('syscw', 0.1484),
-                          ('usertime', 0.0693), ('rssmax', 0.1546), ('time_oncpu',
-                                                                     0.0671), ('processor', 0.0), ('exitcode', 0.0),
-                          ('read_bytes', 0.4215), ('majflt', 0.0), ('num_procs',
-                                                                    0.0), ('rdtsc_duration', 0.0685), ('syscr', 0.005),
-                          ('systemtime', 0.0572), ('cancelled_write_bytes',
-                                                   0.0688), ('wchar', 0.4183), ('num_threads', 0.0),
-                          ('guest_time', 0.0), ('write_bytes', 0.4179), ('cpu_time',
-                                                                         0.0672), ('timeslices', 0.0796), ('rchar', 0.4092),
-                          ('invol_ctxsw', 0.074), ('inblock', 0.3839), ('PERF_COUNT_SW_CPU_CLOCK',
-                                                                        0.0669), ('delayacct_blkio_time', 0.0),
-                          ('minflt', 0.2482)})
+                         {('duration', 0.062), ('time_waiting', 0.0575), ('outblock', 0.0), ('vol_ctxsw', 0.0195),
+                          ('syscw', 0.1484), ('usertime', 0.0693), ('rssmax', 0.1546), ('time_oncpu', 0.0671),
+                          ('processor', 0.0), ('exitcode', 0.0), ('read_bytes', 0.4215), ('majflt', 0.0),
+                          ('num_procs', 0.0), ('rdtsc_duration', 0.0685), ('syscr', 0.005),
+                          ('systemtime', 0.0572), ('cancelled_write_bytes', 0.0688), ('wchar', 0.4183),
+                          ('num_threads', 0.0), ('guest_time', 0.0), ('write_bytes', 0.4179), ('cpu_time', 0.0672),
+                          ('timeslices', 0.0796), ('rchar', 0.4092), ('invol_ctxsw', 0.074), ('inblock', 0.3839),
+                          ('PERF_COUNT_SW_CPU_CLOCK', 0.0669), ('delayacct_blkio_time', 0.0), ('minflt', 0.2482)})
 
         # Now let's use the function designed to rank features
         df, sorted_features = eod.pca_feature_rank(jobs_df)
         self.assertEqual(df.shape, (3, 29))
         self.assertEqual(list(df.columns.values),
-                         ['rssmax', 'timeslices', 'invol_ctxsw', 'usertime', 'rdtsc_duration', 'cancelled_write_bytes', 'cpu_time', 'time_oncpu',
-                          'PERF_COUNT_SW_CPU_CLOCK', 'duration', 'systemtime', 'time_waiting', 'syscw', 'inblock', 'syscr', 'vol_ctxsw', 'write_bytes',
-                          'wchar', 'read_bytes', 'rchar', 'minflt', 'delayacct_blkio_time', 'exitcode', 'guest_time', 'majflt', 'num_procs',
+                         ['rssmax', 'timeslices', 'invol_ctxsw', 'usertime', 'rdtsc_duration',
+                          'cancelled_write_bytes', 'cpu_time', 'time_oncpu', 'PERF_COUNT_SW_CPU_CLOCK',
+                          'duration', 'systemtime', 'time_waiting', 'syscw', 'inblock', 'syscr',
+                          'vol_ctxsw', 'write_bytes', 'wchar', 'read_bytes', 'rchar', 'minflt',
+                          'delayacct_blkio_time', 'exitcode', 'guest_time', 'majflt', 'num_procs',
                           'num_threads', 'outblock', 'processor'])
         self.assertEqual(list(df.iloc[0].values),
-                         [0.2392, 0.2594, 0.2605, 0.261, 0.2612, -0.261, 0.2612, 0.2612, 0.2612, 0.2618, 0.2621, 0.2619, 0.2166, -0.1209, -0.2351,
+                         [0.2392, 0.2594, 0.2605, 0.261, 0.2612, -0.261, 0.2612, 0.2612,
+                          0.2612, 0.2618, 0.2621, 0.2619, 0.2166, -0.1209, -0.2351,
                           -0.2265, -0.0822, -0.0813, -0.0758, -0.061, 0.0422, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
         self.assertEqual(list(df.iloc[1].values),
-                         [-0.1546, 0.0796, 0.074, 0.0693, 0.0685, -0.0688, 0.0672, 0.0671, 0.0669, 0.062, 0.0572, 0.0575, 0.1484, 0.3839,
-                          0.005, 0.0195, 0.4179, 0.4183, 0.4215, 0.4092, -0.2482, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+                         [-0.1546, 0.0796, 0.074, 0.0693, 0.0685, -0.0688, 0.0672, 0.0671,
+                          0.0669, 0.062, 0.0572, 0.0575, 0.1484, 0.3839,
+                          0.005, 0.0195, 0.4179, 0.4183, 0.4215, 0.4092, -0.2482,
+                          0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
         self.assertEqual(list(df.iloc[-1].values),
-                         [0.2168, 0.2117, 0.211, 0.2101, 0.2101, 0.21, 0.2097, 0.2097, 0.2097, 0.2088, 0.2077, 0.2077, 0.1985, 0.1906,
-                          0.1741, 0.1716, 0.1713, 0.1707, 0.1675, 0.1534, 0.0968, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+                         [0.2168, 0.2117, 0.211, 0.2101, 0.2101, 0.21, 0.2097, 0.2097,
+                          0.2097, 0.2088, 0.2077, 0.2077, 0.1985, 0.1906,
+                          0.1741, 0.1716, 0.1713, 0.1707, 0.1675, 0.1534, 0.0968,
+                          0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
         self.assertEqual(sorted_features,
-                         [('rssmax', 0.2168), ('timeslices', 0.2117), ('invol_ctxsw', 0.211), ('usertime', 0.2101), ('rdtsc_duration', 0.2101),
-                          ('cancelled_write_bytes', 0.21), ('cpu_time', 0.2097), ('time_oncpu', 0.2097), ('PERF_COUNT_SW_CPU_CLOCK', 0.2097),
-                          ('duration', 0.2088), ('systemtime', 0.2077), ('time_waiting', 0.2077), ('syscw', 0.1985), ('inblock', 0.1906),
-                          ('syscr', 0.1741), ('vol_ctxsw', 0.1716), ('write_bytes', 0.1713), ('wchar', 0.1707), ('read_bytes', 0.1675), ('rchar', 0.1534),
-                          ('minflt', 0.0968), ('delayacct_blkio_time', 0.0), ('exitcode', 0.0), ('guest_time', 0.0), ('majflt', 0.0), ('num_procs', 0.0),
+                         [('rssmax', 0.2168), ('timeslices', 0.2117), ('invol_ctxsw', 0.211),
+                          ('usertime', 0.2101), ('rdtsc_duration', 0.2101), ('cancelled_write_bytes', 0.21),
+                          ('cpu_time', 0.2097), ('time_oncpu', 0.2097), ('PERF_COUNT_SW_CPU_CLOCK', 0.2097),
+                          ('duration', 0.2088), ('systemtime', 0.2077), ('time_waiting', 0.2077),
+                          ('syscw', 0.1985), ('inblock', 0.1906), ('syscr', 0.1741), ('vol_ctxsw', 0.1716),
+                          ('write_bytes', 0.1713), ('wchar', 0.1707), ('read_bytes', 0.1675), ('rchar', 0.1534),
+                          ('minflt', 0.0968), ('delayacct_blkio_time', 0.0), ('exitcode', 0.0),
+                          ('guest_time', 0.0), ('majflt', 0.0), ('num_procs', 0.0),
                           ('num_threads', 0.0), ('outblock', 0.0), ('processor', 0.0)])
 
     def test_pca_ops(self):
@@ -652,9 +679,12 @@ class OutliersAPI(unittest.TestCase):
         self.assertEqual(list(out_df[out_df.pca_weighted > 0].pca_weighted.index.values), [2, 6, 10, 14, 18])
 
     def test_pca_trained_model(self):
-        r = eq.create_refmodel(['kern-6656-20190614-190245', 'kern-6656-20190614-191138', 'kern-6656-20190614-194024'], features=[], pca=True, fmt='orm')
+        r = eq.create_refmodel(
+            ['kern-6656-20190614-190245', 'kern-6656-20190614-191138', 'kern-6656-20190614-194024'],
+            features=[], pca=True, fmt='orm')
         self.assertEqual(sorted([j.jobid for j in r.jobs]),
-                         sorted(['kern-6656-20190614-190245', 'kern-6656-20190614-191138', 'kern-6656-20190614-194024']))
+                         sorted(['kern-6656-20190614-190245', 'kern-6656-20190614-191138',
+                                 'kern-6656-20190614-194024']))
         self.assertEqual(r.info_dict['pca']['inp_features'],
                          ['PERF_COUNT_SW_CPU_CLOCK', 'cancelled_write_bytes', 'cpu_time', 'delayacct_blkio_time',
                           'duration', 'exitcode', 'guest_time', 'inblock', 'invol_ctxsw', 'majflt', 'minflt',
@@ -663,8 +693,9 @@ class OutliersAPI(unittest.TestCase):
                           'usertime', 'vol_ctxsw', 'wchar', 'write_bytes'])
         self.assertEqual(r.info_dict['pca']['out_features'], ['pca_01', 'pca_02'])
         self.assertEqual(list(r.computed['modified_z_score'].keys()), ['pca_01', 'pca_02'])
-        (df, part) = eod.detect_outlier_jobs(['kern-6656-20190614-190245', 'kern-6656-20190614-191138', 'kern-6656-20190614-192044-outlier'],
-                                             trained_model = r.id, features = [], pca=True)
+        (df, part) = eod.detect_outlier_jobs(
+            ['kern-6656-20190614-190245', 'kern-6656-20190614-191138', 'kern-6656-20190614-192044-outlier'],
+            trained_model = r.id, features = [], pca=True)
         self.assertEqual(df.shape, (3, 4))
         self.assertEqual(list(df.columns), ['jobid', 'pca_weighted', 'pca_01', 'pca_02'])
         self.assertEqual(set(df.jobid.values),
@@ -678,15 +709,18 @@ class OutliersAPI(unittest.TestCase):
         self.assertEqual(df[df.jobid != 'kern-6656-20190614-192044-outlier']['pca_weighted'].sum(), 0.0)
 
     def test_pca_trained_model_ops(self):
-        r = eq.create_refmodel(['kern-6656-20190614-190245', 'kern-6656-20190614-191138', 'kern-6656-20190614-194024'], op_tags='*', features=[], pca=True, fmt='orm')
+        r = eq.create_refmodel(
+            ['kern-6656-20190614-190245', 'kern-6656-20190614-191138', 'kern-6656-20190614-194024'],
+            op_tags='*', features=[], pca=True, fmt='orm')
         self.assertEqual( sorted([j.jobid for j in r.jobs]),
-                          sorted(['kern-6656-20190614-190245', 'kern-6656-20190614-191138', 'kern-6656-20190614-194024']))
+                          sorted(['kern-6656-20190614-190245', 'kern-6656-20190614-191138',
+                                  'kern-6656-20190614-194024']))
         self.assertEqual( r.info_dict['pca']['inp_features'],
                           ['PERF_COUNT_SW_CPU_CLOCK', 'cancelled_write_bytes', 'cpu_time', 'delayacct_blkio_time',
                            'duration', 'exitcode', 'guest_time', 'inblock', 'invol_ctxsw', 'majflt', 'minflt',
                            'num_procs', 'num_threads', 'outblock', 'processor', 'rchar', 'rdtsc_duration', 'read_bytes',
-                           'rssmax', 'syscr', 'syscw', 'systemtime', 'time_oncpu', 'time_waiting', 'timeslices', 'usertime',
-                           'vol_ctxsw', 'wchar', 'write_bytes'])
+                           'rssmax', 'syscr', 'syscw', 'systemtime', 'time_oncpu', 'time_waiting',
+                           'timeslices', 'usertime', 'vol_ctxsw', 'wchar', 'write_bytes'])
         self.assertEqual(r.info_dict['pca']['out_features'],
                          ['pca_01', 'pca_02'])
         self.assertEqual(set(r.computed.keys()),
@@ -696,17 +730,24 @@ class OutliersAPI(unittest.TestCase):
                           '{"op": "extract", "op_instance": "2", "op_sequence": "2"}',
                           '{"op": "build", "op_instance": "4", "op_sequence": "4"}'})
         self.assertEqual(r.computed,
-                         {'{"op": "build", "op_instance": "4", "op_sequence": "4"}': {'modified_z_score': {'pca_01': (1.5029, 8.0231, 0.0884),
-                                                                                                           'pca_02': (4.8231, -0.2834, 0.0237)}},
-                          '{"op": "clean", "op_instance": "5", "op_sequence": "5"}': {'modified_z_score': {'pca_01': (2.1959, -2.4257, 0.0036),
-                                                                                                           'pca_02': (1.6775, -2.1972, 0.0033)}},
-                          '{"op": "configure", "op_instance": "3", "op_sequence": "3"}': {'modified_z_score': {'pca_01': (1.355, -1.6145, 0.0304),
-                                                                                                               'pca_02': (1.1647, -1.5633, 0.0194)}},
-                          '{"op": "download", "op_instance": "1", "op_sequence": "1"}': {'modified_z_score': {'pca_01': (2.2482, -2.4305, 0.0005),
-                                                                                                              'pca_02': (0.9081, -0.9759, 0.0013)}},
-                          '{"op": "extract", "op_instance": "2", "op_sequence": "2"}': {'modified_z_score': {'pca_01': (1.7217, -1.5568, 0.1045),
-                                                                                                             'pca_02': (0.7617, 5.0688, 0.0796)}}})
-        df = eod.detect_outlier_ops(['kern-6656-20190614-190245', 'kern-6656-20190614-192044-outlier'], trained_model=r.id, features=[], pca = True)
+                         {'{"op": "build", "op_instance": "4", "op_sequence": "4"}':
+                              {'modified_z_score': {'pca_01': (1.5029, 8.0231, 0.0884),
+                                                    'pca_02': (4.8231, -0.2834, 0.0237)}},
+                          '{"op": "clean", "op_instance": "5", "op_sequence": "5"}':
+                              {'modified_z_score': {'pca_01': (2.1959, -2.4257, 0.0036),
+                                                    'pca_02': (1.6775, -2.1972, 0.0033)}},
+                          '{"op": "configure", "op_instance": "3", "op_sequence": "3"}':
+                              {'modified_z_score': {'pca_01': (1.355, -1.6145, 0.0304),
+                                                    'pca_02': (1.1647, -1.5633, 0.0194)}},
+                          '{"op": "download", "op_instance": "1", "op_sequence": "1"}':
+                              {'modified_z_score': {'pca_01': (2.2482, -2.4305, 0.0005),
+                                                    'pca_02': (0.9081, -0.9759, 0.0013)}},
+                          '{"op": "extract", "op_instance": "2", "op_sequence": "2"}':
+                              {'modified_z_score': {'pca_01': (1.7217, -1.5568, 0.1045),
+                                                    'pca_02': (0.7617, 5.0688, 0.0796)}}})
+        df = eod.detect_outlier_ops(
+            ['kern-6656-20190614-190245', 'kern-6656-20190614-192044-outlier'],
+            trained_model=r.id, features=[], pca = True)
         self.assertEqual(df.shape, (10, 5))
         self.assertEqual(set(df.jobid.values), {'kern-6656-20190614-190245', 'kern-6656-20190614-192044-outlier'})
         # kern-6656-20190614-190245 is never an outlier

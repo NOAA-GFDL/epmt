@@ -2,7 +2,6 @@
 EPMT list command module - handles job listing functionality.
 """
 
-# from __future__ import print_function
 from sys import stderr
 from logging import getLogger
 
@@ -12,7 +11,7 @@ from epmt.epmt_query import ( get_unanalyzed_jobs, get_unprocessed_jobs, get_job
                               get_thread_metrics, get_job_proc_tags, get_op_metrics )
 from epmt.epmtlib import kwargify
 
-logger = getLogger(__name__)  # you can use other name
+logger = getLogger(__name__)
 
 
 def epmt_list(arglist):

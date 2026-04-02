@@ -26,9 +26,9 @@ def setUpModule():
     #    print('\n' + str(settings.db_params))
     setup_db(settings)
     do_cleanup()
-    datafiles = '{}/test/data/misc/685000.tgz'.format(install_root)
+    datafiles = f'{install_root}/test/data/misc/685000.tgz'
 #    datafiles='{}/test/data/misc/685???.tgz'.format(install_root)
-    print('setUpModule: submitting to db {0}'.format(datafiles))
+    print(f'setUpModule: submitting to db {datafiles}')
     settings.post_process_job_on_ingest = True
     with capture() as (out, err):
         epmt_submit(glob(datafiles), dry_run=False)
@@ -109,7 +109,7 @@ class EPMTCmds(unittest.TestCase):
         settings.post_process_job_on_ingest = False
         with capture() as (out, err):
             self.assertFalse(daemon_loop(
-                nullcontext(), maxiters=1, ingest='{}/test/data/daemon/ingest'.format(install_root),
+                nullcontext(), maxiters=1, ingest=f'{install_root}/test/data/daemon/ingest',
                 post_process=False, analyze=False, retire=False, keep=True, recursive=False))
 
         # by now the files should be in the DB
@@ -117,8 +117,8 @@ class EPMTCmds(unittest.TestCase):
         self.assertEqual(set(eq.get_jobs(['691201', '692544'], fmt='terse')), set({'691201', '692544'}))
 
         # make sure the files aren't removed (since we used the "keep" option)
-        self.assertTrue(path.exists('{}/test/data/daemon/ingest/691201.tgz'.format(install_root)))
-        self.assertTrue(path.exists('{}/test/data/daemon/ingest/692544.tgz'.format(install_root)))
+        self.assertTrue(path.exists(f'{install_root}/test/data/daemon/ingest/691201.tgz'))
+        self.assertTrue(path.exists(f'{install_root}/test/data/daemon/ingest/692544.tgz'))
 
 #    @unittest.skipIf(len(eq.get_unprocessed_jobs()) == 0, 'unprocessed jobs in database')
     @db_session
@@ -131,7 +131,7 @@ class EPMTCmds(unittest.TestCase):
 
         settings.post_process_job_on_ingest = False
         with capture() as (out, err):
-            self.assertTrue(epmt_submit(glob('{}/test/data/daemon/627919.tgz'.format(install_root)), dry_run=False))
+            self.assertTrue(epmt_submit(glob(f'{install_root}/test/data/daemon/627919.tgz'), dry_run=False))
 
         up_jobs = eq.get_unprocessed_jobs()
         self.assertTrue(UnprocessedJob['627919'])
@@ -242,7 +242,7 @@ class EPMTCmds(unittest.TestCase):
         if path.exists(errorfile):
             remove(errorfile)
         tempdir = mkdtemp(prefix='epmt_', dir=gettempdir())
-        copytree("{}/test/data/corrupted_csv".format(install_root), tempdir + "/corrupted_csv")
+        copytree(f"{install_root}/test/data/corrupted_csv", tempdir + "/corrupted_csv")
         with capture() as (out, err):
             retval = epmt_stage([tempdir + "/corrupted_csv"], keep_going=False)
         self.assertTrue(retval == False, "corrupted CSV files, should have returned False")
@@ -255,7 +255,7 @@ class EPMTCmds(unittest.TestCase):
             remove(errorfile)
 
         tempdir = mkdtemp(prefix='epmt_', dir=gettempdir())
-        copytree("{}/test/data/corrupted_csv".format(install_root), tempdir + "/corrupted_csv")
+        copytree(f"{install_root}/test/data/corrupted_csv", tempdir + "/corrupted_csv")
         with capture() as (out, err):
             retval = epmt_stage([tempdir + "/corrupted_csv"], keep_going=True)
         self.assertTrue(retval, "corrupted CSV files but keep_going, should have returned True")
@@ -297,7 +297,7 @@ class EPMTCmds(unittest.TestCase):
     @unittest.skipUnless(orm_in_memory(), 'skip on persistent database')
     def test_zz_drop_db(self):
         # submit a job to the db we just cleaned out... oops!
-        datafiles = '{}/test/data/misc/685000.tgz'.format(install_root)
+        datafiles = f'{install_root}/test/data/misc/685000.tgz'
         #        settings.post_process_job_on_ingest = True
         with capture() as (out, err):
             epmt_submit(glob(datafiles), dry_run=False)

@@ -21,7 +21,7 @@ def do_cleanup():
 
 @timing
 def setUpModule():
-    datafiles = '{}/test/data/misc/685000.tgz'.format(install_root)
+    datafiles = f'{install_root}/test/data/misc/685000.tgz'
     settings.post_process_job_on_ingest = True
     settings.verbose = 2
     setup_db(settings)
@@ -354,7 +354,9 @@ class EPMTSubmit(unittest.TestCase):
                                  'SLURM_JOB_QOS': 'Added as default',
                                  'SLURM_GET_USER_ENV': '1',
                                  'SLURM_NODELIST': 'pp208',
-                                 'pp_script': '/home/Jeffrey.Durachta/ESM4/DECK/ESM4_historical_D151/gfdl.ncrc4-intel16-prod-openmp/scripts/postProcess/ESM4_historical_D151_ocean_annual_rho2_1x1deg_18840101.tags',
+                                 'pp_script': ('/home/Jeffrey.Durachta/ESM4/DECK/ESM4_historical_D151/'
+                                               'gfdl.ncrc4-intel16-prod-openmp/scripts/postProcess/'
+                                               'ESM4_historical_D151_ocean_annual_rho2_1x1deg_18840101.tags'),
                                  'MANPATH': '/home/gfdl/man:/usr/local/man:/usr/share/man',
                                  'SLURM_PROCID': '0',
                                  'OSTYPE': 'linux',
@@ -378,7 +380,8 @@ class EPMTSubmit(unittest.TestCase):
                                  'SLURMD_NODENAME': 'pp208',
                                  'SLURM_LOCALID': '0',
                                  'GROUP': 'f',
-                                 'SLURM_SUBMIT_DIR': '/home/Jeffrey.Durachta/ESM4/DECK/ESM4_historical_D151/gfdl.ncrc4-intel16-prod-openmp/scripts/postProcess',
+                                 'SLURM_SUBMIT_DIR': ('/home/Jeffrey.Durachta/ESM4/DECK/ESM4_historical_D151/'
+                                                      'gfdl.ncrc4-intel16-prod-openmp/scripts/postProcess'),
                                  'SLURM_JOBID': '685000',
                                  'HOSTTYPE': 'x86_64-linux',
                                  'SLURM_TOPOLOGY_ADDR_PATTERN': 'node',
@@ -402,7 +405,10 @@ class EPMTSubmit(unittest.TestCase):
                                  'SLURM_JOB_GID': '70',
                                  'TMPDIR': '/vftmp/Jeffrey.Durachta/job685000',
                                  'MODULEPATH': '/usr/local/Modules/modulefiles:/home/fms/local/modulefiles',
-                                 'EPMT_JOB_TAGS': 'exp_name:ESM4_historical_D151;exp_component:ocean_annual_rho2_1x1deg;exp_time:18840101;atm_res:c96l49;ocn_res:0.5l75;script_name:ESM4_historical_D151_ocean_annual_rho2_1x1deg_18840101',
+                                 'EPMT_JOB_TAGS': (
+                                     'exp_name:ESM4_historical_D151;exp_component:ocean_annual_rho2_1x1deg;'
+                                     'exp_time:18840101;atm_res:c96l49;ocn_res:0.5l75;'
+                                     'script_name:ESM4_historical_D151_ocean_annual_rho2_1x1deg_18840101'),
                                  'OMP_NUM_THREADS': '1',
                                  'SLURM_TASK_PID': '6089',
                                  'SLURM_TOPOLOGY_ADDR': 'pp208',
@@ -457,10 +463,23 @@ class EPMTSubmit(unittest.TestCase):
                                   'status': {'exit_code': 0,
                                              'exit_reason': 'none',
                                              'script_name': 'ESM4_historical_D151_ocean_annual_rho2_1x1deg_18840101',
-                                             'script_path': '/home/Jeffrey.Durachta/ESM4/DECK/ESM4_historical_D151/gfdl.ncrc4-intel16-prod-openmp/scripts/postProcess/ESM4_historical_D151_ocean_annual_rho2_1x1deg_18840101.tags'},
-                                  'metric_names': 'PERF_COUNT_SW_CPU_CLOCK,cancelled_write_bytes,delayacct_blkio_time,guest_time,inblock,invol_ctxsw,majflt,minflt,outblock,processor,rchar,rdtsc_duration,read_bytes,rssmax,syscr,syscw,systemtime,time_oncpu,time_waiting,timeslices,usertime,vol_ctxsw,wchar,write_bytes'},
-                    'annotations': {'papiex-error': 'PAPI failed or misbehaved process closed a descriptor it did not own (rdtsc_duration < 0). 4 processes have potentially erroneous PAPI metric counts',
-                                    'EPMT_JOB_TAGS': 'atm_res:c96l49;exp_component:ocean_annual_rho2_1x1deg;exp_name:ESM4_historical_D151;exp_time:18840101;ocn_res:0.5l75;script_name:ESM4_historical_D151_ocean_annual_rho2_1x1deg_18840101',
+                                             'script_path': (
+                                                 '/home/Jeffrey.Durachta/ESM4/DECK/ESM4_historical_D151/'
+                                                 'gfdl.ncrc4-intel16-prod-openmp/scripts/postProcess/'
+                                                 'ESM4_historical_D151_ocean_annual_rho2_1x1deg_18840101.tags')},
+                                  'metric_names': (
+                                      'PERF_COUNT_SW_CPU_CLOCK,cancelled_write_bytes,'
+                                      'delayacct_blkio_time,guest_time,inblock,invol_ctxsw,'
+                                      'majflt,minflt,outblock,processor,rchar,rdtsc_duration,'
+                                      'read_bytes,rssmax,syscr,syscw,systemtime,time_oncpu,'
+                                      'time_waiting,timeslices,usertime,vol_ctxsw,wchar,write_bytes')},
+                    'annotations': {'papiex-error': ('PAPI failed or misbehaved process closed a descriptor'
+                                                      ' it did not own (rdtsc_duration < 0).'
+                                                      ' 4 processes have potentially erroneous PAPI metric counts'),
+                                    'EPMT_JOB_TAGS': (
+                                        'atm_res:c96l49;exp_component:ocean_annual_rho2_1x1deg;'
+                                        'exp_name:ESM4_historical_D151;exp_time:18840101;ocn_res:0.5l75;'
+                                        'script_name:ESM4_historical_D151_ocean_annual_rho2_1x1deg_18840101'),
                                     'papiex-error-process-ids': [22121,
                                                                  23756,
                                                                  24562,
@@ -491,10 +510,7 @@ class EPMTSubmit(unittest.TestCase):
             self.assertEqual(
                 job_dict[k],
                 ref_dict[k],
-                'expected for key({0}): {1}; got {2}'.format(
-                    k,
-                    ref_dict[k],
-                    job_dict[k]))
+                f'expected for key({k}): {ref_dict[k]}; got {job_dict[k]}')
 
     @db_session
     def test_all_proc_data(self):
@@ -508,7 +524,7 @@ class EPMTSubmit(unittest.TestCase):
         with self.assertRaises(Exception):
             Job['685003']
         with capture() as (out, err):
-            epmt_submit(['{}/test/data/query/685003.tgz'.format(get_install_root())],
+            epmt_submit([f'{get_install_root()}/test/data/query/685003.tgz'],
                         dry_run=True, remove_on_success=False, move_on_failure=False)
         # the job should still not be in the database
         with self.assertRaises(Exception):
@@ -519,7 +535,7 @@ class EPMTSubmit(unittest.TestCase):
         with self.assertRaises(Exception):
             Job['3455']
         with capture() as (out, err):
-            epmt_submit(['{}/test/data/submit/3455/'.format(get_install_root())],
+            epmt_submit([f'{get_install_root()}/test/data/submit/3455/'],
                         dry_run=False, remove_on_success=False, move_on_failure=False)
         j = Job['3455']
         self.assertEqual(j.duration, 28111.0)
@@ -532,8 +548,8 @@ class EPMTSubmit(unittest.TestCase):
         # quell the error message
         epmt_logging_init(-2)
         with capture() as (out, err):
-            epmt_submit(['{}/test/data/query/685000.tgz'.format(install_root),
-                         '{}/test/data/query/685003.tgz'.format(install_root)],
+            epmt_submit([f'{install_root}/test/data/query/685000.tgz',
+                         f'{install_root}/test/data/query/685003.tgz'],
                         keep_going=False,
                         dry_run=False,
                         remove_on_success=False,
@@ -555,7 +571,7 @@ class EPMTSubmit(unittest.TestCase):
             # only sqlalchemy allows this option
             settings.post_process_job_on_ingest = False
         with capture() as (out, err):
-            epmt_submit(glob('{}/test/data/query/685003.tgz'.format(install_root)),
+            epmt_submit(glob(f'{install_root}/test/data/query/685003.tgz'),
                         dry_run=False, remove_on_success=False, move_on_failure=False)
         settings.post_process_job_on_ingest = True
         j = Job['685003']
@@ -587,7 +603,7 @@ class EPMTSubmit(unittest.TestCase):
             # only sqla supports this setting
             settings.post_process_job_on_ingest = False
         with capture() as (out, err):
-            epmt_submit(['{}/test/data/query/685016.tgz'.format(install_root)],
+            epmt_submit([f'{install_root}/test/data/query/685016.tgz'],
                         dry_run=False, remove_on_success=False, move_on_failure=False)
         # restore the old setting
         settings.post_process_job_on_ingest = saved_val
@@ -600,6 +616,23 @@ class EPMTSubmit(unittest.TestCase):
         self.assertTrue(eq.is_job_post_processed('685016'))
 
     @db_session
+    def test_reprocess_job_no_duplicate_hosts(self):
+        """Reprocessing a job with force=True must not raise
+        UniqueViolation for host_job_associations that already exist."""
+        from epmt.epmt_job import post_process_job
+        j = Job['685000']
+        self.assertTrue(eq.is_job_post_processed(j))
+        hosts_before = sorted([h.name for h in j.hosts])
+        self.assertTrue(hosts_before)
+        # force reprocessing — previously this would raise
+        # psycopg2.errors.UniqueViolation on the second INSERT
+        result = post_process_job(j.jobid, force=True)
+        self.assertTrue(result)
+        j = Job['685000']
+        hosts_after = sorted([h.name for h in j.hosts])
+        self.assertEqual(hosts_before, hosts_after)
+
+    @db_session
     def test_convert_csv(self):
         import tempfile
         from epmt.epmt_convert_csv import convert_csv_in_tar
@@ -608,7 +641,7 @@ class EPMTSubmit(unittest.TestCase):
 
         (_, new_tar) = tempfile.mkstemp(prefix='epmt_', suffix='_collated_tsv.tgz')
 #        self.assertTrue(convert_csv_in_tar('{}/test/data/query/685000.tgz'.format(install_root), new_tar))
-        self.assertTrue(convert_csv_in_tar('{}/test/data/misc/685000.tgz'.format(install_root), new_tar))
+        self.assertTrue(convert_csv_in_tar(f'{install_root}/test/data/misc/685000.tgz', new_tar))
         with capture() as (out, err):
             epmt_submit(glob(new_tar), dry_run=False, remove_on_success=True, move_on_failure=False)
 
@@ -623,11 +656,11 @@ class EPMTSubmit(unittest.TestCase):
         for k in job_dict_csv.keys():
             if k in {'updated_at', 'created_at'}:
                 continue
-            self.assertEqual(job_dict_csv[k], job_dict_tsv[k], "Dicts differ for key: {}".format(k))
+            self.assertEqual(job_dict_csv[k], job_dict_tsv[k], f"Dicts differ for key: {k}")
 
     @db_session
     def test_collated_tsv(self):
-        datafile = '{}/test/data/tsv/collated-tsv-2220.tgz'.format(install_root)
+        datafile = f'{install_root}/test/data/tsv/collated-tsv-2220.tgz'
         with capture() as (out, err):
             epmt_submit([datafile], dry_run=False, remove_on_success=False, move_on_failure=False)
         j = Job['2220']
@@ -650,7 +683,7 @@ class EPMTSubmit(unittest.TestCase):
 
     @db_session
     def test_corrupted_csv(self):
-        datafile = '{}/test/data/misc/corrupted-csv.tgz'.format(install_root)
+        datafile = f'{install_root}/test/data/misc/corrupted-csv.tgz'
         # quell the error message
         epmt_logging_init(-2)
         with self.assertRaises(ValueError):
@@ -685,7 +718,7 @@ class EPMTSubmit(unittest.TestCase):
     def test_lazy_compute_process_tree(self):
         orig_lazy_eval = settings.lazy_compute_process_tree
         self.check_lazy_compute(Job['685000'], orig_lazy_eval)
-        datafiles = '{}/test/data/submit/804268.tgz'.format(install_root)
+        datafiles = f'{install_root}/test/data/submit/804268.tgz'
         settings.lazy_compute_process_tree = not orig_lazy_eval  # toggle setting
         with capture() as (out, err):
             epmt_submit(glob(datafiles), dry_run=False, remove_on_success=False, move_on_failure=False)
@@ -696,7 +729,7 @@ class EPMTSubmit(unittest.TestCase):
         from shutil import copyfile
         from os import path
         target = '/tmp/692500.tgz'
-        copyfile('{}/test/data/submit/692500.tgz'.format(install_root), target)
+        copyfile(f'{install_root}/test/data/submit/692500.tgz', target)
         self.assertTrue(path.isfile(target))
         self.assertFalse('692500' in eq.get_jobs(fmt='terse'))
         with capture() as (out, err):

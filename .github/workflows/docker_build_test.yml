@@ -5,6 +5,8 @@ on:
   push:
     branches:
       - main
+    tags:
+      - '*'
 
 # cancel running jobs if there's a newer push
 concurrency:
@@ -39,8 +41,8 @@ jobs:
       SQLITE_VERSION: "3490100"
       SQLITE_YEAR: "2025"
       # Tarball source identifiers — must match Makefile and weekly_tarball_build.yml
-      PAPIEX_VERSION: "2.3.15"
-      EPMT_DASH_SRC_BRANCH: "autopep8.poke"
+      PAPIEX_VERSION: "2.3.16"
+      EPMT_DASH_SRC_BRANCH: "main"
 
     steps:
       - uses: actions/checkout@v4
@@ -460,6 +462,9 @@ jobs:
 
       - name: test_cmds
         run: docker exec ${{ env.CONTAINER_NAME }} bash -c 'cd $(python3 -c "import site; print(site.getsitepackages()[0])") && TZ=UTC pytest -x -vv epmt/test/test_cmds.py'
+
+      - name: test_dbcare
+        run: docker exec ${{ env.CONTAINER_NAME }} bash -c 'cd $(python3 -c "import site; print(site.getsitepackages()[0])") && TZ=UTC pytest -x -vv epmt/test/test_dbcare.py'
 
       - name: test_db_migration
         run: docker exec ${{ env.CONTAINER_NAME }} bash -c 'cd $(python3 -c "import site; print(site.getsitepackages()[0])") && TZ=UTC pytest -x -vv epmt/test/test_db_migration.py'

@@ -7,7 +7,7 @@ package:
   name: epmt
   # Version is read from the git tag at build time.
   # When building locally without a tag, the version will be "develop".
-  version: '{{ environ.get("GIT_DESCRIBE_TAG", "develop") }}'
+  version: '{{ environ.get("GIT_DESCRIBE_TAG", "pre5.0.1") }}'
 
 source:
   path: .
@@ -71,6 +71,7 @@ test:
     - pytest -v ${site_pkgs}/epmt/test/test_anysh.py
     - pytest -v ${site_pkgs}/epmt/test/test_check.py           || echo "unit test test_check failed (GUARDED)"
     - pytest -v ${site_pkgs}/epmt/test/test_cmds.py
+    - pytest -v ${site_pkgs}/epmt/test/test_dbcare.py
     - pytest -v ${site_pkgs}/epmt/test/test_db_migration.py
     - pytest -v ${site_pkgs}/epmt/test/test_db_schema.py
     - pytest -v ${site_pkgs}/epmt/test/test_explore.py

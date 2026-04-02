@@ -5,7 +5,7 @@ from logging import getLogger
 
 from epmt.epmt_query import delete_jobs
 
-logger = getLogger(__name__)  # you can use other name
+logger = getLogger(__name__)
 
 
 def epmt_delete_jobs(joblist):

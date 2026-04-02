@@ -24,6 +24,10 @@ scipy
 six
 SQLAlchemy==1.4.54
 
+# -- devtest (linting / static analysis) ---------------------------------------
+pylint
+pytest
+
 # -- notebook --------------------------------------------------------------
 ipykernel
 ipython
@@ -32,7 +36,9 @@ jupyter
 jupyter-client
 jupyter-console
 jupyter-core
+jupyter-server<2
 notebook<7
+jupyterlab<4
 qtconsole
 
 # -- ui --------------------------------------------------------------------
@@ -46,16 +52,6 @@ livereload
 mkdocs
 mkdocs-git-committers-plugin
 mkdocs-theme-bootstrap4
-
-# -- dev (linting / static analysis) ---------------------------------------
-astroid
-isort
-lazy-object-proxy
-mccabe
-wrapt
-
-# -- test ------------------------------------------------------------------
-pytest
 
 # -- build -----------------------------------------------------------------
 pyinstaller==5.7.0

@@ -37,7 +37,7 @@ class CommonMeta(DeclarativeMeta):
     def __getitem__(cls, index):
         obj = orm_get(cls, index)
         if obj is None:
-            raise KeyError('{0}[{1}] could not be found'.format(cls.__name__, index))
+            raise KeyError(f'{cls.__name__}[{index}] could not be found')
         else:
             return obj
 
@@ -93,7 +93,7 @@ class User(with_metaclass(CommonMeta, Base)):
     # representation
     def __repr__(self):
         try:
-            return "User['%s']" % (self.name)
+            return f"User['{self.name}']"
         except:
             return "User[<detached>]"
 
@@ -120,7 +120,7 @@ class Host(with_metaclass(CommonMeta, Base)):
     # representation
     def __repr__(self):
         try:
-            return "Host['%s']" % (self.name)
+            return f"Host['{self.name}']"
         except:
             return "Host[<detached>]"
 
@@ -155,7 +155,7 @@ class ReferenceModel(with_metaclass(CommonMeta, Base)):
     # representation
     def __repr__(self):
         try:
-            return "ReferenceModel['%s']" % (self.id)
+            return f"ReferenceModel['{self.id}']"
         except:
             return "ReferenceModel[<detached>]"
 
@@ -215,7 +215,7 @@ class Job(with_metaclass(CommonMeta, Base)):
     # representation
     def __repr__(self):
         try:
-            return "Job['%s']" % (self.jobid)
+            return f"Job['{self.jobid}']"
         except:
             return "Job[<detached>]"
 
@@ -239,7 +239,7 @@ class UnprocessedJob(with_metaclass(CommonMeta, Base)):
     # representation
     def __repr__(self):
         try:
-            return "UnprocessedJob['%s']" % (self.jobid)
+            return f"UnprocessedJob['{self.jobid}']"
         except:
             return "UnprocessedJob[<detached>]"
 
@@ -300,8 +300,10 @@ class Process(with_metaclass(CommonMeta, Base)):
     # relationships
     host = relationship('Host', back_populates="processes")
     children = relationship('Process', backref=backref('parent', remote_side=[id]))
-    #ancestors = relationship('ProcessAssociation',backref='descendants', primaryjoin=id==ProcessAssociation.fk_ancestor)
-    #descendants = relationship('ProcessAssociation',backref='ancestors', primaryjoin=id==ProcessAssociation.fk_descendant )
+    #ancestors = relationship('ProcessAssociation',backref='descendants',
+    #                         primaryjoin=id==ProcessAssociation.fk_ancestor)
+    #descendants = relationship('ProcessAssociation',backref='ancestors',
+    #                           primaryjoin=id==ProcessAssociation.fk_descendant )
     ancestors = relationship('Process',
                              backref='descendants',
                              secondary=ancestor_descendant_associations_table,
@@ -311,7 +313,7 @@ class Process(with_metaclass(CommonMeta, Base)):
     # representation
     def __repr__(self):
         try:
-            return "Process[%d]" % (self.id)
+            return f"Process[{self.id}]"
         except:
             return "Process[<detached>]"
 

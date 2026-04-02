@@ -88,57 +88,57 @@ def rootcause(ref, input, features, methods=[rootcause_zscore]):
     return False, None, None
 
 
-if __name__ == "__main__":
-    # Synthesize 10 feature names
-    n_features = 6
-    features = ['%c' % x for x in range(97, 97 + n_features)]
-    print("Features:\n", features)
+#if __name__ == "__main__":
+#    # Synthesize 10 feature names
+#    n_features = 6
+#    features = [f'{x:c}' for x in range(97, 97 + n_features)]
+#    print("Features:\n", features)
 
-    def multiple():
-        '''
-        Check with multiple outliers
-        Narrow range of reference values
-        '''
-        np.random.seed(104)
-        random_reference_df = pd.DataFrame(np.random.randint(50, 100, size=(100, n_features)), columns=features)
-        print("Reference:\n", random_reference_df.head())
-        # Wider range input values for test set
-        random_input_df = pd.DataFrame(np.random.randint(25, 125, size=(1, n_features)), columns=features)
-        print("Input:\n", random_input_df.head())
-        retval, df, dct = rootcause(random_reference_df, random_input_df, features)
-        print("Retval:\n", retval)
-        print("Result:\n", df)
-        print("Result:\n", dct)
+def ex_multiple(features, n_features):
+    '''
+    Check with multiple outliers
+    Narrow range of reference values
+    '''
+    np.random.seed(104)
+    random_reference_df = pd.DataFrame(np.random.randint(50, 100, size=(100, n_features)), columns=features)
+    print("Reference:\n", random_reference_df.head())
+    # Wider range input values for test set
+    random_input_df = pd.DataFrame(np.random.randint(25, 125, size=(1, n_features)), columns=features)
+    print("Input:\n", random_input_df.head())
+    retval, df, dct = rootcause(random_reference_df, random_input_df, features)
+    print("Retval:\n", retval)
+    print("Result:\n", df)
+    print("Result:\n", dct)
 
-    def none():
-        '''
-        Check with no outliers
-        Narrow range of reference values
-        '''
-        np.random.seed(103)
-        random_reference_df = pd.DataFrame(np.random.randint(50, 100, size=(100, n_features)), columns=features)
-        print("Reference:\n", random_reference_df.head())
-        # Wider range input values for test set
-        random_input_df = pd.DataFrame(np.random.randint(25, 125, size=(1, n_features)), columns=features)
-        print("Input:\n", random_input_df.head())
-        retval, df, dct = rootcause(random_reference_df, random_input_df, features)
-        print("Retval:\n", retval)
-        print("Result:\n", df)
-        print("Result:\n", dct)
+def ex_none(features, n_features):
+    '''
+    Check with no outliers
+    Narrow range of reference values
+    '''
+    np.random.seed(103)
+    random_reference_df = pd.DataFrame(np.random.randint(50, 100, size=(100, n_features)), columns=features)
+    print("Reference:\n", random_reference_df.head())
+    # Wider range input values for test set
+    random_input_df = pd.DataFrame(np.random.randint(25, 125, size=(1, n_features)), columns=features)
+    print("Input:\n", random_input_df.head())
+    retval, df, dct = rootcause(random_reference_df, random_input_df, features)
+    print("Retval:\n", retval)
+    print("Result:\n", df)
+    print("Result:\n", dct)
 
-    def one():
-        '''
-        Check with one outlier
-        Narrow range of reference values
-        '''
-        np.random.seed(102)
-        random_reference_df = pd.DataFrame(np.random.randint(50, 100, size=(100, n_features)), columns=features)
-        print("Reference:\n", random_reference_df.head())
-        # Wider range input values for test set
-        random_input_df = pd.DataFrame(np.random.randint(25, 125, size=(1, n_features)), columns=features)
-        print("Input:\n", random_input_df.head())
-        retval, df, dct = rca(random_reference_df, random_input_df, features)
-        print("Retval:\n", retval)
-        print("Result:\n", df)
-        print("Result:\n", dct)
-    one()
+def ex_one(features, n_features):
+    '''
+    Check with one outlier
+    Narrow range of reference values
+    '''
+    np.random.seed(102)
+    random_reference_df = pd.DataFrame(np.random.randint(50, 100, size=(100, n_features)), columns=features)
+    print("Reference:\n", random_reference_df.head())
+    # Wider range input values for test set
+    random_input_df = pd.DataFrame(np.random.randint(25, 125, size=(1, n_features)), columns=features)
+    print("Input:\n", random_input_df.head())
+    retval, df, dct = rca(random_reference_df, random_input_df, features)
+    print("Retval:\n", retval)
+    print("Result:\n", df)
+    print("Result:\n", dct)
+

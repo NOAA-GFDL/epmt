@@ -3,6 +3,10 @@ This file houses a class for an abstract model representing an operation. This w
 as it is NOT used for defining the ORM nor the DB tables. It is for manipulating data and measurements
 """
 
+from logging import getLogger
+
+logger = getLogger(__name__)
+
 class Operation(dict):
     '''
     An operation is defined as a collection of processes spanning one or more jobs where each processes' tag is
@@ -19,9 +23,6 @@ class Operation(dict):
         #from orm import orm_is_query, orm_jobs_col
         from . import orm_is_query, orm_jobs_col  # rocky-8 change
         from epmt.epmtlib import tag_from_string, tags_list
-
-        from logging import getLogger
-        logger = getLogger(__name__)
 
         if op_duration_method not in ("sum", "sum-minus-overlap", "finish-minus-start"):
             raise ValueError('op_duration_method must be one of ("sum", "sum-minus-overlap", "finish-minus-start")')
@@ -65,13 +66,11 @@ class Operation(dict):
     @property
     def processes(self):
         if self._processes is None:
-            from logging import getLogger
             from epmt.epmt_query import get_procs
-            logger = getLogger(__name__)
             logger.debug('computing op processes..')
             self._processes = get_procs(jobs=self.jobs, tags=self.tags, exact_tag_only=self.exact_tag_only, fmt='orm')
             if len(self._processes[:]) == 0:
-                logger.warning("No processes found for operation -- {0}".format(self.tags))
+                logger.warning("No processes found for operation -- %s", self.tags)
             # else:
             #     logger.debug('computing op start/end times..')
             #     self.start = min(p.start for p in self.processes)
@@ -85,8 +84,6 @@ class Operation(dict):
         '''
         from epmt.epmtlib import merge_intervals
         if self._intervals is None:
-            from logging import getLogger
-            logger = getLogger(__name__)
             logger.debug('computing operation intervals..')
             _intervals = [[p.start, p.end] for p in self.processes]
             logger.debug('merging operation intervals..')
@@ -110,7 +107,7 @@ class Operation(dict):
             elif self.op_duration_method == "finish-minus-start":
                 self._duration = round((self.finish - self.start).total_seconds() * 1e6, 1)
             else:
-                raise ValueError("Do not know how to handle op_duration_method: {}".format(self.op_duration_method))
+                raise ValueError(f"Do not know how to handle op_duration_method: {self.op_duration_method}")
         return self._duration
 
     @property
@@ -120,7 +117,7 @@ class Operation(dict):
             from epmt.epmtlib import sum_dicts_list
             from logging import getLogger
             logger = getLogger(__name__)
-            logger.debug('getting op_metrics for jobs={0}, tags={1}'.format(self.jobs, self.tags))
+            logger.debug('getting op_metrics for jobs=%s, tags=%s', self.jobs, self.tags)
             op_metrics = get_op_metrics(
                 jobs=self.jobs,
                 tags=self.tags,

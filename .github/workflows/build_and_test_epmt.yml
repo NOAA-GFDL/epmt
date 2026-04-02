@@ -45,8 +45,8 @@ jobs:
       SQLITE_VERSION: "3490100"
       SQLITE_YEAR: "2025"
       # Tarball source identifiers — must match Makefile and weekly_tarball_build.yml
-      PAPIEX_VERSION: "2.3.15"
-      EPMT_DASH_SRC_BRANCH: "autopep8.poke"
+      PAPIEX_VERSION: "2.3.16"
+      EPMT_DASH_SRC_BRANCH: "main"
       OS_TARGET: "rocky-8"
       # SLURM version — must match docker_build_test.yml
       SLURM_TAG: "slurm-25-05-3-1"
@@ -224,6 +224,12 @@ jobs:
           TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/test_cmds.py
         env:
           COVERAGE_FILE: .coverage.cmds
+
+      - name: test_dbcare
+        run: |
+          TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/test_dbcare.py
+        env:
+          COVERAGE_FILE: .coverage.dbcare
 
       - name: test_db_migration
         run: |
@@ -514,11 +520,11 @@ jobs:
 
       - name: run pylint on epmt module, ignoring ui (epmt-dash)
         run: |
-          pylint --rcfile pylintrc --fail-under 7.1 --ignore-paths src/epmt/ui src/epmt
+          pylint --rcfile pylintrc --fail-under 8.2 --ignore-paths src/epmt/ui src/epmt
 
       - name: run pylint on ui submodule (epmt-dash)
         run: |
-          pylint --rcfile pylintrc --fail-under 5.5 src/epmt/ui
+          pylint --rcfile pylintrc --fail-under 6.0 src/epmt/ui
 
       - name: upload pip installable
         uses: actions/upload-artifact@v4

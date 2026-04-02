@@ -2,18 +2,95 @@
 EPMT dbcare module - executes tasks for taking care of the database, designed to be run on a regular basis
 """
 
-import logging
+from logging import getLogger
 
-#import epmt
 from epmt.epmt_cmd_retire import epmt_retire
 from epmt.epmt_query import post_process_jobs
-#from epmt import epmt_query as eq
 from epmt.orm.sqlalchemy import orm_raw_sql
+import epmt.orm.sqlalchemy.general as orm_general
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
+
+VACUUM_TABLES = ['processes_staging', 'processes', 'jobs']
 
 
-def epmt_dbcare(retire_jobs = False, vacuum_tables = False, post_process = False):
+def _get_dead_row_stats():
+    """Query pg_stat_user_tables for live/dead row counts of vacuum target tables."""
+    table_list = ", ".join(f"'{t}'" for t in VACUUM_TABLES)
+    sql = (
+        "SELECT relname, n_live_tup, n_dead_tup, last_vacuum, last_autovacuum "
+        "FROM pg_stat_user_tables "
+        f"WHERE relname IN ({table_list}) "
+        "ORDER BY relname"
+    )
+    result = orm_raw_sql(sql)
+    logger.debug('result = %s', result)
+    #logger.debug('type(result) = %s', type(result))
+    return result
+
+
+def _vacuum_tables():
+    """Run VACUUM VERBOSE on target tables using an autocommit connection.
+
+    VACUUM cannot run inside a transaction, so we obtain a raw DBAPI
+    connection and set it to autocommit mode.
+    """
+    engine = orm_general.engine
+    if engine is None:
+        logger.error('no database engine available, cannot vacuum')
+        return
+
+    # log dead row stats before vacuuming
+    try:
+        stats = _get_dead_row_stats()
+        for row in stats:
+            logger.info('pre-vacuum stats: table=%s live_rows=%s dead_rows=%s '
+                        'last_vacuum=%s last_autovacuum=%s',
+                        row[0], row[1], row[2], row[3], row[4])
+    except Exception as e:
+        logger.error('could not query dead row stats: %s', e)
+        raise Exception from e
+
+
+    # VACUUM requires autocommit — use a raw DBAPI connection
+    raw_conn = engine.raw_connection()
+    try:
+        raw_conn.set_isolation_level(0)  # 0 = ISOLATION_LEVEL_AUTOCOMMIT
+        cursor = raw_conn.cursor()
+
+        # limit parallel maintenance workers for serial execution
+        logger.info('setting max_parallel_maintenance_workers = 0 (serial execution)')
+        cursor.execute('SET max_parallel_maintenance_workers = 0')
+
+        for table in VACUUM_TABLES:
+            logger.info('vacuuming table: %s', table)
+            try:
+                cursor.execute(f'VACUUM (VERBOSE) {table}')
+                # VACUUM VERBOSE output comes through as NOTICEs;
+                # fetch any notices from the connection
+                if hasattr(raw_conn, 'notices') and raw_conn.notices:
+                    for notice in raw_conn.notices:
+                        logger.info('vacuum %s: %s', table, notice.strip())
+                    raw_conn.notices.clear()
+                logger.info('finished vacuuming table: %s', table)
+            except Exception as e:
+                logger.error('error vacuuming table %s: %s', table, e)
+    finally:
+        cursor.close()
+        raw_conn.close()
+
+    # log dead row stats after vacuuming
+    try:
+        stats = _get_dead_row_stats()
+        for row in stats:
+            logger.info('post-vacuum stats: table=%s live_rows=%s dead_rows=%s '
+                        'last_vacuum=%s last_autovacuum=%s',
+                        row[0], row[1], row[2], row[3], row[4])
+    except Exception as e:
+        logger.warning('could not query post-vacuum dead row stats: %s', e)
+
+
+def epmt_dbcare(retire_jobs=False, vacuum_tables=False, post_process=False):
     '''
     routine to help regularly take care of the database. for each arg that's true, undertake a cleanup behavior
     retire_jobs will run job retirement. vacuum_tables will run the SQL command VACUUM on jobs, processes, and
@@ -30,36 +107,11 @@ def epmt_dbcare(retire_jobs = False, vacuum_tables = False, post_process = False
         epmt_retire(skip_unprocessed=True,
                     dry_run=False)
 
-    ## VACUUM DB TABLES ( TEST THIS APPROACH BY HAND FIRST )
-    ## NOTYETIMPLEMENTED, this needs to use the sqlalchemy.engine connection instance to make this work
+    ## VACUUM DB TABLES
     if not vacuum_tables:
         logger.warning('skipping vacuuming of tables in DB')
     else:
-        logger.info('limiting the allowed number of parallel maintenance processes to 0 (serial execution only)')
-        #result_set_max_parallel_workers=orm_raw_sql(psql_set_max_parallel_workers)
-        #logger.info('result: %s', str(result_set_max_parallel_workers.scalars().all() ) )
-        #
-        ## vacuum each table one-by-one with no parallel maintenance workers
-        #psql_set_max_parallel_workers='SET max_parallel_maintenance_workers = 0;'
-        #psql_stub_vacuum='VACUUM VERBOSE '
-        #psql_vacuum_jobs=psql_stub_vacuum + 'jobs;'
-        #psql_vacuum_procs_stag=psql_stub_vacuum + 'processes_staging;'
-        #psql_vacuum_procs=psql_stub_vacuum + 'processes;'
-        #
-        #logger.info('vacuuming jobs table of dead rows')
-        #result_vacuum_jobs=orm_raw_sql(' '.join[ psql_set_max_parallel_workers,
-        #                                         psql_vacuum_jobs ] )
-        #logger.info('result: %s', str(result_vacuum_jobs.scalars().all() ) )
-        #
-        #logger.info('vacuuming processes_staging table of dead rows')
-        #result_vacuum_procs_stag=orm_raw_sql(' '.join[ psql_set_max_parallel_workers,
-        #                                               psql_vacuum_procs_stag ] )
-        #logger.info('result: %s', str(result_vacuum_procs_stag.scalars().all() ) )
-        #
-        #logger.info('vacuuming processes table of dead rows')
-        #result_vacuum_procs=orm_raw_sql(' '.join[ psql_set_max_parallel_workers,
-        #                                          psql_vacuum_procs ] )
-        #logger.info('result: %s', str(result_vacuum_procs.scalars().all() ) )
+        _vacuum_tables()
 
     ## POST PROCESS JOBS
     if not post_process:
@@ -75,7 +127,7 @@ def epmt_dbcare(retire_jobs = False, vacuum_tables = False, post_process = False
         result_count_unprocd_jobs=orm_raw_sql(psql_count_unprocd_jobs)
         number_of_unprocd_jobs=-1
         try:
-            number_of_unprocd_jobs=result_count_unprocd_jobs.scalars().all()[0]
+            number_of_unprocd_jobs=result_count_unprocd_jobs[0][0]
         except Exception as e:
             raise Exception from e
 
@@ -93,7 +145,7 @@ def epmt_dbcare(retire_jobs = False, vacuum_tables = False, post_process = False
         result_get_unprocd_jobs=orm_raw_sql(psql_get_unprocd_jobs)
         try:
             logger.info('attempting to retrieve job IDs')
-            job_list=result_get_unprocd_jobs.scalars().all()
+            job_list=[row[0] for row in result_get_unprocd_jobs]
             logger.debug('job_list is %s', ' '.join(job_list))
         except Exception as e:
             raise Exception('problem with retrieving job IDs. inspect code.') from e
