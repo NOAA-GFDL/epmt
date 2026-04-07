@@ -348,8 +348,9 @@ def op_roots(jobs, tag, fmt='dict'):
 
 @db_session
 def get_jobs(
-        jobs=[],
-        tags=None,
+    jobs=[],
+    tag=None,
+    tags=None,
         fltr=None,
         order=None,
         limit=None,
@@ -539,6 +540,10 @@ def get_jobs(
 
     qs = orm_jobs_col(jobs)
 
+    # normalize parameter names: prefer user-supplied `tag` then `tags`
+    if tag is not None:
+        tags = tag
+
     if when:
         if isinstance(when, str):
             try:
@@ -581,7 +586,7 @@ def get_jobs(
 
 #
 @db_session
-def get_procs(jobs=[], tags=None, fltr=None, order=None, offset=0, limit=None, when=None,
+def get_procs(jobs=[], tag=None, tags=None, fltr=None, order=None, offset=0, limit=None, when=None,
               hosts=[], fmt='dict', merge_threads_sums=True, exact_tag_only=False):
     """
     Returns a collection of processes for a set of jobs based on filter criteria::Processes
@@ -753,7 +758,11 @@ def get_procs(jobs=[], tags=None, fltr=None, order=None, offset=0, limit=None, w
     if jobs:
         post_process_jobs(jobs)
 
-    qs = orm_get_procs(jobs, tags, fltr, order, limit, offset, when, hosts, exact_tag_only)
+    # normalize parameter names: prefer user-supplied `tag` then `tags`
+    if tag is not None:
+        tags = tag
+
+    qs = orm_get_procs(jobs, tags, fltr, order, limit, offset, when, hosts, exact_tag_only) 
 
     if fmt == 'orm':
         return qs
@@ -1375,8 +1384,8 @@ enabled: boolean, optional
 #jobs, computed, info_dict, and enabled can all be retrieved from the ReferenceModel object
 @db_session
 def save_refmodel(ReferenceModel, jobs, computed, info_dict, enabled, name=None, tags=None, tag=None, op_tags=None, fmt='dict'):
-    # Accept either `tag` or `tags` (tests call `tag=...`). Normalize to `tags`.
-    if tags is None and tag is not None:
+    # Accept either `tag` or `tags` (tests call `tag=...`). Prefer user-supplied `tag`.
+    if tag is not None:
         tags = tag
     if tags is None:
         tags = {}
@@ -1390,6 +1399,58 @@ def save_refmodel(ReferenceModel, jobs, computed, info_dict, enabled, name=None,
         return r.id
     r_dict = orm_to_dict(r, with_collections=True)
     return pd.Series(r_dict) if fmt == 'pandas' else r_dict
+
+@db_session
+def extend_refmodel(ReferenceModel, ref_id, add_jobs, methods=None, features=None,
+                    name=None, tag=None, op_tags=None, fmt='dict', delete_old=True,
+                    sanity_check=True, enabled=True, pca=False):
+    # fetch existing model
+    old = orm_get(ReferenceModel, ref_id)
+    if old is None:
+        raise KeyError(f"ReferenceModel[{ref_id}] not found")
+
+    # determine original metadata to reuse if caller didn't supply them
+    orig_name = old.name
+    name = name if name is not None else None  # create with None to avoid unique-name conflicts
+    tag = tag if tag is not None else (old.tags or {})
+    op_tags = op_tags if op_tags is not None else (old.op_tags or [])
+    methods = methods  # leave None so create_refmodel uses default classifiers if desired
+    features = features
+
+    # build combined jobid list (handle ORM objects, dicts, strings)
+    existing_jobids = [j.jobid if hasattr(j, 'jobid') else j for j in old.jobs]
+    new_jobs_q = orm_jobs_col(add_jobs)
+    new_jobs_list = [j.jobid if hasattr(j, 'jobid') else j for j in list(new_jobs_q)]
+    combined = list(dict.fromkeys(existing_jobids + new_jobs_list))  # preserve order, unique
+
+    if len(combined) < 3:
+        raise ValueError("Need at least 3 jobs to create a reference model")
+
+    # create a new model on combined jobs using create_refmodel to recompute scores
+    # create_refmodel will return a dict or Series depending on fmt; request 'orm' so we get object
+    new_model = create_refmodel(jobs=combined, name=name, tag=tag, op_tags=op_tags,
+                                methods=methods or [], features=features or [], fmt='orm',
+                                sanity_check=sanity_check, enabled=enabled, pca=pca)
+    # ensure we have an ORM object
+    if new_model is None:
+        raise RuntimeError("Failed to create extended reference model")
+
+    # delete old model if requested (keep new model safe by using temp name)
+    if delete_old:
+        delete_refmodels(ref_id)
+
+    # if caller wanted to preserve original name, set it now (rename)
+    if orig_name:
+        new_model.name = orig_name
+        orm_commit()
+
+    # return new model in requested format
+    if fmt == 'orm':
+        return new_model
+    elif fmt == 'terse':
+        return new_model.id
+    else:
+        return orm_to_dict(new_model, with_collections=True) if fmt == 'dict' else pd.Series(orm_to_dict(new_model, with_collections=True))
 
 @db_session
 def delete_refmodels(*ref_ids):
@@ -1604,7 +1665,7 @@ def __unique_proc_tags_for_job(job, exclude=[], fold=True):
 
 
 @db_session
-def get_ops(jobs, tags=[], exact_tag_only=False, combine=False, fmt='dict', op_duration_method="sum", full=False):
+def get_ops(jobs, tag=None, tags=None, exact_tag_only=False, combine=False, fmt='dict', op_duration_method="sum", full=False):
     '''
     Returns a filtered collection of operations for the selected jobs::Operations
 
@@ -1719,6 +1780,9 @@ def get_ops(jobs, tags=[], exact_tag_only=False, combine=False, fmt='dict', op_d
           12
     '''
     _empty_collection_check(jobs)
+    # normalize parameter names: prefer user-supplied `tag` then `tags`
+    if tag is not None:
+        tags = tag
     if not tags:
         tags = rank_proc_tags_keys(jobs)[0][0]
         logger.debug('no tag specified, using tags: %s', tags)
@@ -1762,7 +1826,7 @@ def get_ops(jobs, tags=[], exact_tag_only=False, combine=False, fmt='dict', op_d
 
 
 @db_session
-def get_op_metrics(jobs, tags=[], exact_tags_only=False, group_by_tag=False, fmt='pandas', op_duration_method="sum"):
+def get_op_metrics(jobs, tag=None, tags=None, exact_tags_only=False, group_by_tag=False, fmt='pandas', op_duration_method="sum"):
     """
     Aggregates metrics across the processes of one or more operations::Operations
 
@@ -1819,6 +1883,9 @@ op_duration_method: string, optional
     if isString(jobs):
         jobs = [jobs]
 
+    # normalize parameter names: prefer user-supplied `tag` then `tags`
+    if tag is not None:
+        tags = tag
     tags = tags_list(tags) if tags else job_proc_tags(jobs, fold=False)
     if not tags:
         logger.warning('No tags found across all processes of job(s)')
@@ -2172,8 +2239,7 @@ def retire_jobs(ndays=settings.retire_jobs_ndays, skip_unprocessed=False, dry_ru
 
 
 @db_session
-def ops_costs(jobs=[], tags=['op:hsmput', 'op:dmget', 'op:untar', 'op:mv',
-              'op:dmput', 'op:hsmget', 'op:rm', 'op:cp'], metric='cpu_time'):
+def ops_costs(jobs=[], tag=None, tags=None, metric='cpu_time'):
     """
     Calculates operation(s) costs as a fraction of total job times::Operations
 
@@ -2225,6 +2291,12 @@ def ops_costs(jobs=[], tags=['op:hsmput', 'op:dmget', 'op:untar', 'op:mv',
     where the aggregation is performed in the database layer.
     """
 
+    # normalize parameter names: prefer user-supplied `tag` then `tags`
+    if tag is not None:
+        tags = tag
+    # if neither provided, use default op-list
+    if tags is None:
+        tags = ['op:hsmput', 'op:dmget', 'op:untar', 'op:mv', 'op:dmput', 'op:hsmget', 'op:rm', 'op:cp']
     logger.info('dm ops: %s', tags)
     if metric not in {"duration", "cpu_time"}:
         raise ValueError('We only support "duration" or "cpu_time" for metric')
