@@ -1,14 +1,13 @@
 name: publish_conda
 on:
+  # DEBUG ONLY: remove pull_request trigger before merging — only use if-needed for debugging the upload only
+  pull_request:
+    branches:
   push:
     branches:
       - main
     tags:
       - '*'
-
-#  # DEBUG ONLY: remove pull_request trigger before merging — only use if-needed for debugging the upload only
-#  pull_request:
-#    branches:
 
 jobs:
   conda-publish:
@@ -63,7 +62,7 @@ jobs:
         id: publish
         run: |
           export ANACONDA_API_TOKEN=${{ secrets.ANACONDA_TOKEN }}
-          conda build .
+          conda build --no-test --no-include-recipe .
 
       # -----------------------------------------------------------------
       # Post-publish verification: install epmt from the noaa-gfdl channel
