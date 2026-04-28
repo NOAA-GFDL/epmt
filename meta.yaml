@@ -7,7 +7,7 @@ package:
   name: epmt
   # Version is read from the git tag at build time.
   # When building locally without a tag, the version will be "develop".
-  version: '{{ environ.get("GIT_DESCRIBE_TAG", "pre5.0.1") }}'
+  version: '{{ environ.get("GIT_DESCRIBE_TAG", "develop") }}'
 
 source:
   path: .
@@ -19,10 +19,6 @@ build:
     - {{ PYTHON }} -m pip install src/ -vv
   noarch: python
   number: 0
-
-channels:
-  - conda-forge
-  - defaults
 
 requirements:
   build:
@@ -57,9 +53,6 @@ requirements:
 test:
   requires:
     - conda-forge::pytest
-    - conda-forge::pylint
-  files:
-    - pylintrc 
   imports:
     - epmt
   commands:
@@ -93,7 +86,6 @@ test:
     - pytest -v ${site_pkgs}/epmt/test/integration/test_integration_kernel_compile.py
     - pytest -v ${site_pkgs}/epmt/test/integration/test_integration_shell.py
     - pytest -v ${site_pkgs}/epmt/test/integration/test_integration_slurm.py
-    - pylint --rcfile pylintrc ${site_pkgs}/epmt || echo "pylint failed (GUARDED)"
 
 about:
   home: https://github.com/NOAA-GFDL/epmt
