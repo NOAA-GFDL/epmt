@@ -46,10 +46,12 @@ jobs:
           echo "printing conda config just in case"
           conda config --show
 
-      - name: Install fremor
+      - name: Install epmt
         run: |
-          pip install .
+          pip install src
 
-      - name: Run pylint
+      - name: run pylint on epmt module, ignoring ui (epmt-dash)
         run: |
-          pylint --rcfile pylintrc fremor/
+          pylint --rcfile pylintrc --ignore-paths src/epmt/ui src/epmt
+
+
