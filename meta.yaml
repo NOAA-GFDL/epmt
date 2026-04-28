@@ -11,6 +11,10 @@ package:
 
 source:
   path: .
+  # Exclude the large sample data directory (1.5 GB) from the conda build
+  # source tree. It is not needed for installation or testing.
+  exclude_patterns:
+    - 'sample/**'
 
 build:
   # NOTE: Under development — build recipe may change as packaging matures.
