@@ -3270,3 +3270,32 @@ def verify_jobs(jobs):
             # concatenate the errors into a flat list
             errors[jobid] = job_errors + proc_errors
     return (not (errors), errors)
+
+
+def print_scannable_op_metrics(jobs):
+    """
+    Fetches and prints core operation metrics for a list of jobs, 
+    split by jobid, op, and op_instance.
+    """
+    # 1. Fetch all uncompressed tags across the specified jobs
+    all_tags = get_job_proc_tags(jobs, fold=False)
+    
+    # 2. Extract unique pairs of 'op' and 'op_instance'
+    combinations = {
+        (t.get('op'), t.get('op_instance')) 
+        for t in all_tags 
+        if 'op' in t and 'op_instance' in t
+    }
+    
+    # 3. Format them back into the list of dictionaries epmt expects
+    split_tags = [{'op': op, 'op_instance': inst} for op, inst in combinations]
+    
+    # 4. Fetch the raw metrics (group_by_tag=False ensures jobid is kept)
+    df = get_op_metrics(jobs, tags=split_tags, fmt='pandas')
+    
+    # 5. Filter the DataFrame for maximum scannability and print
+    scannable_df = df[['jobid', 'tags', 'num_procs', 'cpu_time', 'duration']]
+    print(scannable_df)
+    
+    # Return it just in case you want to capture it in a variable later
+    return scannable_df
