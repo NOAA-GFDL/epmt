@@ -3,6 +3,10 @@ name: build_and_test_epmt
 on:
   push
 
+# Minimal permissions for security
+permissions:
+  contents: read
+
 # cancel running jobs if theres a newer push
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
