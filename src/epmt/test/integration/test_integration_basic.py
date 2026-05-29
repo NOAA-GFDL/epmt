@@ -33,9 +33,9 @@ def setup_and_teardown(resource_path, epmt_output_prefix):
 
 class TestBasic:
     def test_epmt_version(self):
-        """epmt -V should print version in format 'EPMT X.Y.Z'."""
+        """epmt -V should print version in format 'EPMT X.Y.Z' or 'EPMT X.Y.Z.post'."""
         result = run_cmd("epmt -V")
-        assert re.match(r"^EPMT \d+\.\d+\.\d+$", result.stdout.strip()), (
+        assert re.match(r"^EPMT \d+\.\d+\.\d+(\.post)?$", result.stdout.strip()), (
             f"Unexpected version output: {result.stdout!r}"
         )
 
