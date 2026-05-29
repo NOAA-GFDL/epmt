@@ -262,11 +262,11 @@ def main():
         foreground=False, post_process=False,
         no_analyze=False, retire=False)
 
-    # Shell PARSER
+    # Shell PARSER (DEPRECATED)
     shell_parser = subparser.add_parser(
         'shell',
-        help="Start an interactive IPython shell",
-        description="shell runs an interactive IPython shell")
+        help="[DEPRECATED] Start an interactive IPython shell (use 'epmt notebook' instead)",
+        description="DEPRECATED: shell runs an interactive IPython shell. Use 'epmt notebook' instead.")
 
     # Gui PARSER
     gui_parser = subparser.add_parser(

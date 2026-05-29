@@ -1661,7 +1661,18 @@ def epmt_dbsize(findwhat=['database', 'table', 'index', 'tablespace'],
 def epmt_shell():
     '''
     Start an interactive IPython shell.
+
+    .. deprecated::
+        ``epmt shell`` is deprecated and will be removed in a future release.
+        Use ``epmt notebook`` instead.
     '''
+    import warnings
+    warnings.warn(
+        "epmt shell is deprecated and will be removed in a future release. "
+        "Use 'epmt notebook' instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
 
     # we import builtins so pyinstaller will use the full builtins module
     # instead of a sketchy replacement. Also we need help from pydoc
