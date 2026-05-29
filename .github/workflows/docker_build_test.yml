@@ -37,7 +37,7 @@ jobs:
       IMAGE_TAG: "25.05.3"
       SLURM_CLUSTER_TAG: "0.9.0"
       # Build environment versions (must match Makefile)
-      PYTHON_VERSION: "3.9.25"  # updated from 3.9.22 (issue #153: use latest 3.9.x)
+      PYTHON_VERSION: "3.10.20"  # updated from 3.9.25 (drop EOL Python 3.9)
       SQLITE_VERSION: "3490100"
       SQLITE_YEAR: "2025"
       # Tarball source identifiers — must match Makefile and weekly_tarball_build.yml
@@ -325,7 +325,7 @@ jobs:
       - name: Configure epmt to use PostgreSQL
         if: matrix.db_backend == 'postgres'
         run: |
-          docker exec -i ${{ env.CONTAINER_NAME }} tee /usr/lib/python3.9/site-packages/epmt/settings.py > /dev/null << 'EOFSETTINGS'
+          docker exec -i ${{ env.CONTAINER_NAME }} tee /usr/lib/python3.10/site-packages/epmt/settings.py > /dev/null << 'EOFSETTINGS'
           def test_settings_import():
               pass
 
@@ -335,7 +335,7 @@ jobs:
           epmt_settings_kind = "test_pg_container"
           EOFSETTINGS
           echo "PostgreSQL settings installed:"
-          docker exec ${{ env.CONTAINER_NAME }} cat /usr/lib/python3.9/site-packages/epmt/settings.py
+          docker exec ${{ env.CONTAINER_NAME }} cat /usr/lib/python3.10/site-packages/epmt/settings.py
 
       - name: epmt version
         run: docker exec ${{ env.CONTAINER_NAME }} epmt -vv -V

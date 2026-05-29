@@ -11,13 +11,12 @@ dynamic         = ["version"]
 authors         = [ { name = "Minimal Metrics, LLC", email = "some.where@over.there" } ]
 description     = "Experiment Performance Metrics Toolkit"
 readme          = "README.md"
-# Widened from ==3.9.* — supports 3.9/3.10/3.11.
+# 3.10/3.11 supported; 3.9 is EOL.
 # 3.12 requires upgrading pandas (1.5→2.x) and SQLAlchemy (1.4→2.x)
 # which dropped distutils; tracked in issue #105.
-requires-python = ">=3.9,<3.12"
+requires-python = ">=3.10,<3.12"
 classifiers     = [
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
 ]

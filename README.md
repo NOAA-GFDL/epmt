@@ -11,9 +11,9 @@ a notebook-style interface.
 [![weekly_cache_builds](https://github.com/NOAA-GFDL/epmt/actions/workflows/weekly_cache_builds.yml/badge.svg)](https://github.com/NOAA-GFDL/epmt/actions/workflows/weekly_cache_builds.yml)
 [![publish_conda](https://github.com/NOAA-GFDL/epmt/actions/workflows/publish_conda.yml/badge.svg)](https://github.com/NOAA-GFDL/epmt/actions/workflows/publish_conda.yml?query=branch%3Amain)
 
-| Workflow | Python 3.9 | Python 3.10 | Python 3.11 |
-|----------|------------|-------------|------------|
-| **create_test_conda_env** | [![3.9](https://github.com/NOAA-GFDL/epmt/actions/workflows/create_test_conda_env.yml/badge.svg)](https://github.com/NOAA-GFDL/epmt/actions/workflows/create_test_conda_env.yml?query=branch%3Amain+python-version%3A3.9) | [![3.10](https://github.com/NOAA-GFDL/epmt/actions/workflows/create_test_conda_env.yml/badge.svg)](https://github.com/NOAA-GFDL/epmt/actions/workflows/create_test_conda_env.yml?query=branch%3Amain+python-version%3A3.10) | [![3.11](https://github.com/NOAA-GFDL/epmt/actions/workflows/create_test_conda_env.yml/badge.svg)](https://github.com/NOAA-GFDL/epmt/actions/workflows/create_test_conda_env.yml?query=branch%3Amain+python-version%3A3.11) |
+| Workflow | Python 3.10 | Python 3.11 |
+|----------|-------------|------------|
+| **create_test_conda_env** | [![3.10](https://github.com/NOAA-GFDL/epmt/actions/workflows/create_test_conda_env.yml/badge.svg)](https://github.com/NOAA-GFDL/epmt/actions/workflows/create_test_conda_env.yml?query=branch%3Amain+python-version%3A3.10) | [![3.11](https://github.com/NOAA-GFDL/epmt/actions/workflows/create_test_conda_env.yml/badge.svg)](https://github.com/NOAA-GFDL/epmt/actions/workflows/create_test_conda_env.yml?query=branch%3Amain+python-version%3A3.11) |
 
 | Workflow | SQLite | PostgreSQL |
 |----------|--------|-----------|
