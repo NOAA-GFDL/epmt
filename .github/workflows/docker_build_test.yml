@@ -49,7 +49,7 @@ jobs:
 
       - name: Extract build variables
         run: |
-          EPMT_VERSION=$(sed -n '/_version = /p' src/epmt/epmtlib.py | sed 's/ //g; s/,/./g; s/.*(\(.*\))/\1/')
+          EPMT_VERSION=$(python3 -c "exec(open('src/epmt/epmtlib.py').read().split('def ')[0]); from packaging.version import Version; print(Version(__version__))")
           echo "EPMT_VERSION=${EPMT_VERSION}" >> $GITHUB_ENV
           echo "EPMT_FULL_RELEASE=EPMT-release-${EPMT_VERSION}-${OS_TARGET}.tgz" >> $GITHUB_ENV
           echo "EPMT_PYTHON_FULL_RELEASE=epmt-${EPMT_VERSION}.tar.gz" >> $GITHUB_ENV

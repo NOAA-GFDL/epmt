@@ -41,7 +41,7 @@ CONFIG_PAPIEX_PAPI?=y
 CONFIG_PAPIEX_DEBUG?=y
 
 # epmt details
-EPMT_VERSION=$(shell sed -n '/_version = /p' src/epmt/epmtlib.py | sed 's/ //g; s/,/./g; s/.*(\(.*\))/\1/')
+EPMT_VERSION=$(shell python3 -c "exec(open('src/epmt/epmtlib.py').read().split('def ')[0]); from packaging.version import Version; print(Version(__version__))")
 EPMT_RELEASE=epmt-$(EPMT_VERSION)-$(OS_TARGET).tgz
 EPMT_FULL_RELEASE=EPMT-release-$(EPMT_VERSION)-$(OS_TARGET).tgz
 EPMT_PYTHON_FULL_RELEASE=epmt-$(EPMT_VERSION).tar.gz
