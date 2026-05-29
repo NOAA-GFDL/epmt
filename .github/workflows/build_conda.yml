@@ -49,7 +49,7 @@ jobs:
 
       - name: Install conda-build
         run: |
-          conda install -y conda-build
+          conda install -n base -y conda-build
 
       - name: Verify conda-build is available
         run: |

@@ -56,7 +56,7 @@ jobs:
 
       - name: Install conda-build and anaconda-client
         run: |
-          conda install -y conda-forge::conda-build conda-forge::anaconda-client
+          conda install -n base -y conda-forge::conda-build conda-forge::anaconda-client
 
       - name: Build and publish epmt conda package to noaa-gfdl channel
         id: publish
