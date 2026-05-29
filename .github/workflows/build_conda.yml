@@ -2,7 +2,6 @@ name: build_conda
 
 on:
   pull_request:
-    branches:
 
 # cancel running jobs if theres a newer push
 concurrency:
@@ -42,21 +41,19 @@ jobs:
           echo "setting strict channel priority"
           conda config --set channel_priority strict
 
-          echo "setting anaconda_upload to yes"
+          echo "setting anaconda_upload to no"
           conda config --set anaconda_upload no
 
           echo "printing conda config just in case"
           conda config --show
 
-      - name: Update Conda and Conda Package Indices
-        run: |
-          echo "updating conda and package channel indices for conda-forge, noaa-gfdl"
-          conda update -y --all --override-channels -c conda-forge
-          conda update -y --all --override-channels -c noaa-gfdl
-
       - name: Install conda-build
         run: |
-          conda install -y conda-forge::conda-build
+          conda install -y conda-build
+
+      - name: Verify conda-build is available
+        run: |
+          conda build --version
 
       - name: Build epmt conda package
         run: |
