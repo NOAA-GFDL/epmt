@@ -5,11 +5,11 @@
 other computational workflow contexts. It also offers entrypoints to analyzing your data by interfacing with `jupyter` for easy access to 
 a notebook-style interface.
 
+[![readthedocs](https://app.readthedocs.org/projects/epmt/badge/?version=latest&style=flat)](https://epmt.readthedocs.io/en/latest/)
 [![codecov](https://codecov.io/gh/NOAA-GFDL/epmt/branch/main/graph/badge.svg)](https://codecov.io/gh/NOAA-GFDL/epmt)
 [![pylint](https://img.shields.io/badge/pylint-%E2%89%A58.1-brightgreen)](https://github.com/NOAA-GFDL/epmt/actions/workflows/build_and_test_epmt.yml)
 [![weekly_cache_builds](https://github.com/NOAA-GFDL/epmt/actions/workflows/weekly_cache_builds.yml/badge.svg)](https://github.com/NOAA-GFDL/epmt/actions/workflows/weekly_cache_builds.yml)
-[![build_conda](https://github.com/NOAA-GFDL/epmt/actions/workflows/build_conda.yml/badge.svg)](https://github.com/NOAA-GFDL/epmt/actions/workflows/build_conda.yml)
-[![publish_conda](https://github.com/NOAA-GFDL/epmt/actions/workflows/publish_conda.yml/badge.svg)](https://github.com/NOAA-GFDL/epmt/actions/workflows/publish_conda.yml)
+[![publish_conda](https://github.com/NOAA-GFDL/epmt/actions/workflows/publish_conda.yml/badge.svg)](https://github.com/NOAA-GFDL/epmt/actions/workflows/publish_conda.yml?query=branch%3Amain)
 
 | Workflow | Python 3.9 | Python 3.10 | Python 3.11 |
 |----------|------------|-------------|------------|
