@@ -235,6 +235,12 @@ jobs:
         env:
           COVERAGE_FILE: .coverage.dbcare
 
+      - name: test_help_dbcare_dbsize
+        run: |
+          TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/test_help_dbcare_dbsize.py
+        env:
+          COVERAGE_FILE: .coverage.help_dbcare_dbsize
+
       - name: test_db_migration
         run: |
           TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/test_db_migration.py
