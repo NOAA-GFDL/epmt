@@ -16,6 +16,7 @@ nav:
   - EPMT Quick Start: Quickstart.md
   - EPMT Install: INSTALL.md
   - EPMT Readme: README.md
+  - Developer Guide: DEVELOPER.md
   - EPMT Explore Command: epmt-explore-cli.md
   - EPMT Commands: epmt_cmds.md
   - Migrations: migrations.md
