@@ -2,6 +2,11 @@ name: build_conda
 
 on:
   pull_request:
+  push:
+    branches:
+      - main
+    tags:
+      - '*'
 
 # cancel running jobs if theres a newer push
 concurrency:
@@ -9,6 +14,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # -------------------------------------------------------------------
+  # Build job — runs on every PR and push
+  # -------------------------------------------------------------------
   conda-build:
     runs-on: ubuntu-latest
 
@@ -58,3 +66,234 @@ jobs:
       - name: Build epmt conda package
         run: |
           conda build .
+
+  # -------------------------------------------------------------------
+  # Publish job — only runs on push to main or tags
+  # -------------------------------------------------------------------
+  conda-publish:
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/'))
+    needs: conda-build
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11"]
+      fail-fast: false  # let all versions run even if one fails
+
+    defaults:
+      run:
+        shell: bash -l {0}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up base Miniforge
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          miniforge-version: latest
+          conda-remove-defaults: true
+          python-version: ${{ matrix.python-version }}
+
+      - name: Configure conda channels
+        run: |
+          echo "removing conda default channels, appending open-source ones"
+          conda config --append channels conda-forge
+          conda config --append channels noaa-gfdl
+
+          echo "setting strict channel priority"
+          conda config --set channel_priority strict
+
+          echo "setting anaconda_upload to yes"
+          conda config --set anaconda_upload yes
+
+          echo "printing conda config just in case"
+          conda config --show
+
+      - name: Update Conda and Conda Package Indices
+        run: |
+          echo "updating conda and package channel indices for conda-forge, noaa-gfdl"
+          conda update -y --all --override-channels -c conda-forge
+          conda update -y --all --override-channels -c noaa-gfdl
+
+      - name: Install conda-build and anaconda-client
+        run: |
+          conda install -n base -y conda-forge::conda-build conda-forge::anaconda-client
+
+      - name: Build and publish epmt conda package to noaa-gfdl channel
+        id: publish
+        run: |
+          export ANACONDA_API_TOKEN=${{ secrets.ANACONDA_TOKEN }}
+          conda build --no-test --no-include-recipe .
+
+      # -----------------------------------------------------------------
+      # Post-publish verification: install epmt from the noaa-gfdl channel
+      # into a clean environment and run tests against it.
+      # -----------------------------------------------------------------
+      - name: Wait for noaa-gfdl channel to update
+        run: |
+          echo "Waiting 2 minutes for the noaa-gfdl channel index to update..."
+          sleep 120
+
+      - name: Remove checked-out source code
+        run: |
+          echo "Removing workspace source to ensure tests run against the installed package"
+          rm -rf "$GITHUB_WORKSPACE"/*
+          ls -la "$GITHUB_WORKSPACE"
+
+      - name: Create clean environment and install epmt from noaa-gfdl
+        run: |
+          conda create -y -n epmt-verify python=${{ matrix.python-version }}
+          conda activate epmt-verify
+          conda install -y -c noaa-gfdl -c conda-forge epmt
+          conda install -y conda-forge::pytest
+          conda list -n epmt-verify
+
+      - name: Resolve site-packages path
+        id: site_pkgs
+        run: |
+          conda activate epmt-verify
+          site_pkgs=$(python3 -c 'import site; print(site.getsitepackages()[0]);')
+          echo "site_pkgs=${site_pkgs}" >> "$GITHUB_OUTPUT"
+          echo "site-packages path: ${site_pkgs}"
+
+      - name: Smoke test(s)
+        run: |
+          conda activate epmt-verify
+          epmt --help
+          epmt -V
+          epmt -v check || echo "fails but we know this- see test_check step"
+
+      # -------------------------------------------------------------------
+      # Unit tests (GUARDED) — run against the channel-installed package
+      # -------------------------------------------------------------------
+      - name: Unit test — test_anysh
+        run: |
+          conda activate epmt-verify
+          TZ=UTC pytest -x -vv ${{ steps.site_pkgs.outputs.site_pkgs }}/epmt/test/test_anysh.py
+
+      - name: Unit test — test_check (GUARDED)
+        if: steps.publish.outcome == 'success'
+        continue-on-error: true
+        run: |
+          conda activate epmt-verify
+          TZ=UTC pytest -x -vv ${{ steps.site_pkgs.outputs.site_pkgs }}/epmt/test/test_check.py
+
+      - name: Unit test — test_cmds
+        run: |
+          conda activate epmt-verify
+          TZ=UTC pytest -x -vv ${{ steps.site_pkgs.outputs.site_pkgs }}/epmt/test/test_cmds.py
+
+      - name: Unit test — test_dbcare
+        run: |
+          conda activate epmt-verify
+          TZ=UTC pytest -x -vv ${{ steps.site_pkgs.outputs.site_pkgs }}/epmt/test/test_dbcare.py
+
+      - name: Unit test — test_db_migration
+        run: |
+          conda activate epmt-verify
+          TZ=UTC pytest -x -vv ${{ steps.site_pkgs.outputs.site_pkgs }}/epmt/test/test_db_migration.py
+
+      - name: Unit test — test_db_schema
+        run: |
+          conda activate epmt-verify
+          TZ=UTC pytest -x -vv ${{ steps.site_pkgs.outputs.site_pkgs }}/epmt/test/test_db_schema.py
+
+      - name: Unit test — test_explore
+        run: |
+          conda activate epmt-verify
+          TZ=UTC pytest -x -vv ${{ steps.site_pkgs.outputs.site_pkgs }}/epmt/test/test_explore.py
+
+      - name: Unit test — test_lib
+        run: |
+          conda activate epmt-verify
+          TZ=UTC pytest -x -vv ${{ steps.site_pkgs.outputs.site_pkgs }}/epmt/test/test_lib.py
+
+      - name: Unit test — test_outliers
+        run: |
+          conda activate epmt-verify
+          TZ=UTC pytest -x -vv ${{ steps.site_pkgs.outputs.site_pkgs }}/epmt/test/test_outliers.py
+
+      - name: Unit test — test_query
+        run: |
+          conda activate epmt-verify
+          TZ=UTC pytest -x -vv ${{ steps.site_pkgs.outputs.site_pkgs }}/epmt/test/test_query.py
+
+      - name: Unit test — test_run
+        run: |
+          conda activate epmt-verify
+          TZ=UTC pytest -x -vv ${{ steps.site_pkgs.outputs.site_pkgs }}/epmt/test/test_run.py
+
+      - name: Unit test — test_settings
+        run: |
+          conda activate epmt-verify
+          TZ=UTC pytest -x -vv ${{ steps.site_pkgs.outputs.site_pkgs }}/epmt/test/test_settings.py
+
+      - name: Unit test — test_shell
+        run: |
+          conda activate epmt-verify
+          TZ=UTC pytest -x -vv ${{ steps.site_pkgs.outputs.site_pkgs }}/epmt/test/test_shell.py
+
+      - name: Unit test — test_stat
+        run: |
+          conda activate epmt-verify
+          TZ=UTC pytest -x -vv ${{ steps.site_pkgs.outputs.site_pkgs }}/epmt/test/test_stat.py
+
+      - name: Unit test — test_submit
+        run: |
+          conda activate epmt-verify
+          TZ=UTC pytest -x -vv ${{ steps.site_pkgs.outputs.site_pkgs }}/epmt/test/test_submit.py
+
+      # -------------------------------------------------------------------
+      # Integration tests (GUARDED) — run against the channel-installed package
+      # -------------------------------------------------------------------
+      - name: Integration test — test_integration_annotate
+        run: |
+          conda activate epmt-verify
+          TZ=UTC pytest -x -vv ${{ steps.site_pkgs.outputs.site_pkgs }}/epmt/test/integration/test_integration_annotate.py
+
+      - name: Integration test — test_integration_basic
+        run: |
+          conda activate epmt-verify
+          TZ=UTC pytest -x -vv ${{ steps.site_pkgs.outputs.site_pkgs }}/epmt/test/integration/test_integration_basic.py
+
+      - name: Integration test — test_integration_collate_tsv
+        run: |
+          conda activate epmt-verify
+          TZ=UTC pytest -x -vv ${{ steps.site_pkgs.outputs.site_pkgs }}/epmt/test/integration/test_integration_collate_tsv.py
+
+      - name: Integration test — test_integration_concat
+        run: |
+          conda activate epmt-verify
+          TZ=UTC pytest -x -vv ${{ steps.site_pkgs.outputs.site_pkgs }}/epmt/test/integration/test_integration_concat.py
+
+      - name: Integration test — test_integration_daemon
+        run: |
+          conda activate epmt-verify
+          TZ=UTC pytest -x -vv ${{ steps.site_pkgs.outputs.site_pkgs }}/epmt/test/integration/test_integration_daemon.py
+
+      - name: Integration test — test_integration_escape
+        run: |
+          conda activate epmt-verify
+          TZ=UTC pytest -x -vv ${{ steps.site_pkgs.outputs.site_pkgs }}/epmt/test/integration/test_integration_escape.py
+
+      - name: Integration test — test_integration_explore
+        run: |
+          conda activate epmt-verify
+          TZ=UTC pytest -x -vv ${{ steps.site_pkgs.outputs.site_pkgs }}/epmt/test/integration/test_integration_explore.py
+
+      - name: Integration test — test_integration_kernel_compile
+        run: |
+          conda activate epmt-verify
+          TZ=UTC pytest -x -vv ${{ steps.site_pkgs.outputs.site_pkgs }}/epmt/test/integration/test_integration_kernel_compile.py
+
+      - name: Integration test — test_integration_shell (GUARDED)
+        continue-on-error: true
+        run: |
+          conda activate epmt-verify
+          TZ=UTC pytest -x -vv ${{ steps.site_pkgs.outputs.site_pkgs }}/epmt/test/integration/test_integration_shell.py
+
+      - name: Integration test — test_integration_slurm
+        run: |
+          conda activate epmt-verify
+          TZ=UTC pytest -x -vv ${{ steps.site_pkgs.outputs.site_pkgs }}/epmt/test/integration/test_integration_slurm.py

@@ -1,0 +1,90 @@
+name: pip_publish
+
+# Draft workflow — builds an sdist/wheel and targets Test PyPI.
+# Upload is currently DISABLED (dry-run only). To enable:
+#   1. Uncomment the "Publish to Test PyPI" step below.
+#   2. Add a TESTPYPI_API_TOKEN secret to the repository.
+#   3. Once validated on Test PyPI, duplicate the publish step targeting
+#      production PyPI (https://upload.pypi.org/legacy/).
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - '*'
+  pull_request:
+
+# cancel running jobs if theres a newer push
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11"]
+      fail-fast: false
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # full history so setuptools-scm / git tags work
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install build dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install build twine
+
+      - name: Build sdist and wheel
+        run: |
+          python -m build src/
+
+      - name: Verify distributions with twine
+        run: |
+          twine check src/dist/*
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ matrix.python-version }}
+          path: src/dist/
+
+  # -------------------------------------------------------------------
+  # Publish job — only runs on push to main or tags (DISABLED by default)
+  # -------------------------------------------------------------------
+  # publish:
+  #   if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/'))
+  #   needs: build
+  #   runs-on: ubuntu-latest
+  #
+  #   steps:
+  #     - name: Download build artifacts
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: dist-3.11
+  #         path: dist/
+  #
+  #     - name: Set up Python
+  #       uses: actions/setup-python@v5
+  #       with:
+  #         python-version: "3.11"
+  #
+  #     - name: Install twine
+  #       run: pip install twine
+  #
+  #     - name: Publish to Test PyPI
+  #       env:
+  #         TWINE_USERNAME: __token__
+  #         TWINE_PASSWORD: ${{ secrets.TESTPYPI_API_TOKEN }}
+  #       run: |
+  #         twine upload --repository-url https://test.pypi.org/legacy/ dist/*
