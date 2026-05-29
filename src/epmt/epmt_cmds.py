@@ -1680,7 +1680,7 @@ def epmt_shell():
     except BaseException:
         pass
 
-    from IPython import embed
+    from IPython import embed # pylint: disable=import-error,import-outside-toplevel
     embed(**kwargs)
 
 
@@ -1719,14 +1719,14 @@ def epmt_entrypoint(args):
         logger.info('//CALL// \\begin epmt gui //CALL//')
         from threading import Thread
 
-        # for Dash interface
+        # for Dash interface, optional soft-dependency of epmt.ui
         # this triggers postprocessing, why?  callbacks?
         logger.info('//IMPORT// import epmt.ui.init_app //IMPORT//')
-        from epmt.ui import init_app
+        from epmt.ui import init_app # pylint: disable=import-error,import-outside-toplevel,no-name-in-module
 
         # Here app == dash.Dash
         logger.info('//IMPORT// import epmt.ui.app //IMPORT//')
-        from epmt.ui import app
+        from epmt.ui import app # pylint: disable=import-error,import-outside-toplevel,no-name-in-module
 
         # Bug in pyinstaller does not import the idna encoding #TODO double check this
         import encodings.idna
