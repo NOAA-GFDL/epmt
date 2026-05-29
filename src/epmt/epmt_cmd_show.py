@@ -9,6 +9,9 @@ import epmt.epmt_query as eq
 logger = getLogger(__name__)
 
 def epmt_show_job(jobid, key=None):
+    '''
+    used by epmt_dump_metadata / epmt dump
+    '''
     if isinstance(jobid, list):
         jobid = jobid[0]
     jobs = eq.get_jobs([jobid], fmt='dict')

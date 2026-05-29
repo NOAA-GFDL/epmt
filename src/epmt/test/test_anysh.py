@@ -55,7 +55,7 @@ class EPMTShell(unittest.TestCase):
         from epmt.epmt_cmds import (epmt_source, epmt_start_job, epmt_dump_metadata,
                                     epmt_run, epmt_stop_job, epmt_stage, epmt_submit)
         with capture() as (out, err):
-            # TODO see if this works 
+            # TODO see if this works
             # results = epmt_check()
             # self.assertEqual(results, False)
 

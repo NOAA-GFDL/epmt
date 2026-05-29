@@ -16,8 +16,9 @@ class EPMTSettings(unittest.TestCase):
         # and (path.getsize(default_settings_file) > 0))
         try:
             import epmt.epmt_default_settings as defaults
+            self.assertTrue(defaults is not None, "import of epmt_default_settings yielded None")
         except BaseException:
-            self.assertTrue(False, "default settings import failed")
+            self.fail("default settings import failed")
         self.assertEqual(defaults.orm, 'sqlalchemy')
         # default settings shouldn't have db_params set.
         # with self.assertRaises(AttributeError):
@@ -32,7 +33,7 @@ class EPMTSettings(unittest.TestCase):
             import epmt.epmt_settings as settings
             assert settings is not None
         except BaseException:
-            self.assertTrue(False, "could not load epmt_settings as settings")
+            self.fail("could not load epmt_settings as settings")
 
     def test_settings_overrides_defaults(self):
 

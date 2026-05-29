@@ -34,7 +34,7 @@ def get_classifier_name(c):
         return c.__name__
     if hasattr(c, '__module__'):
         return c.__module__
-    raise f'Could not determine classifier name for {c}'
+    raise ValueError(f'Could not determine classifier name for {c}')
 
 
 def is_classifier_mv(c):

@@ -262,12 +262,6 @@ def main():
         foreground=False, post_process=False,
         no_analyze=False, retire=False)
 
-    # Shell PARSER
-    shell_parser = subparser.add_parser(
-        'shell',
-        help="Start an interactive IPython shell",
-        description="shell runs an interactive IPython shell")
-
     # Gui PARSER
     gui_parser = subparser.add_parser(
         'gui',

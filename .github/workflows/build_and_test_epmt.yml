@@ -3,6 +3,10 @@ name: build_and_test_epmt
 on:
   push
 
+# Minimal permissions for security
+permissions:
+  contents: read
+
 # cancel running jobs if theres a newer push
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -41,7 +45,7 @@ jobs:
 
     env:
       # Build environment versions — must match Makefile and weekly_tarball_build.yml
-      PYTHON_VERSION: "3.9.25"  # updated from 3.9.22 (issue #153: use latest 3.9.x)
+      PYTHON_VERSION: "3.10.20"  # updated from 3.9.25 (drop EOL Python 3.9)
       SQLITE_VERSION: "3490100"
       SQLITE_YEAR: "2025"
       # Tarball source identifiers — must match Makefile and weekly_tarball_build.yml
@@ -231,6 +235,12 @@ jobs:
         env:
           COVERAGE_FILE: .coverage.dbcare
 
+      - name: test_help_dbcare_dbsize
+        run: |
+          TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/test_help_dbcare_dbsize.py
+        env:
+          COVERAGE_FILE: .coverage.help_dbcare_dbsize
+
       - name: test_db_migration
         run: |
           TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/test_db_migration.py
@@ -279,12 +289,6 @@ jobs:
         env:
           COVERAGE_FILE: .coverage.settings
 
-      - name: test_shell
-        run: |
-          TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/test_shell.py
-        env:
-          COVERAGE_FILE: .coverage.shell
-
       - name: test_stat
         run: |
           TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/test_stat.py
@@ -323,13 +327,6 @@ jobs:
           TZ=UTC pytest -x -vv src/epmt/test/integration/test_integration_daemon.py
         env:
           COVERAGE_FILE: .coverage.integration_daemon
-          COVERAGE_PROCESS_START: coveragerc
-
-      - name: integration, shell
-        run: |
-          TZ=UTC pytest -x -vv src/epmt/test/integration/test_integration_shell.py
-        env:
-          COVERAGE_FILE: .coverage.integration_shell
           COVERAGE_PROCESS_START: coveragerc
 
       - name: integration, annotate

@@ -1366,7 +1366,7 @@ enabled: boolean, optional
     orm_commit()
     if fmt == 'orm':
         return r
-    elif fmt == 'terse':
+    if fmt == 'terse':
         return r.id
     r_dict = orm_to_dict(r, with_collections=True)
     return pd.Series(r_dict) if fmt == 'pandas' else r_dict
@@ -1425,10 +1425,10 @@ def retire_refmodels(ndays=settings.retire_models_ndays, dry_run=False):
         logger.info('Retiring following models (older than %d days): %s', ndays, str(models))
         if dry_run:
             return len(models)
-        else:
-            return delete_refmodels(models)
-    else:
-        logger.info('No models to retire (older than %d days)', ndays)
+
+        return delete_refmodels(models)
+
+    logger.info('No models to retire (older than %d days)', ndays)
     return 0
 
 
@@ -2037,8 +2037,8 @@ def delete_jobs(jobs, force=False, before=None, after=None, warn=True, remove_mo
     # so no jobs will be deleted
     if orm_delete_jobs(jobs):
         return num_jobs
-    else:
-        return 0
+
+    return 0
     # return num_jobs if orm_delete_jobs(jobs) else 0
 
 
@@ -3205,9 +3205,9 @@ def verify_jobs(jobs):
     def verify_num(n):
         if isnan(n):
             return 'is Nan'
-        elif isinf(n):
+        if isinf(n):
             return 'is inf.'
-        elif n < 0:
+        if n < 0:
             return 'is negative'
         return ''
 

@@ -1387,13 +1387,13 @@ def ETL_job_dict(raw_metadata, filedict, settings, tarfile=None):
                     logger.debug('job process_staging ID range: %s',
                         lastid if num_procs_copied == 1 else info_dict['procs_staging_ids'])
                     continue
+
+                # Re-open the file for standard processing since
+                # copy_expert consumed the file stream
+                if tarfile:
+                    flo = tarfile.extractfile(tarfile.getmember(f))
                 else:
-                    # Re-open the file for standard processing since
-                    # copy_expert consumed the file stream
-                    if tarfile:
-                        flo = tarfile.extractfile(tarfile.getmember(f))
-                    else:
-                        flo.seek(0)
+                    flo.seek(0)
 
             csv_file = StringIO(flo.read().decode('utf8'))
 

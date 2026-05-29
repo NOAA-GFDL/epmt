@@ -80,6 +80,7 @@ test_settings()     { _epmt_run_suite "${EPMT_TEST_DIR}/test_settings.py"     "s
 test_shell()        { _epmt_run_suite "${EPMT_TEST_DIR}/test_shell.py"        "shell"; }
 test_stat()         { _epmt_run_suite "${EPMT_TEST_DIR}/test_stat.py"         "stat"; }
 test_submit()       { _epmt_run_suite "${EPMT_TEST_DIR}/test_submit.py"       "submit"; }
+test_help_dbcare_dbsize() { _epmt_run_suite "${EPMT_TEST_DIR}/test_help_dbcare_dbsize.py" "help_dbcare_dbsize"; }
 
 # ── integration suites ─────────────────────────────────────────────
 integration_basic()          { _epmt_run_integration "${EPMT_INTEGRATION_DIR}/test_integration_basic.py"          "integration_basic"; }
@@ -118,6 +119,7 @@ _UNIT_SUITES=(
     test_anysh test_cmds test_db_migration test_db_schema
     test_explore test_lib test_outliers test_query
     test_run test_settings test_shell test_stat test_submit
+    test_help_dbcare_dbsize
 )
 
 _INTEGRATION_SUITES=(

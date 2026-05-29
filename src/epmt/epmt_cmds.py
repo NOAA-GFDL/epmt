@@ -1461,7 +1461,7 @@ def submit_dir_or_tgz_to_db(inputf,
         if not keep_going:
             exc.args = (msg, *exc.args)
             move_away(inputf, destdir_on_failure)
-            raise exc
+            raise exc from e
 
     if not r:
         r = (False, msg, ())
@@ -1658,31 +1658,6 @@ def epmt_dbsize(findwhat=['database', 'table', 'index', 'tablespace'],
         findwhat = ['database', 'table', 'index', 'tablespace']
     return orm_db_size(findwhat, usejson, usebytes)
 
-def epmt_shell():
-    '''
-    Start an interactive IPython shell.
-    '''
-
-    # we import builtins so pyinstaller will use the full builtins module
-    # instead of a sketchy replacement. Also we need help from pydoc
-    # since the builtins module included by pydoc doesn't have help
-    import builtins
-    from pydoc import help
-    kwargs = {}
-    try:
-        # locals() gives an exception if run in the epmt
-        # directory created by pyinstaller. It works elsewhere
-        # So it will run in the user directories fine. However,
-        # out integration tests run from the 'epmt' directory
-        # and may fail. So, just handle the exception and pass
-        # an empty local namespace if necessary
-        args = {'local': locals()}
-    except BaseException:
-        pass
-
-    from IPython import embed
-    embed(**kwargs)
-
 
 def epmt_entrypoint(args):
 
@@ -1699,9 +1674,6 @@ def epmt_entrypoint(args):
 
     # Here it's up to each command to validate what it is looking for
     # and error out appropriately
-    if args.command == 'shell':
-        epmt_shell()
-        return 0
 
     if args.command == 'convert':
         from epmt.epmt_convert_csv import convert_csv_in_tar
@@ -1719,14 +1691,14 @@ def epmt_entrypoint(args):
         logger.info('//CALL// \\begin epmt gui //CALL//')
         from threading import Thread
 
-        # for Dash interface
+        # for Dash interface, optional soft-dependency of epmt.ui
         # this triggers postprocessing, why?  callbacks?
         logger.info('//IMPORT// import epmt.ui.init_app //IMPORT//')
-        from epmt.ui import init_app
+        from epmt.ui import init_app # pylint: disable=import-error,import-outside-toplevel,no-name-in-module
 
         # Here app == dash.Dash
         logger.info('//IMPORT// import epmt.ui.app //IMPORT//')
-        from epmt.ui import app
+        from epmt.ui import app # pylint: disable=import-error,import-outside-toplevel,no-name-in-module
 
         # Bug in pyinstaller does not import the idna encoding #TODO double check this
         import encodings.idna

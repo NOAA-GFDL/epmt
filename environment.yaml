@@ -21,8 +21,8 @@ channels:
   - conda-forge
 
 dependencies:
-  # 3.9/3.10/3.11 supported; 3.12 requires pandas 2.x + SQLAlchemy 2.x (issue #105)
-  - python>=3.9,<3.12
+  # 3.10/3.11 supported; 3.9 is EOL; 3.12 requires pandas 2.x + SQLAlchemy 2.x (issue #105)
+  - python>=3.10,<3.12
   - sqlite>=3.49           # epmt's DB layer requires SQLite >= 3.49
 
   # --- runtime dependencies (mirrors src/pyproject.toml) -----------------

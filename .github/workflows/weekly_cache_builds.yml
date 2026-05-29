@@ -152,7 +152,7 @@ jobs:
       PAPIEX_VERSION: "2.3.16"
       EPMT_DASH_SRC_BRANCH: "main"
       # Build environment versions — must match Makefile and build_and_test_epmt.yml
-      PYTHON_VERSION: "3.9.25"  # updated from 3.9.22 (issue #153: use latest 3.9.x)
+      PYTHON_VERSION: "3.10.20"  # updated from 3.9.25 (drop EOL Python 3.9)
       SQLITE_VERSION: "3490100"
       SQLITE_YEAR: "2025"
 

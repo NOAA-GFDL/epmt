@@ -38,8 +38,7 @@ class CommonMeta(DeclarativeMeta):
         obj = orm_get(cls, index)
         if obj is None:
             raise KeyError(f'{cls.__name__}[{index}] could not be found')
-        else:
-            return obj
+        return obj
 
 
 refmodel_job_associations_table = Table( 'refmodel_job_associations', Base.metadata,
