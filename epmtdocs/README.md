@@ -32,6 +32,6 @@ To build the static site (outputs to `epmtdocs/site/`):
 mkdocs build -f epmtdocs/mkdocs.yml
 ```
 
-## GitHub Pages Deployment
+## Read the Docs Deployment
 
-Docs are automatically deployed to GitHub Pages when changes to `epmtdocs/` are pushed to `main`. The workflow is defined in `.github/workflows/deploy_docs.yml`.
+Docs are automatically built and hosted by [Read the Docs](https://readthedocs.org/) on pushes to `main`. The configuration is in `.readthedocs.yaml` at the repository root.
