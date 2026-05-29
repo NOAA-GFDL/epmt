@@ -20,11 +20,9 @@ class TestEpmtNotebook(unittest.TestCase):
 
         self.assertTrue(result)
         mock_labapp.launch_instance.assert_called_once()
-        argv = mock_labapp.launch_instance.call_args[1].get('argv') or \
-               mock_labapp.launch_instance.call_args[0][0] if mock_labapp.launch_instance.call_args[0] else None
+        call_argv = mock_labapp.launch_instance.call_args.kwargs.get('argv', [])
         # Verify ServerApp.root_dir is passed
-        if argv is None:
-            argv = mock_labapp.launch_instance.call_args.kwargs.get('argv', [])
+        self.assertTrue(any('--ServerApp.root_dir=' in arg for arg in call_argv))
 
     @patch('epmt.epmt_cmd_notebook.LabApp', create=True)
     def test_notebook_passes_extra_args(self, mock_labapp):
@@ -63,20 +61,17 @@ class TestEpmtNotebook(unittest.TestCase):
     def test_notebook_kernel_mode_missing_ipython(self):
         """Test graceful failure when IPython is not available in kernel mode."""
         with patch.dict('sys.modules', {'IPython': None}):
-            # Force re-import to trigger ImportError
-            import importlib
-            import epmt.epmt_cmd_notebook as mod
-            # Patch the import inside the function
+            from epmt.epmt_cmd_notebook import epmt_notebook
             with patch('builtins.__import__', side_effect=_import_error_for('IPython')):
-                result = mod.epmt_notebook(['kernel'])
+                result = epmt_notebook(['kernel'])
         self.assertFalse(result)
 
     def test_notebook_missing_jupyterlab(self):
         """Test graceful failure when jupyterlab is not available."""
         with patch.dict('sys.modules', {'jupyterlab': None, 'jupyterlab.labapp': None}):
-            import epmt.epmt_cmd_notebook as mod
+            from epmt.epmt_cmd_notebook import epmt_notebook
             with patch('builtins.__import__', side_effect=_import_error_for('jupyterlab')):
-                result = mod.epmt_notebook([])
+                result = epmt_notebook([])
         self.assertFalse(result)
 
 

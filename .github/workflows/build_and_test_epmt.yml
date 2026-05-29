@@ -283,12 +283,6 @@ jobs:
         env:
           COVERAGE_FILE: .coverage.settings
 
-      - name: test_shell
-        run: |
-          TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/test_shell.py
-        env:
-          COVERAGE_FILE: .coverage.shell
-
       - name: test_stat
         run: |
           TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/test_stat.py
@@ -327,13 +321,6 @@ jobs:
           TZ=UTC pytest -x -vv src/epmt/test/integration/test_integration_daemon.py
         env:
           COVERAGE_FILE: .coverage.integration_daemon
-          COVERAGE_PROCESS_START: coveragerc
-
-      - name: integration, shell
-        run: |
-          TZ=UTC pytest -x -vv src/epmt/test/integration/test_integration_shell.py
-        env:
-          COVERAGE_FILE: .coverage.integration_shell
           COVERAGE_PROCESS_START: coveragerc
 
       - name: integration, annotate

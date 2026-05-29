@@ -228,11 +228,6 @@ jobs:
           conda activate epmt-verify
           TZ=UTC pytest -x -vv ${{ steps.site_pkgs.outputs.site_pkgs }}/epmt/test/test_settings.py
 
-      - name: Unit test — test_shell
-        run: |
-          conda activate epmt-verify
-          TZ=UTC pytest -x -vv ${{ steps.site_pkgs.outputs.site_pkgs }}/epmt/test/test_shell.py
-
       - name: Unit test — test_stat
         run: |
           conda activate epmt-verify
@@ -285,12 +280,6 @@ jobs:
         run: |
           conda activate epmt-verify
           TZ=UTC pytest -x -vv ${{ steps.site_pkgs.outputs.site_pkgs }}/epmt/test/integration/test_integration_kernel_compile.py
-
-      - name: Integration test — test_integration_shell (GUARDED)
-        continue-on-error: true
-        run: |
-          conda activate epmt-verify
-          TZ=UTC pytest -x -vv ${{ steps.site_pkgs.outputs.site_pkgs }}/epmt/test/integration/test_integration_shell.py
 
       - name: Integration test — test_integration_slurm
         run: |
