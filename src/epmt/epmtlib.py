@@ -489,7 +489,7 @@ def group_dicts_by_key(dicts, key='tags', exclude=[]):
 
 
 def isString(s):
-    return isinstance(s, ("".__class__, u"".__class__))
+    return isinstance(s, ("".__class__, "".__class__))
 
 
 def check_int(s):

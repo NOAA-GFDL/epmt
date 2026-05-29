@@ -1461,7 +1461,7 @@ def submit_dir_or_tgz_to_db(inputf,
         if not keep_going:
             exc.args = (msg, *exc.args)
             move_away(inputf, destdir_on_failure)
-            raise exc
+            raise exc from e
 
     if not r:
         r = (False, msg, ())
