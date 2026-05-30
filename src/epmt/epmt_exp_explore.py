@@ -351,7 +351,7 @@ def find_missing_time_segments(exp_name, jobs=None, components=None, time_segmen
         exp_times = comp_tags['exp_time']
         if isinstance(exp_times, str):
             exp_times = [exp_times]
-        exp_times = set([int(t) for t in exp_times])
+        exp_times = {int(t) for t in exp_times}
         missing_times = set(time_segments) - exp_times
         if missing_times:
             print(f'{c} is missing {sorted(missing_times)}')

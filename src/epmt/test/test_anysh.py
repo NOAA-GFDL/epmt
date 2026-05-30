@@ -19,7 +19,7 @@ def do_cleanup():
         except OSError:
             pass
 
-    for d in ['/tmp/epmt']:
+    for _d in ['/tmp/epmt']:
         try:
             shutil.rmtree('/tmp/epmt')
         except Exception:
@@ -47,14 +47,14 @@ class EPMTShell(unittest.TestCase):
     def test_run_auto(self):
         from epmt.epmt_cmds import epmt_run
         do_cleanup()
-        with capture() as (out, err):
+        with capture() as (_out, _err):
             results = epmt_run(['sleep 1'], wrapit=True, dry_run=False, debug=False)
             self.assertEqual(0, results)
 
     def test_monolithic(self):
         from epmt.epmt_cmds import (epmt_source, epmt_start_job, epmt_dump_metadata,
                                     epmt_run, epmt_stop_job, epmt_stage, epmt_submit)
-        with capture() as (out, err):
+        with capture() as (_out, _err):
             # TODO see if this works
             # results = epmt_check()
             # self.assertEqual(results, False)

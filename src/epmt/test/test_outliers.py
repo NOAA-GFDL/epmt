@@ -757,7 +757,6 @@ class OutliersAPI(unittest.TestCase):
         self.assertEqual(list(df[df.jobid == 'kern-6656-20190614-192044-outlier']['pca_01'].values), [1, 1, 1, 1, 1])
         self.assertEqual(list(df[df.jobid == 'kern-6656-20190614-192044-outlier']['pca_02'].values), [1, 1, 1, 1, 1])
         tags = list(df.tags.values)
-        from epmt.epmtlib import frozen_dict
         tags = [frozen_dict(t) for t in tags]
         self.assertEqual(set(tags),
                          {frozenset({('op', 'configure'), ('op_sequence', '3'), ('op_instance', '3')}),

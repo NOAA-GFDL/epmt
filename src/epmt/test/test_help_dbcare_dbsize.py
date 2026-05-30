@@ -47,7 +47,7 @@ class TestHelpApi(unittest.TestCase):
         """epmt_help_api() with no funcs should print module docs and index."""
         from epmt.epmt_cmd_help import epmt_help_api
 
-        with capture() as (out, err):
+        with capture() as (out, _err):
             epmt_help_api(funcs=[])
 
         output = out.getvalue()
@@ -60,7 +60,7 @@ class TestHelpApi(unittest.TestCase):
         """epmt_help_api(['get_jobs']) should print function signature and docstring."""
         from epmt.epmt_cmd_help import epmt_help_api
 
-        with capture() as (out, err):
+        with capture() as (out, _err):
             epmt_help_api(funcs=['get_jobs'])
 
         output = out.getvalue()
@@ -75,7 +75,7 @@ class TestHelpApi(unittest.TestCase):
 
         # epmt_cmd_help imports stderr at module level, so we patch it directly
         with patch('epmt.epmt_cmd_help.stderr', new_callable=StringIO) as mock_err:
-            with capture() as (out, err):
+            with capture() as (out, _err):
                 epmt_help_api(funcs=['nonexistent_function_xyz'])
 
         err_output = mock_err.getvalue()

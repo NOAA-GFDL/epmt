@@ -844,14 +844,14 @@ class QueryAPI(unittest.TestCase):
 
     @db_session
     def test_verify_jobs(self):
-        import datetime
+        import datetime as dt_mod
         j = Job['685000']
         p = eq.get_procs('685000', limit=1, fmt='orm')[0]
         proc_id = p.id
-        j.start = datetime.datetime(1970, 1, 1)
-        tomorrow = datetime.datetime.now() + datetime.timedelta(days=1)
+        j.start = dt_mod.datetime(1970, 1, 1)
+        tomorrow = dt_mod.datetime.now() + dt_mod.timedelta(days=1)
         j.end = tomorrow
-        p.start = datetime.datetime(1970, 1, 1)
+        p.start = dt_mod.datetime(1970, 1, 1)
         orm_commit()
         (ret, errs) = eq.verify_jobs(['685000'])
         self.assertFalse(ret)

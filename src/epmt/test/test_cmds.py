@@ -234,7 +234,7 @@ class EPMTCmds(unittest.TestCase):
         # quell the error messages
         epmt_logging_init(-2)
 
-        from os import remove, path
+        from os import remove
         from shutil import copytree, rmtree
         from tempfile import gettempdir, mkdtemp
         # re-create error file if it's still hanging around and we didnt clean up lasttime

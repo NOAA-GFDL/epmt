@@ -57,7 +57,7 @@ def partition_classifiers_uv_mv(classifiers):
     Partition classifiers into two disjoint sets of univariate and multivariate::Statistics
 
     """
-    mv_set = set([c for c in classifiers if is_classifier_mv(c)])
+    mv_set = {c for c in classifiers if is_classifier_mv(c)}
     uv_set = set(classifiers) - mv_set
     return (uv_set, mv_set)
 

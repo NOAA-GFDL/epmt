@@ -14,7 +14,7 @@ def remove_stale_files():
         except OSError:
             pass
 
-    for d in ['/tmp/epmt']:
+    for _d in ['/tmp/epmt']:
         try:
             shutil.rmtree('/tmp/epmt')
         except Exception:
@@ -22,7 +22,6 @@ def remove_stale_files():
 
 
 def remove_jobid_envs():
-    from os import environ
     for e in settings.jobid_env_list:
         jid = environ.get(e)
         if jid and len(jid) > 0:
@@ -52,10 +51,9 @@ class EPMTShell(unittest.TestCase):
     # Test epmt with run argument
     def test_run_auto(self):
         from epmt.epmt_cmds import epmt_run
-        from os import environ
         environ['SLURM_JOB_ID'] = jobid
         remove_stale_files()
-        with capture() as (out, err):
+        with capture() as (_out, _err):
             results = epmt_run(['sleep 1'], wrapit=True, dry_run=False, debug=False)
 
         self.assertTrue(jobid in os.listdir(odir))
@@ -64,11 +62,10 @@ class EPMTShell(unittest.TestCase):
 
     def test_run_slurm_jobid(self):
         remove_jobid_envs()
-        from os import environ
         environ['SLURM_JOB_ID'] = jobid
         from epmt.epmt_cmds import epmt_run
         remove_stale_files()
-        with capture() as (out, err):
+        with capture() as (_out, _err):
             results = epmt_run(['sleep 1'], wrapit=True, dry_run=False, debug=False)
             self.assertTrue(jobid in os.listdir(odir))
             self.assertEqual(0, results)
@@ -76,11 +73,10 @@ class EPMTShell(unittest.TestCase):
 
     def test_run_pbjobid(self):
         remove_jobid_envs()
-        from os import environ
         environ['PBS_JOB_ID'] = jobid
         from epmt.epmt_cmds import epmt_run
         remove_stale_files()
-        with capture() as (out, err):
+        with capture() as (_out, _err):
             results = epmt_run(['sleep 1'], wrapit=True, dry_run=False, debug=False)
             self.assertTrue(jobid in os.listdir(odir))
             self.assertEqual(0, results)
@@ -92,7 +88,7 @@ class EPMTShell(unittest.TestCase):
         remove_stale_files()
         # quell the error messages
         epmt_logging_init(-2)
-        with capture() as (out, err):
+        with capture() as (_out, _err):
             results = epmt_run(['sleep 1'], wrapit=True, dry_run=False, debug=False)
             self.assertEqual(1, results)
         # restore logging level
@@ -101,11 +97,10 @@ class EPMTShell(unittest.TestCase):
 
     def test_run_dry_run(self):
         remove_jobid_envs()
-        from os import environ
         environ['SLURM_JOB_ID'] = jobid
         from epmt.epmt_cmds import epmt_run
         remove_stale_files()
-        with capture() as (out, err):
+        with capture() as (_out, _err):
             results = epmt_run(['sleep 1'], wrapit=True, dry_run=True, debug=False)
             self.assertFalse(os.path.isdir(settings.epmt_output_prefix))
             self.assertEqual(0, results)
@@ -118,7 +113,7 @@ class EPMTShell(unittest.TestCase):
         remove_stale_files()
         # quell the error messages
         epmt_logging_init(-2)
-        with capture() as (out, err):
+        with capture() as (_out, _err):
             results = epmt_run(['sleep 1'], wrapit=True, dry_run=True, debug=False)
             self.assertEqual(1, results)
         # restore logging level
@@ -126,21 +121,19 @@ class EPMTShell(unittest.TestCase):
 
     def test_run_nowrap(self):
         remove_jobid_envs()
-        from os import environ
         environ['SLURM_JOB_ID'] = jobid
         from epmt.epmt_cmds import epmt_run
         remove_stale_files()
-        with capture() as (out, err):
+        with capture() as (_out, _err):
             results = epmt_run(['sleep 1'], wrapit=False, dry_run=False, debug=False)
             self.assertEqual(0, results)
 
     def test_monolithic(self):
         from epmt.epmt_cmds import epmt_source, epmt_run
         remove_jobid_envs()
-        from os import environ
         environ['SLURM_JOB_ID'] = jobid
         environ['SLURM_JOB_USER'] = tuser
-        with capture() as (out, err):
+        with capture() as (_out, _err):
 
             results = epmt_source()
             self.assertIn("PAPIEX_OPTIONS", results, 'epmt_source options are missing')
