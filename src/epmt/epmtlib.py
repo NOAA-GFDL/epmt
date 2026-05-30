@@ -394,7 +394,9 @@ def sum_dicts(x, y):
     return {k: x.get(k, 0) + y.get(k, 0) for k in set(x) | set(y)}
 
 
-def sum_dicts_list(dicts, exclude=[]):
+def sum_dicts_list(dicts, exclude=None):
+    if exclude is None:
+        exclude = []
     all_keys = set()
     for d in dicts:
         all_keys |= set(d)
@@ -407,10 +409,12 @@ def sum_dicts_list(dicts, exclude=[]):
     return sum_dict
 
 
-def unique_dicts(dicts, exclude_keys=[]):
+def unique_dicts(dicts, exclude_keys=None):
     '''
     from list of dictionaries, get the unique ones exclude keys is an optional list of keys that are removed from
     '''
+    if exclude_keys is None:
+        exclude_keys = []
 
     new_dicts = []
     if exclude_keys:
@@ -453,7 +457,7 @@ def fold_dicts(dicts):
     return {k: list(v) if len(v) > 1 else v.pop() for (k, v) in folded_dict.items()}
 
 
-def group_dicts_by_key(dicts, key='tags', exclude=[]):
+def group_dicts_by_key(dicts, key='tags', exclude=None):
     '''
     given a list of dictionaries, we aggregate like fields across the dictionaries
     but only when they share the same value for 'key'
@@ -472,6 +476,8 @@ def group_dicts_by_key(dicts, key='tags', exclude=[]):
         [{'tags': {'op': 'hsmget'}, duration: 3000},
          {'tags': {'op': 'gcp'},  duration: 300}]
     '''
+    if exclude is None:
+        exclude = []
     groups = {}
     for d in dicts:
         k = dumps(d[key], sort_keys=True)
@@ -827,7 +833,7 @@ def ranges(i):
     """
 
     from itertools import groupby
-    for a, b in groupby(enumerate(i), lambda pair: pair[1] - pair[0]):
+    for _a, b in groupby(enumerate(i), lambda pair: pair[1] - pair[0]):
         b = list(b)
         yield b[0][1], b[-1][1]
 
@@ -892,7 +898,7 @@ def decode2strings(v):
     return [decode_string_from_int(n) for n in v]
 
 
-def dframe_encode_features(df, features=[], reversible=False):
+def dframe_encode_features(df, features=None, reversible=False):
     '''
     Replaces feature columns containing string/object (non-numeric)
     values with columns containing encoded integers.
@@ -917,6 +923,8 @@ def dframe_encode_features(df, features=[], reversible=False):
 
     NOTE: If encoded_features is empty, no features were encoded.
     '''
+    if features is None:
+        features = []
     if not features:
         import epmt.epmt_settings as settings
         logger.debug('Selecting non-numeric columns from dataframe and then pruning out blacklisted features')
@@ -1205,13 +1213,15 @@ def csv_probe_format(f):
     raise ValueError(f"CSV file -- {f.name} -- has an unknown file format. Is it corrupted?")
 
 
-def set_signal_handlers(signals=[], handler=None):
+def set_signal_handlers(signals=None, handler=None):
     '''
     Set up signal handlers. If no signals are specified, sensible
     defaults are used. If no handler is specified, the default
     handler is assumed (this means the signal handler will be restored
     to the default)
     '''
+    if signals is None:
+        signals = []
     from signal import SIGHUP, SIGTERM, SIGINT, signal, SIG_DFL
 
     # set defaults

@@ -20,8 +20,7 @@ class Operation(dict):
     # op_duration_method is one of "sum", "sum-minus-overlap", "finish-minus-start"
     def __init__(self, jobs, tags, exact_tag_only=False, op_duration_method="sum"):
 
-        #from orm import orm_is_query, orm_jobs_col
-        from . import orm_is_query, orm_jobs_col  # rocky-8 change
+        from . import orm_jobs_col  # rocky-8 change
         from epmt.epmtlib import tag_from_string, tags_list
 
         if op_duration_method not in ("sum", "sum-minus-overlap", "finish-minus-start"):

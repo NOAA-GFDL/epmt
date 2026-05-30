@@ -31,7 +31,7 @@ logger = getLogger(__name__)
 FEATURES = settings.outlier_features
 
 
-def partition_jobs(jobs, features=FEATURES, methods=[], thresholds=thresholds):
+def partition_jobs(jobs, features=None, methods=None, thresholds=None):
     """
     Partition jobs into disjoint sets of reference and outliers::Outlier Detection
 
@@ -77,11 +77,17 @@ def partition_jobs(jobs, features=FEATURES, methods=[], thresholds=thresholds):
                     u'kern-6656-20190614-191138']),
                    set([]))}
     """
+    if features is None:
+        features = FEATURES
+    if methods is None:
+        methods = []
+    if thresholds is None:
+        thresholds = globals()['thresholds']
     (_, parts) = detect_outlier_jobs(jobs, features=features, methods=methods, thresholds=thresholds)
     return parts
 
 
-def partition_jobs_by_ops(jobs, tags=[], features=FEATURES, methods=[modified_z_score], thresholds=thresholds):
+def partition_jobs_by_ops(jobs, tags=None, features=None, methods=None, thresholds=None):
     """
     Partitions operations into disjoint sets of reference and outliers::Outlier Detection
 
@@ -147,13 +153,21 @@ def partition_jobs_by_ops(jobs, tags=[], features=FEATURES, methods=[modified_z_
                                                                   u'kern-6656-20190614-194024']),
                                                               set([u'kern-6656-20190614-192044-outlier']))}
     """
+    if tags is None:
+        tags = []
+    if features is None:
+        features = FEATURES
+    if methods is None:
+        methods = [modified_z_score]
+    if thresholds is None:
+        thresholds = globals()['thresholds']
     (_, parts, _, _, _) = detect_outlier_ops(jobs, tags=tags, features=features, methods=methods, thresholds=thresholds)
     return parts
 
 
 @db_session
-def detect_outlier_jobs(jobs, trained_model=None, features=FEATURES, methods=[],
-                        thresholds=thresholds, sanity_check=True, pca=False):
+def detect_outlier_jobs(jobs, trained_model=None, features=None, methods=None,
+                        thresholds=None, sanity_check=True, pca=False):
     """
     Detects outlier jobs::Outlier Detection
 
@@ -337,6 +351,12 @@ def detect_outlier_jobs(jobs, trained_model=None, features=FEATURES, methods=[],
     # TODO: Provide examples with multivariate classifiers
 
     """
+    if features is None:
+        features = FEATURES
+    if methods is None:
+        methods = []
+    if thresholds is None:
+        thresholds = globals()['thresholds']
     eq._empty_collection_check(jobs)
     if sanity_check:
         eq._warn_incomparable_jobs(jobs)
@@ -566,8 +586,8 @@ def detect_outlier_jobs(jobs, trained_model=None, features=FEATURES, methods=[],
 # This function can be very expensive. So, we only use a single outlier
 # scoring method by default. Using 2 more really takes too long.
 @db_session
-def detect_outlier_ops(jobs, tags=[], trained_model=None, features=FEATURES,
-                       methods=[], thresholds=thresholds, sanity_check=True, pca=False):
+def detect_outlier_ops(jobs, tags=None, trained_model=None, features=None,
+                       methods=None, thresholds=None, sanity_check=True, pca=False):
     """
     Detects outlier operations::Outlier Detection
 
@@ -774,6 +794,14 @@ ime', 'time_oncpu', 'time_waiting', 'timeslices', 'usertime', 'vol_ctxsw', 'wcha
 
 
     """
+    if tags is None:
+        tags = []
+    if features is None:
+        features = FEATURES
+    if methods is None:
+        methods = []
+    if thresholds is None:
+        thresholds = globals()['thresholds']
     eq._empty_collection_check(jobs)
     if sanity_check:
         eq._warn_incomparable_jobs(jobs)
@@ -1069,7 +1097,7 @@ ime', 'time_oncpu', 'time_waiting', 'timeslices', 'usertime', 'vol_ctxsw', 'wcha
         return (mvod_df, classfiers_od_dict)
 
 
-def detect_outliers(df, features=[], methods=[]):
+def detect_outliers(df, features=None, methods=None):
     """
     Generic function to detect outlier rows in a dataframe::Outlier Detection
 
@@ -1093,6 +1121,10 @@ def detect_outliers(df, features=[], methods=[]):
     This function currently supports only univariate classifiers. Trained models
     are not presently supported, either.
     """
+    if features is None:
+        features = []
+    if methods is None:
+        methods = []
     eq._empty_collection_check(df)
     features = features or list(df.columns.values)
     retval = pd.DataFrame(0, columns=features, index=df.index)
@@ -1112,7 +1144,7 @@ def detect_outliers(df, features=[], methods=[]):
     return retval
 
 
-def detect_outlier_processes(processes, features=['duration', 'cpu_time'], methods=[]):
+def detect_outlier_processes(processes, features=None, methods=None):
     """
     This function detects outlier processes from within the input set::Outlier Detection
 
@@ -1131,10 +1163,14 @@ def detect_outlier_processes(processes, features=['duration', 'cpu_time'], metho
     This function currently supports only univariate classifiers. Trained models
     are not presently supported, either.
     """
+    if features is None:
+        features = ['duration', 'cpu_time']
+    if methods is None:
+        methods = []
     return detect_outliers(processes, features=features, methods=methods)
 
 
-def detect_outlier_threads(threads, features=['usertime', 'systemtime', 'rssmax'], methods=[]):
+def detect_outlier_threads(threads, features=None, methods=None):
     """
     This function detects outlier threads from within the input set::Outlier Detection
 
@@ -1153,11 +1189,15 @@ def detect_outlier_threads(threads, features=['usertime', 'systemtime', 'rssmax'
     This function currently supports only univariate classifiers. Trained models
     are not presently supported, either.
     """
+    if features is None:
+        features = ['usertime', 'systemtime', 'rssmax']
+    if methods is None:
+        methods = []
     return detect_outliers(threads, features=features, methods=methods)
 
 
 @db_session
-def detect_rootcause(jobs, inp, features=FEATURES, methods=[modified_z_score]):
+def detect_rootcause(jobs, inp, features=None, methods=None):
     """
     Performs root-cause analysis on a job given a set of reference jobs::RCA
 
@@ -1188,6 +1228,10 @@ def detect_rootcause(jobs, inp, features=FEATURES, methods=[modified_z_score]):
     for the feature. The sorted_tuples consists of a list of tuples, where each
     tuple (feature,<diff_score>)
     """
+    if features is None:
+        features = FEATURES
+    if methods is None:
+        methods = [modified_z_score]
     if isinstance(jobs, int):
         jobs = eq.conv_jobs(orm_get(ReferenceModel, jobs).jobs, fmt='pandas')
     elif not isinstance(jobs, pd.DataFrame):
@@ -1198,7 +1242,7 @@ def detect_rootcause(jobs, inp, features=FEATURES, methods=[modified_z_score]):
 
 
 @db_session
-def detect_rootcause_op(jobs, inp, tag, features=FEATURES, methods=[modified_z_score]):
+def detect_rootcause_op(jobs, inp, tag, features=None, methods=None):
     """
     Performs root-cause analysis (RCA) for an operation::RCA
 
@@ -1257,6 +1301,10 @@ def detect_rootcause_op(jobs, inp, tag, features=FEATURES, methods=[modified_z_s
     >>> s
     [('cpu_time', 379.350952249517), ('duration', 56.09397944199707), ('num_procs', 0.0)]
     """
+    if features is None:
+        features = FEATURES
+    if methods is None:
+        methods = [modified_z_score]
     if not tag:
         print('You must specify a non-empty tag')
         return (False, None, None)
@@ -1282,7 +1330,7 @@ def detect_rootcause_op(jobs, inp, tag, features=FEATURES, methods=[modified_z_s
     return rca(ref_ops_df, inp_ops_df, features, methods)
 
 
-def pca_feature_combine(inp_df, inp_features=[], desired=2, retain_features=False):
+def pca_feature_combine(inp_df, inp_features=None, desired=2, retain_features=False):
     '''
     Perform PCA on a dataframe with multiple features::Data Reduction
 
@@ -1449,6 +1497,8 @@ pca_variance_ratios_list: List of variance ratios. You should
 
     IOW, 625151 is an outlier according to pca_01.
     '''
+    if inp_features is None:
+        inp_features = []
 
     from epmt.epmt_stat import pca_stat
     if not isinstance(inp_df, pd.DataFrame):
@@ -1544,7 +1594,7 @@ pca_weight_vec : The newly added PCA weighted vector
     return (out_df, pca_weighted_vec)
 
 
-def pca_feature_rank(jobs, inp_features=[]):
+def pca_feature_rank(jobs, inp_features=None):
     '''
     Performs 2-component PCA and feature-ranking::Data Reduction
 
@@ -1609,6 +1659,8 @@ def pca_feature_rank(jobs, inp_features=[]):
       ('outblock', 0.0), ('processor', 0.0) ]
 
     '''
+    if inp_features is None:
+        inp_features = []
     from epmt.epmt_stat import dframe_append_weighted_row
 
     jobs_df = eq.get_jobs(jobs, fmt='pandas')
@@ -1627,7 +1679,7 @@ def pca_feature_rank(jobs, inp_features=[]):
     return (sorted_df, sorted_features)
 
 
-def feature_scatter_plot(jobs, features=[], outfile='', annotate=False):
+def feature_scatter_plot(jobs, features=None, outfile='', annotate=False):
     '''
     Create a 2-D scatter plot showing job features::Outlier Detection
 
@@ -1661,6 +1713,8 @@ def feature_scatter_plot(jobs, features=[], outfile='', annotate=False):
     >>> feature_scatter_plot(['625151', '627907', '629322', '633114', '675992', '680163', '685001', '691209', '693129'],
                              features=['cpu_time', 'duration'])
     '''
+    if features is None:
+        features = []
     jobs_df = eq.get_jobs(jobs, fmt='pandas')
     features = sanitize_features(features, jobs_df)
     pca_variances = None
@@ -1760,7 +1814,7 @@ def sanitize_features(f, df, model=None):
     return features
 
 
-def get_feature_distributions(jobs, features=[]):
+def get_feature_distributions(jobs, features=None):
     '''
     Get feature distributions for a collection of jobs::Jobs
 
@@ -1796,6 +1850,8 @@ def get_feature_distributions(jobs, features=[]):
                                        features=['cpu_time', 'rssmax'])
     {'cpu_time': 'unknown', 'rssmax': 'norm'}
     '''
+    if features is None:
+        features = []
     eq._empty_collection_check(jobs)
     eq._warn_incomparable_jobs(jobs)
 

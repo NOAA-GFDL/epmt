@@ -17,15 +17,13 @@ Hostname is determined from csv file name
   Jobid: `goodSample_123`
 '''
 
-from epmt.epmtlib import epmt_logging_init, logfn
-
-from sys import exit as sysexit
-from re import findall, search
-from os import path, remove, makedirs
-from shutil import copyfile
 from glob import glob
-
 from logging import getLogger
+from os import path, remove, makedirs
+from re import findall, search
+from shutil import copyfile
+
+from epmt.epmtlib import epmt_logging_init, logfn
 
 logger = getLogger(__name__)
 
@@ -82,7 +80,6 @@ def parseFile(inputfile, masterHeader, masterHeaderFile, delim, commentDelim):
     """
     fileLines = []
     comments = []
-    header = ""
     datas = []
     line = ""
     data = ""
@@ -107,7 +104,7 @@ def parseFile(inputfile, masterHeader, masterHeaderFile, delim, commentDelim):
             comments.append(line)
             continue
         try:
-            header, data, headerDelimCount, headerFound, masterHeader, masterHeaderFile = parseLine(
+            _header, data, headerDelimCount, headerFound, masterHeader, masterHeaderFile = parseLine(
                 inputfile, line, masterHeader, masterHeaderFile, headerDelimCount, headerFound, delim)
             if data:
                 datas.append(data)
@@ -250,7 +247,7 @@ def file_len(fname):
     """
     ind = None
     with open(fname) as f:
-        for i, ln in enumerate(f):
+        for i, _ln in enumerate(f):
             ind = i
     return ind + 1
 

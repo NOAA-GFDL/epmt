@@ -9,7 +9,7 @@ Uses an in-memory SQLite database to avoid contention with production.
 import unittest
 from datetime import datetime
 from glob import glob
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.dialects.postgresql import JSONB
@@ -20,7 +20,7 @@ def _compile_jsonb_sqlite(type_, compiler, **kw):
     return "JSON"
 
 from epmt import epmt_query as eq, epmt_settings as settings
-from epmt.orm import db_session, orm_in_memory, setup_db
+from epmt.orm import setup_db
 from epmt.orm.sqlalchemy.models import Job
 from epmt.epmtlib import timing, capture, get_install_root, epmt_logging_init
 from epmt.epmt_cmds import epmt_submit
@@ -199,8 +199,6 @@ class TestDeleteJobs(unittest.TestCase):
 
     def test_delete_jobs_warn_no_spam(self):
         """delete_jobs with warn=False should not produce 'verbosity' warnings (PR #189)."""
-        import logging
-
         with self.assertLogs('epmt', level='DEBUG') as cm:
             eq.delete_jobs(['nonexistent_job_id'], force=True)
 

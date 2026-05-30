@@ -20,7 +20,6 @@ import pytz
 from epmt.orm import *
 import epmt.epmt_settings as settings
 from epmt.epmtlib import tag_from_string, sum_dicts, timing, dotdict, get_first_key_match, check_fix_metadata, logfn
-from epmt.epmt_query import is_job_post_processed
 
 logger = getLogger(__name__)
 
@@ -150,10 +149,12 @@ def lookup_or_create_user(username):
 #         row += thr_count
 
 
-def get_proc_rows(csvfile, skiprows=0, fmt='1', metric_names=[]):
+def get_proc_rows(csvfile, skiprows=0, fmt='1', metric_names=None):
     '''
     Generator function that returns a list of rows corresponding to metric names from csv, with optional skipping
     '''
+    if metric_names is None:
+        metric_names = []
 
     from epmt.epmt_convert_csv import OUTPUT_CSV_FIELDS, OUTPUT_CSV_SEP
     # we only support two formats at present
@@ -429,8 +430,10 @@ def extract_tags_from_comment_line(jobdatafile, comment="#", tarfile=None):
 # relations and descendant maps are used if we do bulk inserts
 
 
-def _proc_ancestors(pid_map, proc, ancestor_pid, relations=None, descendant_map={}):
+def _proc_ancestors(pid_map, proc, ancestor_pid, relations=None, descendant_map=None):
 
+    if descendant_map is None:
+        descendant_map = {}
     if ancestor_pid in pid_map:
         proc.depth += 1
         entries = pid_map[ancestor_pid]

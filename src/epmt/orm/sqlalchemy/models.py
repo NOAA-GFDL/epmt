@@ -6,14 +6,15 @@ see the migrations guide for more information. long story short, you'll need to 
 migration script and then run 'alembic upgrade head'
 """
 
-from .general import *
 from datetime import datetime
-from sqlalchemy.ext.declarative import DeclarativeMeta
-from sqlalchemy import Table, Column, String, Integer, ForeignKey, Boolean, DateTime, Float, JSON
-from sqlalchemy.orm import backref, relationship
+
 from six import with_metaclass
+from sqlalchemy import Table, Column, String, Integer, ForeignKey, Boolean, DateTime, Float, JSON
+from sqlalchemy.ext.declarative import DeclarativeMeta
+from sqlalchemy.orm import backref, relationship
 
 import epmt.epmt_settings as settings
+from .general import *
 
 if 'postgres' in settings.db_params.get('url', ''):
     from sqlalchemy.dialects.postgresql import JSONB as JSON

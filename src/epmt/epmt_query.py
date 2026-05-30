@@ -12,19 +12,19 @@ list of database IDs, and a powerful ORM object collection.
 The format can be selected using the `fmt` argument.
 """
 
+from datetime import datetime
+from json import loads, dumps
+from logging import getLogger
+
+import pandas as pd
+from sqlalchemy import func
+
 from epmt.epmt_stat import get_classifier_name, is_classifier_mv, mvod_scores, uvod_classifiers
 from epmt.epmtlib import ( tag_from_string, tags_list, init_settings, sum_dicts, unique_dicts, fold_dicts,
                            isString, group_dicts_by_key, conv_to_datetime )
-from datetime import datetime
-import pandas as pd
-
+from epmt.epmtlib import epmt_logging_init
 from epmt.orm import *
-from sqlalchemy import func
-from json import loads, dumps
-from logging import getLogger
 import epmt.epmt_settings as settings
-
-from epmt.epmtlib import epmt_logging_init, version
 
 logger = getLogger(__name__)
 epmt_logging_init(settings.verbose if hasattr(settings, 'verbose') else 0, check=True)
@@ -175,7 +175,7 @@ def conv_procs(procs, fmt='pandas', order=None):
     return __conv_procs_orm(procs, fmt=fmt)
 
 
-def timeline(jobs, limit=0, fltr='', when=None, hosts=[], fmt='pandas'):
+def timeline(jobs, limit=0, fltr='', when=None, hosts=None, fmt='pandas'):
     """
     Returns a timeline of processes ordered chronologically by start time::Processes
 
@@ -226,6 +226,8 @@ def timeline(jobs, limit=0, fltr='', when=None, hosts=[], fmt='pandas'):
     3  685000  modulecmd 2019-06-15 11:52:04.176020  pp208
     4  685000       test 2019-06-15 11:52:04.192758  pp208
     """
+    if hosts is None:
+        hosts = []
     return get_procs(jobs, fmt=fmt, order=(Process.start), limit=limit, fltr=fltr, when=when, hosts=hosts)
 
 
@@ -348,7 +350,7 @@ def op_roots(jobs, tag, fmt='dict'):
 
 @db_session
 def get_jobs(
-        jobs=[],
+        jobs=None,
         tags=None,
         fltr=None,
         order=None,
@@ -357,7 +359,7 @@ def get_jobs(
         when=None,
         before=None,
         after=None,
-        hosts=[],
+        hosts=None,
         fmt='dict',
         annotations=None,
         analyses=None,
@@ -524,6 +526,10 @@ def get_jobs(
     # same as above except we use the orm format
     >>> jobs_orm = get_jobs(tags = 'exp_name:ESM4_historical_D151;exp_component=atmos_cmip', fmt='orm')
     """
+    if jobs is None:
+        jobs = []
+    if hosts is None:
+        hosts = []
 
     # Customer feedback strongly indicated that limits on the job table were
     # a strong no-no. So, commenting out the code below:
@@ -581,8 +587,8 @@ def get_jobs(
 
 #
 @db_session
-def get_procs(jobs=[], tags=None, fltr=None, order=None, offset=0, limit=None, when=None,
-              hosts=[], fmt='dict', merge_threads_sums=True, exact_tag_only=False):
+def get_procs(jobs=None, tags=None, fltr=None, order=None, offset=0, limit=None, when=None,
+              hosts=None, fmt='dict', merge_threads_sums=True, exact_tag_only=False):
     """
     Returns a collection of processes for a set of jobs based on filter criteria::Processes
 
@@ -715,6 +721,10 @@ def get_procs(jobs=[], tags=None, fltr=None, order=None, offset=0, limit=None, w
     by using the default merge_threads_sums=True, it will be available as column in the output
     dataframe. The output will be pre-sorted on this field because we have set 'order'
     """
+    if jobs is None:
+        jobs = []
+    if hosts is None:
+        hosts = []
 
     # Jeff strongly wanted this removed as it can cause processes
     # to be left out in queries.
@@ -807,7 +817,7 @@ def get_thread_metrics(*processes):
 
 
 @db_session
-def job_proc_tags(jobs, exclude=[], tag_filter='', fold=False):
+def job_proc_tags(jobs, exclude=None, tag_filter='', fold=False):
     """
     Returns the unique process tags across all processes of a job or collection of jobs::Processes
 
@@ -840,6 +850,8 @@ def job_proc_tags(jobs, exclude=[], tag_filter='', fold=False):
     Process tags are very different from job tags. This function returns
     process tags.
     """
+    if exclude is None:
+        exclude = []
     _empty_collection_check(jobs)
     jobs = orm_jobs_col(jobs)
     tags = []
@@ -944,7 +956,7 @@ tag_filter : dict or string
     return folded_dict if fold else tags
 
 
-def rank_proc_tags_keys(jobs, order='cardinality', exclude=[]):
+def rank_proc_tags_keys(jobs, order='cardinality', exclude=None):
     '''
     Returns a sorted list of tag keys across processes of one or more jobs::Processes
 
@@ -987,6 +999,8 @@ def rank_proc_tags_keys(jobs, order='cardinality', exclude=[]):
         {'9', '19', '6', '4', '20', '12', '8', '16', '2', '15', '5', '13', '10', '3', '11', '7', '14', '1', '18'}),
        ('op_sequence', {'83', '9', '67', '82', '60', '89', '85', '79', '20', '72', '8', '12', '27', '2', ...})]
     '''
+    if exclude is None:
+        exclude = []
     _empty_collection_check(jobs)
     if order.lower() not in ('cardinality', 'frequency'):
         logger.warning('order needs to be one or "cardinality" or "frequency"')
@@ -1008,7 +1022,7 @@ def rank_proc_tags_keys(jobs, order='cardinality', exclude=[]):
 
 
 @db_session
-def get_refmodels(name=None, tag={}, fltr=None, limit=0, order=None, before=None,
+def get_refmodels(name=None, tag=None, fltr=None, limit=0, order=None, before=None,
                   after=None, exact_tag_only=False, merge_nested_fields=True, fmt='dict'):
     """
     Returns collection of reference models filtered using specified criteria::Reference Models
@@ -1068,6 +1082,8 @@ def get_refmodels(name=None, tag={}, fltr=None, limit=0, order=None, before=None
       # the model creation phase).
       >>> get_refmodels(tag = 'exp_name:ESM4;exp_component:ice_1x1', fmt='pandas')
     """
+    if tag is None:
+        tag = {}
 
     # filter using tag if set
     if isinstance(tag, str):
@@ -1160,9 +1176,9 @@ def _refmodel_scores(col, methods, features):
 
 
 @db_session
-def create_refmodel(jobs, name=None, tag={}, op_tags=[],
-                    methods=[],
-                    features=['duration', 'cpu_time', 'num_procs'], exact_tag_only=False,
+def create_refmodel(jobs, name=None, tag=None, op_tags=None,
+                    methods=None,
+                    features=None, exact_tag_only=False,
                     fmt='dict', sanity_check=True, enabled=True, pca=False):
     """
     Creates a reference model based on a set of reference jobs::Reference Models
@@ -1268,6 +1284,14 @@ enabled: boolean, optional
     {'jobs': [...], 'name': None, 'tags': {}, 'op_tags': [], 'computed': {...}, ...}
 
     """
+    if tag is None:
+        tag = {}
+    if op_tags is None:
+        op_tags = []
+    if methods is None:
+        methods = []
+    if features is None:
+        features = ['duration', 'cpu_time', 'num_procs']
     if not jobs or (not (orm_is_query(jobs)) and len(jobs) == 0) or (orm_is_query(jobs) and (jobs.count == 0)):
         logger.error('You need to specify one or more jobs to create a reference model')
         return None
@@ -1566,7 +1590,9 @@ def refmodel_set_active_metrics(ref_id, metrics):
 # tags for a job (job is either a job id or a Job object).
 # See also: job_proc_tags, which does the same
 # for a list of jobs
-def __unique_proc_tags_for_job(job, exclude=[], fold=True):
+def __unique_proc_tags_for_job(job, exclude=None, fold=True):
+    if exclude is None:
+        exclude = []
     global settings
     if isString(job):
         job = Job[job]
@@ -1587,7 +1613,7 @@ def __unique_proc_tags_for_job(job, exclude=[], fold=True):
 
 
 @db_session
-def get_ops(jobs, tags=[], exact_tag_only=False, combine=False, fmt='dict', op_duration_method="sum", full=False):
+def get_ops(jobs, tags=None, exact_tag_only=False, combine=False, fmt='dict', op_duration_method="sum", full=False):
     '''
     Returns a filtered collection of operations for the selected jobs::Operations
 
@@ -1701,6 +1727,8 @@ def get_ops(jobs, tags=[], exact_tag_only=False, combine=False, fmt='dict', op_d
           >>> len(ops)
           12
     '''
+    if tags is None:
+        tags = []
     _empty_collection_check(jobs)
     if not tags:
         tags = rank_proc_tags_keys(jobs)[0][0]
@@ -1745,7 +1773,7 @@ def get_ops(jobs, tags=[], exact_tag_only=False, combine=False, fmt='dict', op_d
 
 
 @db_session
-def get_op_metrics(jobs, tags=[], exact_tags_only=False, group_by_tag=False, fmt='pandas', op_duration_method="sum"):
+def get_op_metrics(jobs, tags=None, exact_tags_only=False, group_by_tag=False, fmt='pandas', op_duration_method="sum"):
     """
     Aggregates metrics across the processes of one or more operations::Operations
 
@@ -1790,6 +1818,8 @@ op_duration_method: string, optional
     -------
     A collection of operation metrics in the selected format
     """
+    if tags is None:
+        tags = []
     if op_duration_method not in ("sum", "sum-minus-overlap", "finish-minus-start"):
         raise ValueError('op_duration_method must be one of ("sum", "sum-minus-overlap", "finish-minus-start")')
     _empty_collection_check(jobs)
@@ -2155,8 +2185,7 @@ def retire_jobs(ndays=settings.retire_jobs_ndays, skip_unprocessed=False, dry_ru
 
 
 @db_session
-def ops_costs(jobs=[], tags=['op:hsmput', 'op:dmget', 'op:untar', 'op:mv',
-              'op:dmput', 'op:hsmget', 'op:rm', 'op:cp'], metric='cpu_time'):
+def ops_costs(jobs=None, tags=None, metric='cpu_time'):
     """
     Calculates operation(s) costs as a fraction of total job times::Operations
 
@@ -2207,6 +2236,11 @@ def ops_costs(jobs=[], tags=['op:hsmput', 'op:dmget', 'op:untar', 'op:mv',
     This makes the computation slower (5x) than with 'cpu_time',
     where the aggregation is performed in the database layer.
     """
+    if jobs is None:
+        jobs = []
+    if tags is None:
+        tags = ['op:hsmput', 'op:dmget', 'op:untar', 'op:mv',
+              'op:dmput', 'op:hsmget', 'op:rm', 'op:cp']
 
     logger.info('dm ops: %s', tags)
     if metric not in {"duration", "cpu_time"}:
@@ -2389,7 +2423,7 @@ def remove_job_annotations(jobid):
     return annotate_job(jobid, {}, True)
 
 
-def analyze_jobs(jobs=[], analyses_filter={}, max_comparable=50, check=True):
+def analyze_jobs(jobs=None, analyses_filter=None, max_comparable=50, check=True):
     """
     Run the analysis pipeline on jobs::Jobs
 
@@ -2416,6 +2450,10 @@ def analyze_jobs(jobs=[], analyses_filter={}, max_comparable=50, check=True):
     -------
     The total number of analyses algorithms executed
     """
+    if jobs is None:
+        jobs = []
+    if analyses_filter is None:
+        analyses_filter = {}
     if check:
         ua_jobs = get_unanalyzed_jobs(jobs=jobs, analyses_filter=analyses_filter)
         if len(ua_jobs) != len(jobs):
@@ -2593,7 +2631,7 @@ def get_job_analyses(jobid):
     return j.analyses
 
 
-def get_unanalyzed_jobs(jobs=[], analyses_filter={}, fmt='terse'):
+def get_unanalyzed_jobs(jobs=None, analyses_filter=None, fmt='terse'):
     '''
     Gets the subset of jobs that have not had any analysis pipeline run on them::Jobs
 
@@ -2621,6 +2659,10 @@ analyses_filter : dict, optional
     -----
     This is one of the few functions that allows an empty `jobs` parameter
     '''
+    if jobs is None:
+        jobs = []
+    if analyses_filter is None:
+        analyses_filter = {}
     return get_jobs(jobs, analyses=analyses_filter, fmt=fmt)
 
 
@@ -2653,7 +2695,7 @@ def get_unprocessed_jobs():
 
 
 @db_session
-def comparable_job_partitions(jobs, matching_keys=['exp_name', 'exp_component']):
+def comparable_job_partitions(jobs, matching_keys=None):
     '''
     Partitions a jobs into disjoint partitions of comparable jobs::Jobs
 
@@ -2698,6 +2740,8 @@ matching_keys : list of strings, optional
     The default keys that require a match are 'exp_name' and 'exp_component'.
     The top-level list is ordered in decreasing cardinality of number of jobs.
     '''
+    if matching_keys is None:
+        matching_keys = ['exp_name', 'exp_component']
     d = {}
     jobs = orm_jobs_col(jobs)
     # logger.info('doing a comparable_job_partitions on {0} jobs'.format(jobs.count()))
@@ -2719,7 +2763,7 @@ matching_keys : list of strings, optional
     return sorted(l, key=lambda v: sum([Job[jobid].duration for jobid in v[1]]), reverse=True)
 
 
-def are_jobs_comparable(jobs, matching_keys=['exp_name', 'exp_component']):
+def are_jobs_comparable(jobs, matching_keys=None):
     '''
     Returns True iff *all* the specified jobs are comparable::Jobs
 
@@ -2743,6 +2787,8 @@ matching_keys : list of strings, optional
     INFO:epmt_query:doing a comparable_job_partitions on 5 jobs
     True
     '''
+    if matching_keys is None:
+        matching_keys = ['exp_name', 'exp_component']
     return len(comparable_job_partitions(jobs, matching_keys)) == 1
 
 
@@ -2934,7 +2980,7 @@ def procs_set(jobs, attr='exename'):
 
 
 @db_session
-def add_features_df(jobs_df, features=[procs_histogram, procs_set], key='jobid'):
+def add_features_df(jobs_df, features=None, key='jobid'):
     '''
     Appends synthetic metrics such as process histogram to a jobs dataframe::Processes
 
@@ -3001,6 +3047,8 @@ added_fetaures: list of strings
     8  {'mv': 118, 'perl': 101, 'globus-url-copy': 76...  [TAVG.exe, arch, basename, bash, cat, chmod, c...
 
     '''
+    if features is None:
+        features = [procs_histogram, procs_set]
     out_df = jobs_df.copy()
     keys = list(jobs_df[key].values)
     added_features = []

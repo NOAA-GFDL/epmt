@@ -153,13 +153,13 @@ def main():
         help="Only dump the value for the specified key")
 
     # Schema PARSER
-    db_schema_parser = subparser.add_parser(
+    _db_schema_parser = subparser.add_parser(
         'schema',
         help="Dump the database schema",
         description="schema will dump the database schema")
 
     # Migrate PARSER
-    db_migrate_parser = subparser.add_parser(
+    _db_migrate_parser = subparser.add_parser(
         'migrate',
         help="Migrate the database schema",
         description="Migrate the database schema (if needed). Safe to use this option on an already migrated database")
@@ -263,7 +263,7 @@ def main():
         no_analyze=False, retire=False)
 
     # Gui PARSER
-    gui_parser = subparser.add_parser(
+    _gui_parser = subparser.add_parser(
         'gui',
         help="Run the EPMT dashboard GUI",
         description="gui a web-based dashboard accessible at: http://localhost:8050")
@@ -388,7 +388,7 @@ def main():
         help='%(choices)s')
 
     # Check PARSER
-    check_parser = subparser.add_parser(
+    _check_parser = subparser.add_parser(
         'check',
         help='Verify EPMT Installation',
         description="Check will verify basic epmt configuration and functionality.")

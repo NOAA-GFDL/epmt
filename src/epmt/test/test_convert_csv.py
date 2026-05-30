@@ -5,7 +5,6 @@ Tests exercise the CSV conversion logic using real sample data
 from the test/data directory without mocking.
 """
 import os
-import csv
 import shutil
 import tarfile
 import tempfile
