@@ -360,7 +360,7 @@ def epmt_check():
     retval = True
 
     logger.warning('CHECKING verify_db_params()...')
-    _reval = verify_db_params() and retval
+    retval = verify_db_params() and retval
 
     logger.warning('CHECKING verify_install_prefix()...')
     retval = verify_install_prefix() and retval
@@ -530,8 +530,6 @@ def epmt_start_job(keep_going=True, other=None):
 
 @logfn
 def epmt_stop_job(keep_going=True, other=None):
-    if other is None:
-        other = []
     global_jobid, global_datadir, global_metadatafile = setup_vars()
     if not all( [ global_jobid , global_datadir , global_metadatafile ] ):
         return False

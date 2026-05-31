@@ -242,7 +242,7 @@ def exp_explore(exp_name, metric='duration', op=np.sum, limit=10):
     metric = metric or 'duration'  # defaults when using with command-line
     limit = limit or 10  # defaults when using with command-line
 
-    _exp_jobs = eq.get_jobs(tags={'exp_name': exp_name}, fmt='orm')
+    _exp_jobs = eq.get_jobs(tags={'exp_name': exp_name}, fmt='orm')  # noqa: F841 - query primes ORM cache
     ordered_comp_list = exp_component_outliers(exp_name, metric, op, limit)
 
     agg_metric = np.sum([np.array(d['metrics']).sum() for d in ordered_comp_list])

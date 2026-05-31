@@ -1746,6 +1746,7 @@ def feature_scatter_plot(jobs, features=None, outfile='', annotate=False):
         xaxis=dict(title_text=features[0] + x_label_ext),)
     if outfile:
         print('Plotly Cannot export static images, Feature coming soon')
+        return None
     else:
         return plt
 

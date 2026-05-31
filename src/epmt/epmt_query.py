@@ -22,7 +22,7 @@ from sqlalchemy import func
 from epmt.epmt_stat import get_classifier_name, is_classifier_mv, mvod_scores, uvod_classifiers
 from epmt.epmtlib import ( tag_from_string, tags_list, init_settings, sum_dicts, unique_dicts, fold_dicts,
                            isString, group_dicts_by_key, conv_to_datetime )
-from epmt.epmtlib import epmt_logging_init
+from epmt.epmtlib import epmt_logging_init, version
 from epmt.orm import *
 import epmt.epmt_settings as settings
 

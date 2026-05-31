@@ -14,7 +14,7 @@ from sqlalchemy.ext.declarative import DeclarativeMeta
 from sqlalchemy.orm import backref, relationship
 
 import epmt.epmt_settings as settings
-from .general import *
+from .general import Base, orm_get
 
 if 'postgres' in settings.db_params.get('url', ''):
     from sqlalchemy.dialects.postgresql import JSONB as JSON
