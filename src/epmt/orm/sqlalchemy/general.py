@@ -7,7 +7,7 @@ from logging import getLogger
 from os import chdir, getcwd
 import threading
 
-from sqlalchemy import engine_from_config, text, inspect, MetaData
+from sqlalchemy import engine_from_config, text, inspect, MetaData, desc
 from sqlalchemy import sql as sqla_sql
 from sqlalchemy.orm import sessionmaker, scoped_session, mapperlib
 from sqlalchemy.orm.query import Query
