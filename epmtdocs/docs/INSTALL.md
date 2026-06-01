@@ -1,12 +1,12 @@
 Experiment Performance Management Tool a.k.a Workflow DB
 
-This is a tool to collect metadata and performance data about an entire job down to the individual threads in individual processes. This tool uses **papiex** to perform the process monitoring. This tool is targeted at batch or ephemeral jobs, not daemon processes. 
+This is a tool to collect metadata and performance data about an entire job down to the individual threads in individual processes. This tool uses **papiex** to perform the process monitoring. This tool is targeted at batch or ephemeral jobs, not daemon processes.
 
 The software contained in this repository was written by Philip Mucci of Minimal Metrics LLC.
 
 ## Installation With Release File
 
-The release file includes EPMT, Data Collection Libraries, Notebook and EPMT Workflow GUI. 
+The release file includes EPMT, Data Collection Libraries, Notebook and EPMT Workflow GUI.
 
 For installing with a release file you'll need:
 
@@ -16,7 +16,7 @@ For installing with a release file you'll need:
 
 ### Run Install Script
 
-Use the provided epmt-installer script 
+Use the provided epmt-installer script
 
 ```
 $ ./epmt-installer EPMT-release-3.8.20-centos-7.tgz 
@@ -73,9 +73,7 @@ WARNING: epmtlib: No job name found, defaulting to unknown
 epmt run functionality  Pass
 ```
 
-
 ---
-
 
 ### Perf Event System Setting
 

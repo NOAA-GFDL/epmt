@@ -1,8 +1,8 @@
 # **Experiment Process / Metadata Tool** (`epmt`)
 
-`epmt` collects metadata and performance data about shell processes, down to individual threads in individual processes. Currently, 
-`epmt` is particularly specialized for interfacing with Slurm batch jobs associated with earth modeling workflows, but is generalizable to 
-other computational workflow contexts. It also offers entrypoints to analyzing your data by interfacing with `jupyter` for easy access to 
+`epmt` collects metadata and performance data about shell processes, down to individual threads in individual processes. Currently,
+`epmt` is particularly specialized for interfacing with Slurm batch jobs associated with earth modeling workflows, but is generalizable to
+other computational workflow contexts. It also offers entrypoints to analyzing your data by interfacing with `jupyter` for easy access to
 a notebook-style interface.
 
 [![readthedocs](https://app.readthedocs.org/projects/epmt/badge/?version=latest&style=flat)](https://epmt.readthedocs.io/en/latest/)
@@ -20,15 +20,14 @@ a notebook-style interface.
 | **docker_build_test** | [![sqlite](https://github.com/NOAA-GFDL/epmt/actions/workflows/docker_build_test.yml/badge.svg)](https://github.com/NOAA-GFDL/epmt/actions/workflows/docker_build_test.yml?query=branch%3Amain+db_backend%3Asqlite) | [![postgres](https://github.com/NOAA-GFDL/epmt/actions/workflows/docker_build_test.yml/badge.svg)](https://github.com/NOAA-GFDL/epmt/actions/workflows/docker_build_test.yml?query=branch%3Amain+db_backend%3Apostgres) |
 | **build_and_test_epmt** | [![sqlite](https://github.com/NOAA-GFDL/epmt/actions/workflows/build_and_test_epmt.yml/badge.svg)](https://github.com/NOAA-GFDL/epmt/actions/workflows/build_and_test_epmt.yml?query=branch%3Amain+db_backend%3Asqlite) | [![postgres](https://github.com/NOAA-GFDL/epmt/actions/workflows/build_and_test_epmt.yml/badge.svg)](https://github.com/NOAA-GFDL/epmt/actions/workflows/build_and_test_epmt.yml?query=branch%3Amain+db_backend%3Apostgres) |
 
-
 ## Installation
 
-These are not-yet *fully* functional installations, as `epmt` was designed in an era where virtual environments were not as ubiquitous as 
+These are not-yet *fully* functional installations, as `epmt` was designed in an era where virtual environments were not as ubiquitous as
 they are today. For full-featured build/installation approaches, consult the `Makefile`, `.github/workflows`, and [`DEVELOPER.md`](./DEVELOPER.md)
 
 ### With `conda` (recommended)
 
-The `conda` installation is currently favored as a quick-start for new users. 
+The `conda` installation is currently favored as a quick-start for new users.
 
 ```bash
 conda install noaa-gfdl::epmt
@@ -37,6 +36,7 @@ conda install noaa-gfdl::epmt
 ### From repo checkout
 
 The following creates a whole `epmt` conda environment with `epmt` accessible via an editable `pip` installation.
+
 ```bash
 git clone https://github.com/NOAA-GFDL/epmt.git
 cd epmt
@@ -45,6 +45,7 @@ conda activate epmt
 ```
 
 If you already have an environment created that you wish to install `epmt`, and it's already activated:
+
 ```bash
 git clone https://github.com/NOAA-GFDL/epmt.git
 cd epmt
@@ -54,16 +55,18 @@ pip install src/
 ### Verifying an Installation
 
 The `check` command is a first-stop sanity-check of your `epmt` installation. Call it with
+
 ```bash
-$ epmt check
+epmt check
 ```
 
 Verify the version:
+
 ```bash
-$ epmt -V
+epmt -V
 ```
 
-## Quickstart: Watch `epmt` work 
+## Quickstart: Watch `epmt` work
 
 Try wrapping your commands with `epmt start` / `epmt stop`:
 

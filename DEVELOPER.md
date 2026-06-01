@@ -1,4 +1,5 @@
 # `epmt` Developer and Advanced Usage Guide
+
 This document contains detailed information about `epmt` configuration, data collection,
 database submission, analysis, metrics, debugging, and CI/CD infrastructure.
 
@@ -34,12 +35,14 @@ For installation and quick-start instructions, see [README.md](./README.md).
     - [`version GLIBC_x.xx not found`](#version-glibc_xxx-not-found)
 
 ## Configuration
-`epmt` houses default settings (`epmt_default_settings.py`), user settings (`settings.py`), 
-and a submodule (`epmt_settings.py`) that appends the user settings to the end of the 
+
+`epmt` houses default settings (`epmt_default_settings.py`), user settings (`settings.py`),
+and a submodule (`epmt_settings.py`) that appends the user settings to the end of the
 default settings, overriding them.
 
 Custom user settings should only be included by developers who understand `epmt`'s requirements.
 The default settings should first be evaluated, they look a little bit like the following:
+
 ```bash
 $ cat src/epmt/epmt_default_settings.py
   ...
@@ -55,7 +58,9 @@ $ cat src/epmt/epmt_default_settings.py
 ```
 
 ### Environment Variables
+
 The following variables replace, at run-time, the values in the `db_params` dictionary found in `settings.py`:
+
 ```
 EPMT_DB_PROVIDER
 EPMT_DB_USER
@@ -66,7 +71,9 @@ EPMT_DB_FILENAME
 ```
 
 ### Getting Current Configuration Information
+
 You can examine all current settings by passing the `--help` option:
+
 ```bash
 $ ./epmt --help
 usage: epmt [-n] [-d] [-h] [-a] [--drop]
@@ -95,19 +102,22 @@ environment variables (overrides settings.py):
 ```
 
 ## The Three Modes of `epmt`
+
 There are three modes to `epmt` usage; data collection, data submission, and data analysis. Each
 has different dependencies:
 
-* **Collection** requires Python 2.6 or higher, and compiled [`papiex`](https://github.com/noaa-gfdl/papiex) 
+- **Collection** requires Python 2.6 or higher, and compiled [`papiex`](https://github.com/noaa-gfdl/papiex)
 libraries for process tagging
-* **Submission** requires Python packages for SQL and database interactions (`sqlalchemy`, `sqlite`, `postgres`)
-* **Analysis** requires `jupyter`, `iPython`, and additionally [`epmt-dash`](https://github.com/noaa-gfdl/epmt-dash) 
+- **Submission** requires Python packages for SQL and database interactions (`sqlalchemy`, `sqlite`, `postgres`)
+- **Analysis** requires `jupyter`, `iPython`, and additionally [`epmt-dash`](https://github.com/noaa-gfdl/epmt-dash)
 and `plotly` for dashboard-style analytics
 
 ### The First Mode, Data Collection
 
 #### Collecting Performance Data
+
 Assuming you have `epmt` installed and in your path, let's modify a job file:
+
 ```bash
 $ cat my_job.sh
 #!/bin/bash
@@ -116,6 +126,7 @@ $ cat my_job.sh
 ```
 
 This becomes:
+
 ```bash
 $ cat my_job_epmt.sh
 #!/bin/bash
@@ -126,6 +137,7 @@ epmt stop
 ```
 
 Or more succintlty by automating the start/stop cycle with the `--auto` or `-a` flag:
+
 ```bash
 $ cat my_job_epmt2.sh
 #!/bin/bash
@@ -134,6 +146,7 @@ epmt -a run ./compute_the_world --debug
 ```
 
 But usually we want to run more than one executable. We could have any number of run statements:
+
 ```bash
 $ cat my_job_epmt3.sh
 #!/bin/bash
@@ -150,10 +163,11 @@ provides the configuration to export to the environment through the `source`
 command. This is intended for use in a job file and should be evaluated by the
 running shell, be it `bash` or `csh`. `epmt source` prints the required
 environment variables in Bash format unless either the `SHELL` or `_`
-environment variable ends in `csh`. 
+environment variable ends in `csh`.
 
 **Note the unset of `LD_PRELOAD` before stop!** This prevents the data
 collection routine from running on `epmt stop` itself.
+
 ```bash
 $ cat my_job_bash.sh
 #!/bin/bash
@@ -172,7 +186,8 @@ unset LD_PRELOAD
 epmt stop
 ```
 
-Here's an example for `csh`, when run interactively, 
+Here's an example for `csh`, when run interactively,
+
 ```bash
 $ /bin/csh
 > epmt -j1 source
@@ -182,10 +197,11 @@ setenv LD_PRELOAD /Users/phil/Work/GFDL/epmt.git/../papiex-oss/papiex-oss-instal
 ```
 
 #### Data Collection with SLURM epilog and prolog
+
 Using configured prolog and epilogs with SLURM tasks allows one to skip job
 instrumentation entirely, except for job tags (`EPMT_JOB_TAGS`) and process
 tags (`PAPIEX_TAGS`). These are configured in `slurm.conf` for jobs
-submitted with `sbatch` but can be tested on the command line when using `srun`. 
+submitted with `sbatch` but can be tested on the command line when using `srun`.
 
 The above Csh job is equivalent to the below sequence using a prolog and
 epilog, ***with the exception of the trailing submit statement.***
@@ -200,10 +216,11 @@ $ sleep 1
 
 For this job to work using `sbatch`, make the following modifications in
 `slurm.conf`, substituting the appropriate path for `$EPMT_PREFIX`:
+
 ```bash
-$ SLURM_TASK_SCRIPT_DIR=${EPMT_PREFIX}/epmt-install/slurm
-$ TaskProlog=${SLURM_TASK_SCRIPT_DIR}/slurm_task_prolog_epmt.sh
-$ TaskEpilog=${SLURM_TASK_SCRIPT_DIR}/slurm_task_epilog_epmt.sh
+SLURM_TASK_SCRIPT_DIR=${EPMT_PREFIX}/epmt-install/slurm
+TaskProlog=${SLURM_TASK_SCRIPT_DIR}/slurm_task_prolog_epmt.sh
+TaskEpilog=${SLURM_TASK_SCRIPT_DIR}/slurm_task_epilog_epmt.sh
 ```
 
 If this fails, the `papiex` installation is likely either missing or
@@ -211,29 +228,35 @@ misconfigured in `settings.py`. The `-a` flag tells `epmt` to treat
 this run as an entire job.
 
 ### The Second Mode, Data Submission
+
 After collecting the data, jobs (groups of processes) are imported into the
 database with the `submit` command. This command takes arguments in the form of
-directories or tar files that must contain a `job_metadata` file.   
+directories or tar files that must contain a `job_metadata` file.
 
 Normal operation is to submit one or more directories:
+
 ```bash
-$ epmt submit <dir1/> [...]
+epmt submit <dir1/> [...]
 ```
 
 One can also submit a list of compressed tar files:
+
 ```bash
-$ epmt submit <compressed_dir_file.*z> [...]
+epmt submit <compressed_dir_file.*z> [...]
 ```
 
 There is also a mode where the current environment is used to determine where to find the data.
+
 ```bash
-$ epmt submit
+epmt submit
 ```
 
 #### Manual Submission Example
+
 We can submit our previous job to the database defined in `settings.py` by
 running the `epmt submit` command with the directory returned by `stage` (found
 in the location set by `settings.py` `epmt_output_prefix`):
+
 ```bash
 $ epmt -v submit /tmp/epmt/1/
 INFO:epmt_cmds:submit_to_db(/tmp/epmt/1/,*-papiex-[0-9]*-[0-9]*.csv,False)
@@ -283,13 +306,17 @@ INFO:epmt_cmds:Committed job 1 to database: Job[u'1']
 ```
 
 #### Compressed Directory Submission Exmple
+
 This might happen at the end of the day via a cron job:
+
 ```bash
-$ epmt submit <dir>/*tgz
+epmt submit <dir>/*tgz
 ```
 
 #### Internal-batch Job Submission Example
+
 These commands could be part of every users job, or in the batch systems configurable preambles/postambles.
+
 ```bash
 $ cat my_job.sh
 #!/bin/bash
@@ -302,16 +329,19 @@ epmt submit
 ```
 
 The start/stop cycle can be removed with the `--auto` or `-a` flag, which performs start and stop for you:
+
 ```
-$ epmt -a run ./debug_the_world --outliers
-$ epmt submit
+epmt -a run ./debug_the_world --outliers
+epmt submit
 ```
 
 #### Data From Current Session Submission Example
-If not inside of a batch environment, `epmt` will *attempt to fake-and-bake a job id*. This is useful 
-when performing interactive runs. You may not be able to submit these jobs to a shared database due to 
-constraints on job ID uniqueness, sincet he session ID is not guaranteed to be unique across reboots, 
+
+If not inside of a batch environment, `epmt` will *attempt to fake-and-bake a job id*. This is useful
+when performing interactive runs. You may not be able to submit these jobs to a shared database due to
+constraints on job ID uniqueness, sincet he session ID is not guaranteed to be unique across reboots,
 much less other systems. However, this use case is perfectly acceptable when using a private database:
+
 ```bash
 $ epmt start
 WARNING:epmt_cmds:JOB_ID unset: Using session id 6948 as JOB_ID
@@ -323,8 +353,10 @@ $ epmt submit
 ```
 
 ### The Third Mode, Data Analysis and Visualization
+
 `epmt` uses an `IPython` notebook data analytics environment. Starting the
 Jupyter notebook is easy from the `epmt notebook` command:
+
 ```bash
 $ epmt notebook
 [I 15:39:24.236 NotebookApp] Serving notebooks from local directory: /home/chris/Documents/playground/MM/build/epmt
@@ -344,23 +376,28 @@ $ epmt notebook
 The notebook command supports passing parameters to jupyter, such as host IP
 for sharing access with machines on the local network, notebook token, and
 notebook password:
+
 ```bash
-$ epmt notebook -- --ip 0.0.0.0 --NotebookApp.token='thisisatoken' --NotebookApp.password='hereisa$upersecurepassword'
+epmt notebook -- --ip 0.0.0.0 --NotebookApp.token='thisisatoken' --NotebookApp.password='hereisa$upersecurepassword'
 ```
 
 ## Debugging
+
 `epmt` can be passed both `-n` (dry-run) and `-v` (verbosity) to help
 with debugging. Add more `-v` flags to increase verbosity level (`-vvv`).
+
 ```bash
-$ epmt -v start
+epmt -v start
 ```
 
 Or to attempt a submit without touching the database:
+
 ```bash
-$ epmt -vv submit -n /dir/to/jobdata
+epmt -vv submit -n /dir/to/jobdata
 ```
 
 Also, one can decode and dump the job_metadata file in a dir or compressed dir.
+
 ```bash
 $ epmt dump ~/Downloads/yrs05-25.20190221/CM4_piControl_C_atmos_00050101.papiex.gfdl.19712961.tgz 
 exp_component           atmos                                                   
@@ -386,11 +423,13 @@ job_pl_username         Foo.Bar
 ```
 
 ## Performance Metrics Data Dictionary
+
 `epmt` collects data both from the job runtime and the applications run in that
 environment. See the `src/epmt/models/` directory for fixed data stored related to each
 object. Metric data is stored differently; the data collector's data dictionary
 can be found in papiex-oss/README.md. At the time of this writing, it looked
 like this:
+
 | Key                        | Scope    | Description                                             |
 |--------------------------- |--------- |-------------------------------------------------------- |
 | 1. tags                    | Process  | User specified tags for this executable                 |
@@ -443,35 +482,41 @@ like this:
 | *                          | Thread   | PAPI metrics                                            |
 
 ### Addition of new metrics
+
 Additional metrics can be configured either in two ways:
-* The `papiex_options` string in `settings.py` if using `epmt run` or `epmt source`
-* The value of the `PAPIEX_OPTIONS` environment variable if using `LD_PRELOAD` directly.
+- The `papiex_options` string in `settings.py` if using `epmt run` or `epmt source`
+- The value of the `PAPIEX_OPTIONS` environment variable if using `LD_PRELOAD` directly.
 
 The value of these should be a comma separated string:
+
 ```bash
-$ export PAPIEX_OPTIONS="PERF_COUNT_SW_CPU_CLOCK,PAPI_CYCLES"
+export PAPIEX_OPTIONS="PERF_COUNT_SW_CPU_CLOCK,PAPI_CYCLES"
 ```
 
 To list available and functioning metrics, use one of the included command line tools:
- * `papi_avail` and `papi_native_avail` (via `papi`)
- * `check_events` and `showevtinfo` (via `libpfm`)
- * `perf list` (`linux`)
+
+- `papi_avail` and `papi_native_avail` (via `papi`)
+- `check_events` and `showevtinfo` (via `libpfm`)
+- `perf list` (`linux`)
 
 The `PERF_COUNT_SW_*` events should work on any system that has the proper
 `/proc/sys/kernel/perf_event_paranoid` setting.
 
 One should verify the functionality of the metric using the `papi_command_line` tool:
+
 ```bash
-$ papi_command_line PERF_COUNT_SW_CPU_CLOCK
-$ papi_command_line CYCLES
+papi_command_line PERF_COUNT_SW_CPU_CLOCK
+papi_command_line CYCLES
 ```
 
 ## CI/CD Workflows and Caching
+
 `epmt`'s GitHub Actions CI is split into focused workflows that use
 `actions/cache` to avoid rebuilding expensive artifacts on every pull request
 run.
 
 ### Workflows
+
 | Workflow | Trigger | Purpose |
 |---|---|---|
 | `docker_build_test.yml` | `push` to `main`, `pull_request` | Full build + test pipeline; restores cached artifacts before building |
@@ -480,6 +525,7 @@ run.
 | `build_and_test_epmt.yml` | `push` to `main`, `pull_request` | Source-tree unit tests (no Docker) |
 
 ### Caches and Invalidation
+
 Each cache step is keyed on its build prerequisites — analogous to how `make`
 uses file modification times to decide whether a target must be rebuilt. Changing
 a prerequisite produces a new cache key, causing a cache miss and forcing a fresh
@@ -494,22 +540,25 @@ build.
 | `epmt-dash` UI directory | `EPMT_DASH_SRC_BRANCH` | Change `EPMT_DASH_SRC_BRANCH`<br/>in `docker_build_test.yml`,<br/>`weekly_tarball_build.yml`,<br/>and `Makefile` | Branch-name based; new commits<br/>to same branch don't invalidate —<br/>weekly workflow bounds staleness<br/>to ≤1 week |
 
 ### Cache Invalidation Gap vs. `make`
+
 `make` detects prerequisite changes via file modification times regardless of
 version numbers. The GitHub Actions caches above use version strings or content
 hashes instead, so:
-* `epmt-build` is fully `make`-like — changing the Dockerfile or
+- `epmt-build` is fully `make`-like — changing the Dockerfile or
   requirements file immediately produces a different hash and forces a rebuild.
-* `papiex` and `slurm-cluster` require a deliberate version bump in the
+- `papiex` and `slurm-cluster` require a deliberate version bump in the
   workflow env block to trigger a rebuild. Remote source changes without a
   version bump go undetected until the next weekly build.
-* `epmt-dash` requires either a branch rename or waiting for the weekly
+- `epmt-dash` requires either a branch rename or waiting for the weekly
   build. The weekly `weekly_tarball_build.yml` workflow always fetches fresh
   content, bounding maximum staleness to one week.
 
 ### Forcing a Rebuild
+
 To force any individual cache to rebuild, bump the relevant version variable
 in the `env:` section of both the weekly workflow and `docker_build_test.yml`,
 and update the `Makefile` to match:
+
 ```yaml
 # docker_build_test.yml  (and weekly_tarball_build.yml)
 env:
@@ -523,6 +572,7 @@ The `epmt-build` cache is invalidated automatically whenever
 modified — no manual version bump is needed.
 
 ### Weekly Pre-warming
+
 `slurm_image_build.yml` and `weekly_tarball_build.yml` run every Monday
 morning to pre-warm their respective caches before the working week begins.
 `docker_build_test.yml` then restores those caches on pull request and push
@@ -533,10 +583,12 @@ artifact inline so the pipeline never silently skips a required build step.
 ## Troubleshooting
 
 ### Virtual Environments
+
 Note that often in virtual environments, hardware counters are not often available in the VM.
 
 ### Common Error Messages
 
 #### `version GLIBC_x.xx not found`
+
 The collector library may not have been built for the current environment or the release
 OS version does not match the current environment.

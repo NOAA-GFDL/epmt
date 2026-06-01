@@ -1,10 +1,10 @@
 # EPMT Release Quickstart
 
 ## Download
-You should have been provided link to the release tar EPMT-2.1.0.tgz 
+
+You should have been provided link to the release tar EPMT-2.1.0.tgz
 as well as an installer script (epmt-installer). Download both of
 them and place them in a folder.
-
 
 ## Install
 
@@ -40,8 +40,6 @@ Once the installer finishes successfully, you should follow the printed
 instructions and update your shell startup file. Then logout and login
 to update your PATH.
 
-
-
 ### Manual Install
 
 It is recommended that you do the automatic install using
@@ -50,10 +48,10 @@ manual install instructions:
 
 Untar the release tar (EPMT-2.1.0.tgz), you will get three files
 
- - papiex-epmt-x.y.z.tgz 
- - epmt-x.y.z.tgz        
- - test-epmt-x.y.z.tgz   
- 
+- papiex-epmt-x.y.z.tgz
+- epmt-x.y.z.tgz
+- test-epmt-x.y.z.tgz
+
 Then set the environment variables below:
 
 ```
@@ -97,19 +95,22 @@ $EPMT_PREFIX/epmt-install/epmt/epmt check
 ```
 
 If everything looks good, add `epmt` to your path. For ***Bash***:
+
 ```
 export PATH=$EPMT_PREFIX/epmt-install/epmt:$PATH
 ```
+
 or for ***C shell***:
+
 ```
 setenv PATH $EPMT_PREFIX/epmt-install/epmt:$PATH
 ```
+
 ## Usage
 
 ### Manual Usage
 
 See examples in the `$EPMT_PREFIX/epmt-install/examples/` directory.
-
 
 ```
 $ cat epmt-example.csh
@@ -133,7 +134,7 @@ $ sbatch epmt-example.csh
 
 ### Automatic instrumentation using SLURM
 
-Using configured prolog and epilogs with SLURM tasks allows one to skip job instrumentation entirely, with the exception of job tags (***EPMT_JOB_TAGS***) and process tags (***PAPIEX_TAGS***). These are configured in `slurm.conf` for jobs submitted with `sbatch` but they can be tested on the command line when using `srun`. 
+Using configured prolog and epilogs with SLURM tasks allows one to skip job instrumentation entirely, with the exception of job tags (***EPMT_JOB_TAGS***) and process tags (***PAPIEX_TAGS***). These are configured in `slurm.conf` for jobs submitted with `sbatch` but they can be tested on the command line when using `srun`.
 
 The above Csh job is equivalent to the below sequence using a prolog and epilog, ***with the exception of the trailing submit statement.***
 
@@ -163,25 +164,25 @@ Saving your existing `settings.py` and using an in-memory sqlite
 template for the tests:
 
 ```
-$ mv $EPMT_PREFIX/epmt-install/epmt/settings.py $EPMT_PREFIX/epmt-install/epmt/settings.py.backup
-$ cp $EPMT_PREFIX/epmt-install/preset_settings/settings_sqlite_inmem_sqlalchemy.py $EPMT_PREFIX/epmt-install/epmt/settings.py
+mv $EPMT_PREFIX/epmt-install/epmt/settings.py $EPMT_PREFIX/epmt-install/epmt/settings.py.backup
+cp $EPMT_PREFIX/epmt-install/preset_settings/settings_sqlite_inmem_sqlalchemy.py $EPMT_PREFIX/epmt-install/epmt/settings.py
 ```
 
 ### Run integration tests
 
 ```
-$ cd $EPMT_PREFIX/epmt-install/epmt
-$ pytest -x -vv test/integration/test_integration_*.py
+cd $EPMT_PREFIX/epmt-install/epmt
+pytest -x -vv test/integration/test_integration_*.py
 ```
 
 ### Run unit tests
 
 ```
-$ pytest src/epmt/test/
+pytest src/epmt/test/
 ```
 
 Tip: Don't forget to restore your `settings.py` file after the tests!
 
 ```
-$ mv $EPMT_PREFIX/epmt-install/epmt/settings.py.backup $EPMT_PREFIX/epmt-install/epmt/settings.py
+mv $EPMT_PREFIX/epmt-install/epmt/settings.py.backup $EPMT_PREFIX/epmt-install/epmt/settings.py
 ```

@@ -1,7 +1,7 @@
 To reproduce this example, you will need the following test data:
 
 ```
-$ epmt submit test/data/outliers_nb/*.tgz
+epmt submit test/data/outliers_nb/*.tgz
 ```
 
 You run the CLI by typing `epmt explore` and passing it an
@@ -114,7 +114,7 @@ duration by time segment:
 
 The output is self-explanatory. The outliers are marked with asterisks,
 the more the asterisks the greater the outlier. We use multimode score
-using a number of univariate classifiers. 
+using a number of univariate classifiers.
 
 You will notice that the first four time-segments take a bulk of the time.
 That's an artifact of the fact that we loaded all the jobs of the first
@@ -231,5 +231,3 @@ cpu_time by time segment:
 ```
 
 The `cpu_time` data suggests that the `18590101` took less cpu cycles. Yet it took longer to finish. One hypothesis that could explain the seeming contradiction is if the node(s) where the `18590101` were time-sharing with other concurrently running jobs.
-
-

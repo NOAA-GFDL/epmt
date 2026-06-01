@@ -4,14 +4,16 @@ Migrations are supported for SQLAlchemy at present. We use
 alembic for migrations.
 
 ## Requirements
- - SQLAlchemy ORM
- - Preferably a database such as Postgres that supports `ALTER`
-   SQLite works, but some migrations will give pain as SQLite 
+
+- SQLAlchemy ORM
+- Preferably a database such as Postgres that supports `ALTER`
+   SQLite works, but some migrations will give pain as SQLite
    doesn't support `ALTER`.
- - Persistent database such as in file. We haven't tested
+- Persistent database such as in file. We haven't tested
    in-memory configurations.
 
 # Initial DB setup
+
 We have used alembic's auto-generate feature to create a baseline
 migration using the model definitions in `orm/sqlalchemy/models.py`.
 
@@ -66,6 +68,7 @@ INFO  [alembic.runtime.migration] Running upgrade  -> b1cf8c168491, add admin co
 ```
 
 You can verify the column has been added to the database:
+
 ```
 $ echo ".schema users" | sqlite3 db.sqlite
 CREATE TABLE "users" (
@@ -85,6 +88,7 @@ CREATE TABLE "users" (
 This only adds the column to the database. If you want to the column to be
 accessible in the object model, you WILL need to manually update the model
 definition in `orm/sqlalchemy/models.py`, and add something like:
+
 ```
 class User(db.Model):
     ...
@@ -94,6 +98,7 @@ class User(db.Model):
 ### To remove a migration
 
 To remove the latest migration, simply do:
+
 ```
 $ alembic downgrade -1
 INFO  [alembic.runtime.migration] Using sqlite:///db.sqlite
@@ -103,6 +108,7 @@ INFO  [alembic.runtime.migration] Running downgrade b1cf8c168491 -> , add admin 
 ```
 
 You can verify the column has been removed:
+
 ```
 $ echo ".schema users" | sqlite3 db.sqlite
 CREATE TABLE "users" (
@@ -117,10 +123,12 @@ CREATE TABLE "users" (
 ```
 
 To remove all migrations, do:
+
 ```
-$ alembic downgrade base
+alembic downgrade base
 ```
 
 ### References
- - https://medium.com/the-andela-way/alembic-how-to-add-a-non-nullable-field-to-a-populated-table-998554003134
- - https://alembic.sqlalchemy.org/en/latest/batch.html
+
+- <https://medium.com/the-andela-way/alembic-how-to-add-a-non-nullable-field-to-a-populated-table-998554003134>
+- <https://alembic.sqlalchemy.org/en/latest/batch.html>
