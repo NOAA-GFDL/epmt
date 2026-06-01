@@ -4,9 +4,6 @@ database submission, analysis, metrics, debugging, and CI/CD infrastructure.
 
 For installation and quick-start instructions, see [README.md](./README.md).
 
-
-
-
 ## Table of Contents
 
 - [Configuration](#configuration)
@@ -36,9 +33,6 @@ For installation and quick-start instructions, see [README.md](./README.md).
   - [Common Error Messages](#common-error-messages)
     - [`version GLIBC_x.xx not found`](#version-glibc_xxx-not-found)
 
-
-
-
 ## Configuration
 `epmt` houses default settings (`epmt_default_settings.py`), user settings (`settings.py`), 
 and a submodule (`epmt_settings.py`) that appends the user settings to the end of the 
@@ -60,8 +54,6 @@ $ cat src/epmt/epmt_default_settings.py
   ...
 ```
 
-
-
 ### Environment Variables
 The following variables replace, at run-time, the values in the `db_params` dictionary found in `settings.py`:
 ```
@@ -72,8 +64,6 @@ EPMT_DB_HOST
 EPMT_DB_DBNAME
 EPMT_DB_FILENAME
 ```
-
-
 
 ### Getting Current Configuration Information
 You can examine all current settings by passing the `--help` option:
@@ -104,9 +94,6 @@ epmt_output_prefix      /tmp/epmt/
 environment variables (overrides settings.py):
 ```
 
-
-
-
 ## The Three Modes of `epmt`
 There are three modes to `epmt` usage; data collection, data submission, and data analysis. Each
 has different dependencies:
@@ -117,11 +104,7 @@ libraries for process tagging
 * **Analysis** requires `jupyter`, `iPython`, and additionally [`epmt-dash`](https://github.com/noaa-gfdl/epmt-dash) 
 and `plotly` for dashboard-style analytics
 
-
-
 ### The First Mode, Data Collection
-
-
 
 #### Collecting Performance Data
 Assuming you have `epmt` installed and in your path, let's modify a job file:
@@ -227,8 +210,6 @@ If this fails, the `papiex` installation is likely either missing or
 misconfigured in `settings.py`. The `-a` flag tells `epmt` to treat
 this run as an entire job.
 
-
-
 ### The Second Mode, Data Submission
 After collecting the data, jobs (groups of processes) are imported into the
 database with the `submit` command. This command takes arguments in the form of
@@ -248,7 +229,6 @@ There is also a mode where the current environment is used to determine where to
 ```bash
 $ epmt submit
 ```
-
 
 #### Manual Submission Example
 We can submit our previous job to the database defined in `settings.py` by
@@ -302,13 +282,11 @@ INFO:epmt_job:Staged import took 0:00:00.189151, 5.286781 processes per second
 INFO:epmt_cmds:Committed job 1 to database: Job[u'1']
 ```
 
-
 #### Compressed Directory Submission Exmple
 This might happen at the end of the day via a cron job:
 ```bash
 $ epmt submit <dir>/*tgz
 ```
-
 
 #### Internal-batch Job Submission Example
 These commands could be part of every users job, or in the batch systems configurable preambles/postambles.
@@ -329,7 +307,6 @@ $ epmt -a run ./debug_the_world --outliers
 $ epmt submit
 ```
 
-
 #### Data From Current Session Submission Example
 If not inside of a batch environment, `epmt` will *attempt to fake-and-bake a job id*. This is useful 
 when performing interactive runs. You may not be able to submit these jobs to a shared database due to 
@@ -344,8 +321,6 @@ WARNING:epmt_cmds:JOB_USER unset: Using username phil as JOB_USE$ epmt run ./deb
 $ epmt stop
 $ epmt submit
 ```
-
-
 
 ### The Third Mode, Data Analysis and Visualization
 `epmt` uses an `IPython` notebook data analytics environment. Starting the
@@ -372,9 +347,6 @@ notebook password:
 ```bash
 $ epmt notebook -- --ip 0.0.0.0 --NotebookApp.token='thisisatoken' --NotebookApp.password='hereisa$upersecurepassword'
 ```
-
-
-
 
 ## Debugging
 `epmt` can be passed both `-n` (dry-run) and `-v` (verbosity) to help
@@ -413,67 +385,62 @@ job_pl_submit           2019-02-20 19:58:41.274463
 job_pl_username         Foo.Bar                                        
 ```
 
-
-
-
 ## Performance Metrics Data Dictionary
 `epmt` collects data both from the job runtime and the applications run in that
 environment. See the `src/epmt/models/` directory for fixed data stored related to each
 object. Metric data is stored differently; the data collector's data dictionary
 can be found in papiex-oss/README.md. At the time of this writing, it looked
 like this:
-| Key                       	| Scope   	| Description                                            	|
-|---------------------------	|---------	|--------------------------------------------------------	|
-| 1. tags                   	| Process 	| User specified tags for this executable                	|
-| 2. hostname               	| Process 	| hostname                                               	|
-| 3. exename                	| Process 	| Name of the application, usually argv[0]               	|
-| 4. path                   	| Process 	| Path to the application                                	|
-| 5. args                   	| Process 	| All arguments to exe excluding argv[0]                 	|
-| 6. exitcode               	| Process 	| Exit code                                              	|
-| 7. exitsignal             	| Process 	| Exited due to a signal                                 	|
-| 8. pid                    	| Process 	| Process id                                              |
-| 9. generation             	| Process 	| Incremented after every exec() or PID wrap             	|
-| 10. ppid                  	| Process 	| Parent process id                                      	|
-| 11. pgid                  	| Process 	| Process group id                                       	|
-| 12. sid                   	| Process 	| Process session id                                     	|
-| 13. numtids               	| Process 	| Number of threads caught by instrumentation            	|
-| 14. numranks              	| Process 	| Number of MPI ranks detected                           	|
-| 15. tid                   	| Process 	| Thread id                                              	|
-| 16. mpirank               	| Thread  	| MPI rank                                               	|
-| 17. start                 	| Process 	| Microsecond timestamp at start                         	|
-| 18. end                   	| Process 	| Microsecond timestamp at end                           	|
-| 19. usertime              	| Thread  	| Microsecond user time                                  	|
-| 20. systemtime            	| Thread  	| Microsecond system time                                	|
-| 21. rssmax                	| Thread  	| Kb max resident set size                               	|
-| 22. minflt                	| Thread  	| Minor faults (TLB misses/new page frames)              	|
-| 23. majflt                	| Thread  	| Major page faults (requiring I/O)                      	|
-| 24. inblock               	| Thread  	| 512B blocks read from I/O                              	|
-| 25. outblock              	| Thread  	| 512B blocks written to I/O                             	|
-| 26. vol_ctxsw             	| Thread  	| Voluntary context switches (yields)                    	|
-| 27. invol_ctxsw           	| Thread  	| Involuntary context switches (preemptions)             	|
-| 28. cminflt               	| Process 	| minflt (20) for all wait()ed children                  	|
-| 29. cmajflt               	| Thread  	| majflt (21) for all wait()ed children                  	|
-| 30. cutime                	| Process 	| utime (17) for all wait()ed children                   	|
-| 31. cstime                	| Thread  	| stime (18) for all wait()ed children                   	|
-| 32. num_threads           	| Process 	| Threads in process at finish                           	|
-| 33. starttime             	| Thread  	| Timestamp in jiffies after boot thread was started     	|
-| 34. processor             	| Thread  	| CPU this thread last ran on                            	|
-| 35. delayacct_blkio_time  	| Thread  	| Jiffies process blocked in D state on I/O device       	|
-| 36. guest_time            	| Thread  	| Jiffies running a virtual CPU for a guest OS           	|
-| 37. rchar                 	| Thread  	| Bytes read via syscall (maybe from cache not dev I/O)  	|
-| 38. wchar                 	| Thread  	| Bytes written via syscall (maybe to cache not dev I/O) 	|
-| 39. syscr                 	| Thread  	| Read syscalls                                          	|
-| 40. syscw                 	| Thread  	| Write syscalls                                         	|
-| 41. read_bytes            	| Thread  	| Bytes read from I/O device                             	|
-| 42. write_bytes           	| Thread  	| Bytes written to I/O device                            	|
-| 43. cancelled_write_bytes 	| Thread  	| Bytes discarded by truncation                          	|
-| 44. time_oncpu            	| Thread  	| Nanoseconds spent running                              	|
-| 45. time_waiting          	| Thread  	| Nanoseconds runnable but waiting                       	|
-| 46. timeslices            	| Thread  	| Number of run periods on CPU                           	|
-| 47. rdtsc_duration        	| Thread  	| If PAPI, real time cycle duration of thread            	|
-| *                         	| Thread  	| PAPI metrics                                           	|
-
-
+| Key                        | Scope    | Description                                             |
+|--------------------------- |--------- |-------------------------------------------------------- |
+| 1. tags                    | Process  | User specified tags for this executable                 |
+| 2. hostname                | Process  | hostname                                                |
+| 3. exename                 | Process  | Name of the application, usually argv[0]                |
+| 4. path                    | Process  | Path to the application                                 |
+| 5. args                    | Process  | All arguments to exe excluding argv[0]                  |
+| 6. exitcode                | Process  | Exit code                                               |
+| 7. exitsignal              | Process  | Exited due to a signal                                  |
+| 8. pid                     | Process  | Process id                                              |
+| 9. generation              | Process  | Incremented after every exec() or PID wrap              |
+| 10. ppid                   | Process  | Parent process id                                       |
+| 11. pgid                   | Process  | Process group id                                        |
+| 12. sid                    | Process  | Process session id                                      |
+| 13. numtids                | Process  | Number of threads caught by instrumentation             |
+| 14. numranks               | Process  | Number of MPI ranks detected                            |
+| 15. tid                    | Process  | Thread id                                               |
+| 16. mpirank                | Thread   | MPI rank                                                |
+| 17. start                  | Process  | Microsecond timestamp at start                          |
+| 18. end                    | Process  | Microsecond timestamp at end                            |
+| 19. usertime               | Thread   | Microsecond user time                                   |
+| 20. systemtime             | Thread   | Microsecond system time                                 |
+| 21. rssmax                 | Thread   | Kb max resident set size                                |
+| 22. minflt                 | Thread   | Minor faults (TLB misses/new page frames)               |
+| 23. majflt                 | Thread   | Major page faults (requiring I/O)                       |
+| 24. inblock                | Thread   | 512B blocks read from I/O                               |
+| 25. outblock               | Thread   | 512B blocks written to I/O                              |
+| 26. vol_ctxsw              | Thread   | Voluntary context switches (yields)                     |
+| 27. invol_ctxsw            | Thread   | Involuntary context switches (preemptions)              |
+| 28. cminflt                | Process  | minflt (20) for all wait()ed children                   |
+| 29. cmajflt                | Thread   | majflt (21) for all wait()ed children                   |
+| 30. cutime                 | Process  | utime (17) for all wait()ed children                    |
+| 31. cstime                 | Thread   | stime (18) for all wait()ed children                    |
+| 32. num_threads            | Process  | Threads in process at finish                            |
+| 33. starttime              | Thread   | Timestamp in jiffies after boot thread was started      |
+| 34. processor              | Thread   | CPU this thread last ran on                             |
+| 35. delayacct_blkio_time   | Thread   | Jiffies process blocked in D state on I/O device        |
+| 36. guest_time             | Thread   | Jiffies running a virtual CPU for a guest OS            |
+| 37. rchar                  | Thread   | Bytes read via syscall (maybe from cache not dev I/O)   |
+| 38. wchar                  | Thread   | Bytes written via syscall (maybe to cache not dev I/O)  |
+| 39. syscr                  | Thread   | Read syscalls                                           |
+| 40. syscw                  | Thread   | Write syscalls                                          |
+| 41. read_bytes             | Thread   | Bytes read from I/O device                              |
+| 42. write_bytes            | Thread   | Bytes written to I/O device                             |
+| 43. cancelled_write_bytes  | Thread   | Bytes discarded by truncation                           |
+| 44. time_oncpu             | Thread   | Nanoseconds spent running                               |
+| 45. time_waiting           | Thread   | Nanoseconds runnable but waiting                        |
+| 46. timeslices             | Thread   | Number of run periods on CPU                            |
+| 47. rdtsc_duration         | Thread   | If PAPI, real time cycle duration of thread             |
+| *                          | Thread   | PAPI metrics                                            |
 
 ### Addition of new metrics
 Additional metrics can be configured either in two ways:
@@ -499,15 +466,10 @@ $ papi_command_line PERF_COUNT_SW_CPU_CLOCK
 $ papi_command_line CYCLES
 ```
 
-
-
-
 ## CI/CD Workflows and Caching
 `epmt`'s GitHub Actions CI is split into focused workflows that use
 `actions/cache` to avoid rebuilding expensive artifacts on every pull request
 run.
-
-
 
 ### Workflows
 | Workflow | Trigger | Purpose |
@@ -516,8 +478,6 @@ run.
 | `slurm_image_build.yml` | Weekly (Mon 06:00 UTC), `workflow_dispatch` | Builds the `slurm-cluster` Docker image from source and saves it to cache |
 | `weekly_tarball_build.yml` | Weekly (Mon 06:00 UTC), `workflow_dispatch` | Compiles `papiex` and downloads `epmt-dash`, then saves both to cache |
 | `build_and_test_epmt.yml` | `push` to `main`, `pull_request` | Source-tree unit tests (no Docker) |
-
-
 
 ### Caches and Invalidation
 Each cache step is keyed on its build prerequisites — analogous to how `make`
@@ -533,8 +493,6 @@ build.
 | `slurm-cluster` Docker image | `IMAGE_TAG` +<br/>`SLURM_TAG` +<br/>`SLURM_CLUSTER_TAG` | Bump any of the three version<br/>variables in `docker_build_test.yml`<br/>and `slurm_image_build.yml` | Version-string based; upstream<br/>tag mutations without a version<br/>bump won't invalidate |
 | `epmt-dash` UI directory | `EPMT_DASH_SRC_BRANCH` | Change `EPMT_DASH_SRC_BRANCH`<br/>in `docker_build_test.yml`,<br/>`weekly_tarball_build.yml`,<br/>and `Makefile` | Branch-name based; new commits<br/>to same branch don't invalidate —<br/>weekly workflow bounds staleness<br/>to ≤1 week |
 
-
-
 ### Cache Invalidation Gap vs. `make`
 `make` detects prerequisite changes via file modification times regardless of
 version numbers. The GitHub Actions caches above use version strings or content
@@ -547,8 +505,6 @@ hashes instead, so:
 * `epmt-dash` requires either a branch rename or waiting for the weekly
   build. The weekly `weekly_tarball_build.yml` workflow always fetches fresh
   content, bounding maximum staleness to one week.
-
-
 
 ### Forcing a Rebuild
 To force any individual cache to rebuild, bump the relevant version variable
@@ -566,8 +522,6 @@ The `epmt-build` cache is invalidated automatically whenever
 `Dockerfiles/Dockerfile.rocky-8-epmt-build` or `requirements.txt.py3` is
 modified — no manual version bump is needed.
 
-
-
 ### Weekly Pre-warming
 `slurm_image_build.yml` and `weekly_tarball_build.yml` run every Monday
 morning to pre-warm their respective caches before the working week begins.
@@ -576,17 +530,10 @@ runs, skipping the expensive Docker compile steps. If the cache is missing (firs
 run, eviction, or new key), `docker_build_test.yml` falls back to building the
 artifact inline so the pipeline never silently skips a required build step.
 
-
-
-
 ## Troubleshooting
 
-
-
-### Virtual Environments:
+### Virtual Environments
 Note that often in virtual environments, hardware counters are not often available in the VM.
-
-
 
 ### Common Error Messages
 
