@@ -27,7 +27,7 @@ def setUpModule():
     do_cleanup()
     datafiles = f'{install_root}/test/data/query/*.tgz'
     #    print('setUpModdule: importing {0}'.format(datafiles))
-    with capture() as (out, err):
+    with capture() as (_out, _err):
         epmt_submit(sorted(glob(datafiles)), dry_run=False)
     # only use modz as the tests are written that way
     settings.univariate_classifiers = ['modified_z_score']
@@ -724,7 +724,7 @@ class QueryAPI(unittest.TestCase):
         # jobs = eq.get_jobs(JOBS_LIST, fmt='orm')
         # self.assertEqual(jobs.count(), 3)
         model_name = 'test_model'
-        with capture() as (out, err):
+        with capture() as (_out, err):
             r = eq.create_refmodel(jobs, tag='model_name:' + model_name)
         self.assertIn('WARNING: The jobs do not share identical tag values', err.getvalue())
         self.assertEqual(r['tags'], {'model_name': model_name})
@@ -761,7 +761,7 @@ class QueryAPI(unittest.TestCase):
         n = eq.delete_refmodels(r['id'])
         self.assertEqual(n, 1, 'wrong ref_model delete count')
         # wildcard features
-        with capture() as (out, err):
+        with capture() as (_out, err):
             r = eq.create_refmodel(jobs, tag='model_name:' + model_name, features='*')
         all_features = {
             'duration',

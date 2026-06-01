@@ -69,7 +69,7 @@ class ExploreAPI(unittest.TestCase):
         self.assertEqual(jobs, ['685000'])
 
     def test_missing_segments(self):
-        with capture() as (out, err):
+        with capture() as (_out, _err):
             d = exp.find_missing_time_segments(
                 'ESM4_historical_D151', jobs=[
                     '685000', '685003'], time_segments=range(

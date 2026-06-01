@@ -48,8 +48,8 @@ def setUpModule():
     settings.db_params = {'url': 'sqlite:///:memory:', 'echo': False}
     setup_db(settings)
     do_cleanup()
-    datafiles = '{}/test/data/misc/685000.tgz'.format(install_root)
-    print('setUpModule (test_dbcare): submitting to db {0}'.format(datafiles))
+    datafiles = f'{install_root}/test/data/misc/685000.tgz'
+    print(f'setUpModule (test_dbcare): submitting to db {datafiles}')
     settings.post_process_job_on_ingest = True
     with capture() as (_out, _err):
         epmt_submit(glob(datafiles), dry_run=False)
@@ -153,7 +153,7 @@ class TestRetireJobs(unittest.TestCase):
         self.assertNotIn('685000', jobs_after)
 
         # re-submit the job for subsequent tests
-        datafiles = '{}/test/data/misc/685000.tgz'.format(install_root)
+        datafiles = f'{install_root}/test/data/misc/685000.tgz'
         settings.post_process_job_on_ingest = True
         with capture() as (_out, _err):
             epmt_submit(glob(datafiles), dry_run=False)

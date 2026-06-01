@@ -75,7 +75,7 @@ class TestHelpApi(unittest.TestCase):
 
         # epmt_cmd_help imports stderr at module level, so we patch it directly
         with patch('epmt.epmt_cmd_help.stderr', new_callable=StringIO) as mock_err:
-            with capture() as (out, _err):
+            with capture() as (_out, _err):
                 epmt_help_api(funcs=['nonexistent_function_xyz'])
 
         err_output = mock_err.getvalue()
