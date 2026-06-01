@@ -6,17 +6,19 @@ see the migrations guide for more information. long story short, you'll need to 
 migration script and then run 'alembic upgrade head'
 """
 
-from .general import *
 from datetime import datetime
-from sqlalchemy.ext.declarative import DeclarativeMeta
-from sqlalchemy import Table, Column, String, Integer, ForeignKey, Boolean, DateTime, Float, JSON
-from sqlalchemy.orm import backref, relationship
+
 from six import with_metaclass
+from sqlalchemy import Table, Column, String, Integer, ForeignKey, Boolean, DateTime, Float, JSON
+from sqlalchemy.ext.declarative import DeclarativeMeta
+from sqlalchemy.orm import backref, relationship
 
 import epmt.epmt_settings as settings
+from .general import Base, orm_get
 
+# required for flexibility to use both sqlite3 and postgres
 if 'postgres' in settings.db_params.get('url', ''):
-    from sqlalchemy.dialects.postgresql import JSONB as JSON
+    from sqlalchemy.dialects.postgresql import JSONB as JSON # pylint: disable=ungrouped-imports,shadowed-import
 
 # Control what gets exported when using "from .models import *"
 __all__ = [
@@ -315,4 +317,3 @@ class Process(with_metaclass(CommonMeta, Base)):
             return f"Process[{self.id}]"
         except:
             return "Process[<detached>]"
-

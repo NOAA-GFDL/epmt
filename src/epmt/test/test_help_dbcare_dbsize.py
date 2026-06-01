@@ -7,8 +7,7 @@ Covers previously untested lines in:
   - epmt/orm/__init__.py (orm_db_size on non-postgres provider)
 """
 import unittest
-from unittest.mock import patch, MagicMock
-from io import StringIO
+from unittest.mock import patch
 
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.dialects.postgresql import JSONB
@@ -48,7 +47,7 @@ class TestHelpApi(unittest.TestCase):
         """epmt_help_api() with no funcs should print module docs and index."""
         from epmt.epmt_cmd_help import epmt_help_api
 
-        with capture() as (out, err):
+        with capture() as (out, _err):
             epmt_help_api(funcs=[])
 
         output = out.getvalue()
@@ -61,7 +60,7 @@ class TestHelpApi(unittest.TestCase):
         """epmt_help_api(['get_jobs']) should print function signature and docstring."""
         from epmt.epmt_cmd_help import epmt_help_api
 
-        with capture() as (out, err):
+        with capture() as (out, _err):
             epmt_help_api(funcs=['get_jobs'])
 
         output = out.getvalue()
@@ -72,12 +71,11 @@ class TestHelpApi(unittest.TestCase):
     def test_help_api_with_unknown_function(self):
         """epmt_help_api with unknown function prints error to stderr."""
         from epmt.epmt_cmd_help import epmt_help_api
-        import sys
         from io import StringIO
 
         # epmt_cmd_help imports stderr at module level, so we patch it directly
         with patch('epmt.epmt_cmd_help.stderr', new_callable=StringIO) as mock_err:
-            with capture() as (out, err):
+            with capture() as (_out, _err):
                 epmt_help_api(funcs=['nonexistent_function_xyz'])
 
         err_output = mock_err.getvalue()
@@ -90,7 +88,6 @@ class TestDbcarePostProcess(unittest.TestCase):
     def test_dbcare_post_process_zero_unprocessed(self):
         """dbcare with post_process=True should raise ValueError when 0 unprocessed jobs."""
         from epmt.epmt_cmd_dbcare import epmt_dbcare
-        from epmt.orm.sqlalchemy import orm_raw_sql
 
         # Mock orm_raw_sql to return 0 unprocessed jobs
         with patch('epmt.epmt_cmd_dbcare.orm_raw_sql') as mock_sql:

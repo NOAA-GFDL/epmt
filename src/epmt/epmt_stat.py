@@ -11,11 +11,12 @@ stateless mathematical functions. No database connectivity is assumed
 for the functions in this module.
 """
 
-import pandas as pd
-import numpy as np
 import operator
 from logging import getLogger
 from numbers import Number
+
+import numpy as np
+import pandas as pd
 
 import epmt.epmt_settings as settings
 from epmt.epmtlib import logfn
@@ -56,7 +57,7 @@ def partition_classifiers_uv_mv(classifiers):
     Partition classifiers into two disjoint sets of univariate and multivariate::Statistics
 
     """
-    mv_set = set([c for c in classifiers if is_classifier_mv(c)])
+    mv_set = {c for c in classifiers if is_classifier_mv(c)}
     uv_set = set(classifiers) - mv_set
     return (uv_set, mv_set)
 
@@ -258,7 +259,7 @@ def outliers_z_score(ys, threshold=thresholds['z_score']):
     return (np.abs(scores) > threshold) + 0
 
 
-def outliers_uv(ys, methods=[outliers_iqr, outliers_z_score, outliers_modified_z_score]):
+def outliers_uv(ys, methods=None):
     '''
     Detects outliers in a vector using one or more univariate classifiers::Statistics
 
@@ -274,6 +275,8 @@ def outliers_uv(ys, methods=[outliers_iqr, outliers_z_score, outliers_modified_z
              value. So, use the outliers_* wrappers instead of methods
              such as iqr, z_score, modified_z_score
     '''
+    if methods is None:
+        methods = [outliers_iqr, outliers_z_score, outliers_modified_z_score]
     ys = np.array(ys)
     logger.debug('input vector: %s', ys)
     out_vec = np.zeros_like(ys)
@@ -340,7 +343,7 @@ def mvod_classifiers(contamination=0.1, warnopts='ignore'):
     return classifiers
 
 
-def mvod_scores(X=None, classifiers=[], warnopts='ignore'):
+def mvod_scores(X=None, classifiers=None, warnopts='ignore'):
     '''
     Perform outlier scoring using multivariate classifiers::Statistics
 
@@ -380,6 +383,8 @@ def mvod_scores(X=None, classifiers=[], warnopts='ignore'):
     {'Angle-based Outlier Detector (ABOD)': array(...),
      'K Nearest Neighbors (KNN)':  array(...) }
     '''
+    if classifiers is None:
+        classifiers = []
 
     if warnopts:
         from warnings import simplefilter
@@ -389,7 +394,7 @@ def mvod_scores(X=None, classifiers=[], warnopts='ignore'):
 
 
     # the contamination below, is *ONLY* used in the model
-    # for preditiction of outliers and used for random data
+    # for prediction of outliers and used for random data
     # The API is confusing and it might appear that we are using the
     # parameter for the classifier, in fact, its' only used for
     # prediction of the outlier. The scores are the *same* regardless
@@ -417,10 +422,9 @@ def mvod_scores(X=None, classifiers=[], warnopts='ignore'):
         while (X is None) or (X[-int(n_pts * contamination):-1].sum() == 0.0):
             X, Y = generate_data(n_train=n_pts, train_only=True, n_features=n_features, contamination=contamination)
         # store outliers and inliers in different numpy arrays
-        x_outliers, x_inliers = get_outliers_inliers(X, Y)
+        #_x_outliers, _x_inliers = get_outliers_inliers(X, Y) # orig line
+        _, _ = get_outliers_inliers(X, Y)
 
-        n_inliers = len(x_inliers)
-        n_outliers = len(x_outliers)
 
     (npts, ndim) = X.shape
     logger.debug('mvod: input length %s, dimensions %s', npts, ndim)
@@ -529,7 +533,7 @@ def mvod_scores_using_model(inp, model_inp, classifier, threshold=None):
     if not retval:
         logger.warning('could not score using %s', c_name)
         return False
-    (model_scores, model_score_max) = retval
+    (_model_scores, model_score_max) = retval
     model_score_max = model_score_max[c_name]
     logger.debug('MVOD %s (threshold=%s)', c_name, threshold)
     from math import isclose
@@ -575,10 +579,12 @@ def mvod_scores_using_model(inp, model_inp, classifier, threshold=None):
 # match the column labels of the ref dataframe. Similarly if inp is a
 # dataframe then it's column labels must match those of ref and in the
 # same order.
-def rca(ref, inp, features, methods=[modified_z_score]):
+def rca(ref, inp, features, methods=None):
     '''
     Perform low-level RCA::Statistics
     '''
+    if methods is None:
+        methods = [modified_z_score]
     # API input checking
     if ref.empty or inp.empty:
         return (False, None, None)
@@ -701,7 +707,7 @@ def pca_stat(inp_features, desired=2):
     else:
         logger.debug('desired variance ratio: %s', desired)
 
-    n_samples, n_dim = inp_features.shape
+    _n_samples, n_dim = inp_features.shape
     assert n_dim > 1
 
     x = StandardScaler().fit_transform(inp_features)
@@ -720,7 +726,7 @@ def pca_stat(inp_features, desired=2):
     return (pc_array, pca)
 
 
-def check_dist(data=[], dist='norm', alpha=0.05):
+def check_dist(data=None, dist='norm', alpha=0.05):
     '''
     Determines the distribution of input data::Statistics
 
@@ -775,6 +781,8 @@ def check_dist(data=[], dist='norm', alpha=0.05):
       DEBUG: epmt_stat: check_dist: 0 tests PASSED, 1 tests FAILED
     (0, 1)
     '''
+    if data is None:
+        data = []
     # https://stackoverflow.com/questions/40845304/runtimewarning-numpy-dtype-size-changed-may-indicate-binary-incompatibility
     import warnings
     warnings.filterwarnings("ignore")
@@ -992,7 +1000,7 @@ def dframe_append_weighted_row(df, weights, ignore_index=True, use_abs=False):
     return df.append(pd.DataFrame([new_row], columns=df.columns), ignore_index=ignore_index)
 
 
-def dict_outliers(dlist, labels=[], threshold=2.0):
+def dict_outliers(dlist, labels=None, threshold=2.0):
     '''
     Get outliers from a collection of dictionaries::Statistics
 
@@ -1018,6 +1026,8 @@ def dict_outliers(dlist, labels=[], threshold=2.0):
         outliers: set of outlier labels (or indices)
      outl_by_key: dict of outliers
     '''
+    if labels is None:
+        labels = []
     data = {}
     for d in dlist:
         for k in d:

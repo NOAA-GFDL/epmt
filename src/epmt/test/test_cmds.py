@@ -30,7 +30,7 @@ def setUpModule():
 #    datafiles='{}/test/data/misc/685???.tgz'.format(install_root)
     print(f'setUpModule: submitting to db {datafiles}')
     settings.post_process_job_on_ingest = True
-    with capture() as (out, err):
+    with capture() as (_out, _err):
         epmt_submit(glob(datafiles), dry_run=False)
     settings.post_process_job_on_ingest = False
     assert eq.get_jobs(['685000'], fmt='terse') == ['685000']
@@ -107,7 +107,7 @@ class EPMTCmds(unittest.TestCase):
         # watching the directory containing the .tgz
         # This should result in one unprocessed job in the database
         settings.post_process_job_on_ingest = False
-        with capture() as (out, err):
+        with capture() as (_out, _err):
             self.assertFalse(daemon_loop(
                 nullcontext(), maxiters=1, ingest=f'{install_root}/test/data/daemon/ingest',
                 post_process=False, analyze=False, retire=False, keep=True, recursive=False))
@@ -130,7 +130,7 @@ class EPMTCmds(unittest.TestCase):
         self.assertTrue(is_daemon_running() == (False, -1))
 
         settings.post_process_job_on_ingest = False
-        with capture() as (out, err):
+        with capture() as (_out, _err):
             self.assertTrue(epmt_submit(glob(f'{install_root}/test/data/daemon/627919.tgz'), dry_run=False))
 
         up_jobs = eq.get_unprocessed_jobs()
@@ -140,8 +140,7 @@ class EPMTCmds(unittest.TestCase):
 
         # a daemon loop should clear the backlog of unprocessed
         # and unanalyzed jobs
-        #       with capture() as (out,err):
-        with capture() as (out, err):
+        with capture() as (_out, _err):
             self.assertFalse(daemon_loop(
                 nullcontext(), maxiters=1, ingest=False,
                 post_process=True, analyze=False, retire=False, keep=True, recursive=False))
@@ -172,48 +171,48 @@ class EPMTCmds(unittest.TestCase):
         # self.assertEqual('EPMT daemon is not running.', out)
 
     def test_list_jobs(self):
-        with capture() as (out, err):
+        with capture() as (_out, _err):
             retval = epmt_list_jobs([])
         self.assertEqual(type(retval), bool, 'wrong list jobs return type')
         self.assertEqual(retval, True, 'wrong list jobs return value')
 
-        with capture() as (out, err):
+        with capture() as (_out, _err):
             retval = epmt_list_jobs(["685000"])
         self.assertEqual(type(retval), bool, 'wrong list jobs return type')
         self.assertEqual(retval, True, 'wrong list jobs return value')
 
     def test_list_procs(self):
-        with capture() as (out, err):
+        with capture() as (_out, _err):
             retval = epmt_list_procs(["685000"])
         self.assertEqual(type(retval), bool, 'wrong list jobs return type')
         self.assertEqual(retval, True, 'wrong list jobs return value')
 
     def test_list_refmodels(self):
-        with capture() as (out, err):
+        with capture() as (_out, _err):
             retval = epmt_list_refmodels('')
         self.assertEqual(retval, False, 'wrong list jobs return value')
 
     def test_list_op_metrics(self):
-        with capture() as (out, err):
+        with capture() as (_out, _err):
             retval = epmt_list_op_metrics(['685000'])
         self.assertTrue(retval, 'wrong list get_op_metrics return type')
 
     def test_list_thread_metrics(self):
         p = eq.root('685000', fmt='terse')
         self.assertTrue(p, 'empty root process')
-        with capture() as (out, err):
+        with capture() as (_out, _err):
             retval = epmt_list_thread_metrics([p])
         self.assertEqual(type(retval), bool, 'wrong list jobs return type')
         self.assertEqual(retval, True, 'wrong list jobs return value')
 
     def test_list_job_proc_tags(self):
-        with capture() as (out, err):
+        with capture() as (_out, _err):
             retval = epmt_list_job_proc_tags(["685000"])
         self.assertEqual(type(retval), bool, 'wrong list jobs return type')
         self.assertEqual(retval, True, 'wrong list jobs return value')
 
     def test_dbsize_json(self):
-        with capture() as (out, err):
+        with capture() as (out, _err):
             retval = epmt_dbsize(['database', 'table', 'index', 'tablespace'], usejson=True)
         s = out.getvalue()
         isPG = orm_db_provider() == 'postgres'
@@ -234,7 +233,7 @@ class EPMTCmds(unittest.TestCase):
         # quell the error messages
         epmt_logging_init(-2)
 
-        from os import remove, path
+        from os import remove
         from shutil import copytree, rmtree
         from tempfile import gettempdir, mkdtemp
         # re-create error file if it's still hanging around and we didnt clean up lasttime
@@ -243,7 +242,7 @@ class EPMTCmds(unittest.TestCase):
             remove(errorfile)
         tempdir = mkdtemp(prefix='epmt_', dir=gettempdir())
         copytree(f"{install_root}/test/data/corrupted_csv", tempdir + "/corrupted_csv")
-        with capture() as (out, err):
+        with capture() as (_out, _err):
             retval = epmt_stage([tempdir + "/corrupted_csv"], keep_going=False)
         self.assertTrue(retval == False, "corrupted CSV files, should have returned False")
         self.assertFalse(path.exists(errorfile))
@@ -256,7 +255,7 @@ class EPMTCmds(unittest.TestCase):
 
         tempdir = mkdtemp(prefix='epmt_', dir=gettempdir())
         copytree(f"{install_root}/test/data/corrupted_csv", tempdir + "/corrupted_csv")
-        with capture() as (out, err):
+        with capture() as (_out, _err):
             retval = epmt_stage([tempdir + "/corrupted_csv"], keep_going=True)
         self.assertTrue(retval, "corrupted CSV files but keep_going, should have returned True")
         self.assertTrue(path.exists(errorfile))
@@ -282,7 +281,7 @@ class EPMTCmds(unittest.TestCase):
         # to make sure we retire 627919, set retirement to it's age minus a day
         settings.retire_jobs_ndays = ndays - 1
         from epmt.epmt_cmd_retire import epmt_retire
-        with capture() as (out, err):
+        with capture() as (_out, _err):
             (jobs_delete_count, _) = epmt_retire()
 
         # restore original setting
@@ -299,7 +298,7 @@ class EPMTCmds(unittest.TestCase):
         # submit a job to the db we just cleaned out... oops!
         datafiles = f'{install_root}/test/data/misc/685000.tgz'
         #        settings.post_process_job_on_ingest = True
-        with capture() as (out, err):
+        with capture() as (_out, _err):
             epmt_submit(glob(datafiles), dry_run=False)
         #        settings.post_process_job_on_ingest = False
 
@@ -309,7 +308,7 @@ class EPMTCmds(unittest.TestCase):
 
         # drop the db and check that we get an empty list after dropping the db
         from epmt.orm import orm_drop_db
-        with capture() as (out, err):
+        with capture() as (_out, _err):
             orm_drop_db()
         jobs = eq.get_jobs(fmt='terse')
         self.assertEqual(len(jobs), 0)

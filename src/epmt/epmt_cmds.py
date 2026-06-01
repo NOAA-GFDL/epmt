@@ -3,17 +3,15 @@ EPMT commands module - main command interface for EPMT functionality.
 """
 
 from datetime import datetime
-from os import environ, makedirs, mkdir, path, getpid, remove, uname, kill
-from os.path import basename
+from os import environ, makedirs, mkdir, path, getpid, remove, uname
 from socket import gethostname
 from subprocess import run
 from glob import glob
-from sys import stderr, stdin
+from sys import stderr
 from json import dumps, loads
 from shutil import copyfile, rmtree, move
 from re import match
 from re import error as reerror
-from cpuinfo import get_cpu_info
 
 import errno
 import fnmatch
@@ -21,6 +19,8 @@ import pickle
 import time
 
 from logging import getLogger
+
+from cpuinfo import get_cpu_info
 
 from epmt.epmtlib import ( get_username, epmt_logging_init, init_settings, conv_dict_byte2str, cmd_exists,
                            run_shell_cmd, safe_rm, dict_filter, check_fix_metadata, logfn )
@@ -92,7 +92,6 @@ def write_job_epilog(jobdatafile, metadata):
         pickle.dump(metadata, file)
         logger.debug("Pickled to %s", jobdatafile)
         return True
-    return False
 
 def PrintFail():
     print("\t" + bcolors.FAIL + "Fail" + bcolors.ENDC, flush=True)
@@ -222,7 +221,7 @@ def verify_papiex_options():
         # guessing... NOT TRIED YET TODO: TRY THIS INSTEAD OF ABOVE LINE
         cmd = settings.install_prefix + "/bin/papi_command_line 2>&1 " + e + \
             "| sed -e '/PERF_COUNT_SW_CPU_CLOCK\\ :/,$p' | grep PERF_COUNT_SW_CPU_CLOCK > /dev/null 2>&1"
-        logger.info("\t" + cmd)
+        logger.info("\t%s", cmd)
         return_code = run(cmd, shell=True).returncode
         if return_code != 0:
             logger.error("%s failed", cmd)
@@ -317,7 +316,7 @@ def verify_papiex():
     print("epmt run functionality", end='')
     logger.info("\tepmt run -a /bin/sleep 1")
     retval = epmt_run(["/bin/sleep", "1"], wrapit=True)
-    global_jobid, global_datadir, global_metadatafile = setup_vars()
+    _global_jobid, global_datadir, _global_metadatafile = setup_vars()
     if retval != 0:
         retval = False
     else:
@@ -360,7 +359,7 @@ def epmt_check():
     retval = True
 
     logger.warning('CHECKING verify_db_params()...')
-    reval = verify_db_params() and retval
+    retval = verify_db_params() and retval
 
     logger.warning('CHECKING verify_install_prefix()...')
     retval = verify_install_prefix() and retval
@@ -393,8 +392,10 @@ def epmt_check():
 # inl: not sure what the function desc here should be, but the old comment above it,
 # "this should match _check_and_create_metadata" did not make much sense, as this
 # function does not exist. from_batch is/was unused? but is passed things from epmt_start_job
-def create_start_job_metadata(jobid, submit_ts, from_batch=[]):
+def create_start_job_metadata(jobid, submit_ts, from_batch=None):
     # use timezone info if available, otherwise use naive datetime objects
+    if from_batch is None:
+        from_batch = []
     try:
         ts = datetime.now().astimezone()
     except BaseException:
@@ -421,8 +422,10 @@ def create_start_job_metadata(jobid, submit_ts, from_batch=[]):
     return metadata
 
 
-def merge_stop_job_metadata(metadata, exitcode=0, reason="none", from_batch=[]):
+def merge_stop_job_metadata(metadata, exitcode=0, reason="none", from_batch=None):
     # use timezone info if available, otherwise use naive datetime objects
+    if from_batch is None:
+        from_batch = []
     try:
         ts = datetime.now().astimezone()
     except BaseException:
@@ -453,7 +456,6 @@ def write_job_metadata(jobdatafile, data):
         logger.info("pickled to %s", jobdatafile)
         logger.debug("Data %s", data)
         return True
-    return False
     # collect env
 
 
@@ -489,7 +491,9 @@ def stopped_metadata_file(filename):
 
 
 @logfn
-def epmt_start_job(keep_going=True, other=[]):
+def epmt_start_job(keep_going=True, other=None):
+    if other is None:
+        other = []
     global_jobid, global_datadir, global_metadatafile = setup_vars()
     if not all( [ global_jobid, global_datadir, global_metadatafile] ):
         return False
@@ -523,7 +527,7 @@ def epmt_start_job(keep_going=True, other=[]):
 
 
 @logfn
-def epmt_stop_job(keep_going=True, other=[]):
+def epmt_stop_job(keep_going=True, other=None):
     global_jobid, global_datadir, global_metadatafile = setup_vars()
     if not all( [ global_jobid , global_datadir , global_metadatafile ] ):
         return False
@@ -591,7 +595,7 @@ def epmt_dump_metadata(filelist, key=None):
                 rc_final = False
             continue
 
-        err, tar = open_compressed_tar(f)
+        _err, tar = open_compressed_tar(f)
         if tar:
             try:
                 info = tar.getmember("./job_metadata")
@@ -676,7 +680,7 @@ def epmt_annotate(argslist, replace=False):
 
     # initialize
     from epmt.epmtlib import kwargify
-    staged_file = job_dir = jobid = running_job = False
+    staged_file = job_dir = jobid = False
 
     def get_annotations_from_kwargs(args):
         '''
@@ -1226,7 +1230,7 @@ def epmt_submit(dirs, ncpus=1, dry_run=True, drop=False, keep_going=False,
 
 
 @logfn
-def copy_files(src_dir, dest_dir='', patterns=['*'], prefix=''):
+def copy_files(src_dir, dest_dir='', patterns=None, prefix=''):
     '''
     Copy some or all files from one directory to another
 
@@ -1256,6 +1260,8 @@ def copy_files(src_dir, dest_dir='', patterns=['*'], prefix=''):
     then the temporary directory created by this function will be
     removed before it returns.
     '''
+    if patterns is None:
+        patterns = ['*']
     if not path.isdir(src_dir):
         logger.error('%s does not exist', src_dir)
         return False
@@ -1363,7 +1369,7 @@ def extract_tar(tarfile, outdir='', check_metadata=False):
     if not path.isfile(tarfile):
         logger.error("%s does not exist!", tarfile)
         return False
-    err, tar = open_compressed_tar(tarfile)
+    _err, tar = open_compressed_tar(tarfile)
 
     # only check for metadata file if required to do so
     if check_metadata:
@@ -1465,7 +1471,7 @@ def submit_dir_or_tgz_to_db(inputf,
 
     if not r:
         r = (False, msg, ())
-    (status, msg, submit_details) = r
+    (status, msg, _submit_details) = r
 
     if not status:
         logger.debug("Status is False")
@@ -1649,9 +1655,11 @@ def epmt_stage(dirs, keep_going=True, collate=True, compress_and_tar=True):
     return r
 
 
-def epmt_dbsize(findwhat=['database', 'table', 'index', 'tablespace'],
+def epmt_dbsize(findwhat=None,
                 usejson=True,
                 usebytes=True):
+    if findwhat is None:
+        findwhat = ['database', 'table', 'index', 'tablespace']
     from epmt.orm import orm_db_size
     # Absolutely all argument checking should go here, specifically the findwhat stuff
     if findwhat == "all":

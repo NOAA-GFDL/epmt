@@ -9,7 +9,7 @@ Uses an in-memory SQLite database to avoid contention with production.
 import unittest
 from datetime import datetime
 from glob import glob
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.dialects.postgresql import JSONB
@@ -20,7 +20,7 @@ def _compile_jsonb_sqlite(type_, compiler, **kw):
     return "JSON"
 
 from epmt import epmt_query as eq, epmt_settings as settings
-from epmt.orm import db_session, orm_in_memory, setup_db
+from epmt.orm import setup_db
 from epmt.orm.sqlalchemy.models import Job
 from epmt.epmtlib import timing, capture, get_install_root, epmt_logging_init
 from epmt.epmt_cmds import epmt_submit
@@ -48,10 +48,10 @@ def setUpModule():
     settings.db_params = {'url': 'sqlite:///:memory:', 'echo': False}
     setup_db(settings)
     do_cleanup()
-    datafiles = '{}/test/data/misc/685000.tgz'.format(install_root)
-    print('setUpModule (test_dbcare): submitting to db {0}'.format(datafiles))
+    datafiles = f'{install_root}/test/data/misc/685000.tgz'
+    print(f'setUpModule (test_dbcare): submitting to db {datafiles}')
     settings.post_process_job_on_ingest = True
-    with capture() as (out, err):
+    with capture() as (_out, _err):
         epmt_submit(glob(datafiles), dry_run=False)
     settings.post_process_job_on_ingest = False
     assert eq.get_jobs(['685000'], fmt='terse') == ['685000']
@@ -137,7 +137,7 @@ class TestRetireJobs(unittest.TestCase):
         self.assertIn('685000', jobs_before)
 
         # use a threshold that's 1 day MORE than the job's age — should NOT delete
-        result = eq.retire_jobs(ndays=ndays + 2)
+        eq.retire_jobs(ndays=ndays + 2)
         jobs_after = eq.get_jobs(['685000'], fmt='terse')
         self.assertIn('685000', jobs_after)
 
@@ -153,9 +153,9 @@ class TestRetireJobs(unittest.TestCase):
         self.assertNotIn('685000', jobs_after)
 
         # re-submit the job for subsequent tests
-        datafiles = '{}/test/data/misc/685000.tgz'.format(install_root)
+        datafiles = f'{install_root}/test/data/misc/685000.tgz'
         settings.post_process_job_on_ingest = True
-        with capture() as (out, err):
+        with capture() as (_out, _err):
             epmt_submit(glob(datafiles), dry_run=False)
         settings.post_process_job_on_ingest = False
 
@@ -199,8 +199,6 @@ class TestDeleteJobs(unittest.TestCase):
 
     def test_delete_jobs_warn_no_spam(self):
         """delete_jobs with warn=False should not produce 'verbosity' warnings (PR #189)."""
-        import logging
-
         with self.assertLogs('epmt', level='DEBUG') as cm:
             eq.delete_jobs(['nonexistent_job_id'], force=True)
 

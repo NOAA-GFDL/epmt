@@ -27,7 +27,7 @@ def setUpModule():
     do_cleanup()
     datafiles = f'{install_root}/test/data/query/*.tgz'
     #    print('setUpModdule: importing {0}'.format(datafiles))
-    with capture() as (out, err):
+    with capture() as (_out, _err):
         epmt_submit(sorted(glob(datafiles)), dry_run=False)
     # only use modz as the tests are written that way
     settings.univariate_classifiers = ['modified_z_score']
@@ -724,7 +724,7 @@ class QueryAPI(unittest.TestCase):
         # jobs = eq.get_jobs(JOBS_LIST, fmt='orm')
         # self.assertEqual(jobs.count(), 3)
         model_name = 'test_model'
-        with capture() as (out, err):
+        with capture() as (_out, err):
             r = eq.create_refmodel(jobs, tag='model_name:' + model_name)
         self.assertIn('WARNING: The jobs do not share identical tag values', err.getvalue())
         self.assertEqual(r['tags'], {'model_name': model_name})
@@ -761,7 +761,7 @@ class QueryAPI(unittest.TestCase):
         n = eq.delete_refmodels(r['id'])
         self.assertEqual(n, 1, 'wrong ref_model delete count')
         # wildcard features
-        with capture() as (out, err):
+        with capture() as (_out, err):
             r = eq.create_refmodel(jobs, tag='model_name:' + model_name, features='*')
         all_features = {
             'duration',
@@ -798,7 +798,7 @@ class QueryAPI(unittest.TestCase):
         eq.delete_refmodels(r['id'])
 
         # named reference models
-        with capture() as (out, err):
+        with capture() as (_out, err):
             r1 = eq.create_refmodel(jobs, name='test_model')
             r2 = eq.create_refmodel(jobs)
         self.assertEqual(r1['name'], 'test_model')
@@ -844,14 +844,14 @@ class QueryAPI(unittest.TestCase):
 
     @db_session
     def test_verify_jobs(self):
-        import datetime
+        import datetime as dt_mod
         j = Job['685000']
         p = eq.get_procs('685000', limit=1, fmt='orm')[0]
         proc_id = p.id
-        j.start = datetime.datetime(1970, 1, 1)
-        tomorrow = datetime.datetime.now() + datetime.timedelta(days=1)
+        j.start = dt_mod.datetime(1970, 1, 1)
+        tomorrow = dt_mod.datetime.now() + dt_mod.timedelta(days=1)
         j.end = tomorrow
-        p.start = datetime.datetime(1970, 1, 1)
+        p.start = dt_mod.datetime(1970, 1, 1)
         orm_commit()
         (ret, errs) = eq.verify_jobs(['685000'])
         self.assertFalse(ret)

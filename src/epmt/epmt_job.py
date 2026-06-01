@@ -20,7 +20,6 @@ import pytz
 from epmt.orm import *
 import epmt.epmt_settings as settings
 from epmt.epmtlib import tag_from_string, sum_dicts, timing, dotdict, get_first_key_match, check_fix_metadata, logfn
-from epmt.epmt_query import is_job_post_processed
 
 logger = getLogger(__name__)
 
@@ -150,10 +149,12 @@ def lookup_or_create_user(username):
 #         row += thr_count
 
 
-def get_proc_rows(csvfile, skiprows=0, fmt='1', metric_names=[]):
+def get_proc_rows(csvfile, skiprows=0, fmt='1', metric_names=None):
     '''
     Generator function that returns a list of rows corresponding to metric names from csv, with optional skipping
     '''
+    if metric_names is None:
+        metric_names = []
 
     from epmt.epmt_convert_csv import OUTPUT_CSV_FIELDS, OUTPUT_CSV_SEP
     # we only support two formats at present
@@ -429,8 +430,10 @@ def extract_tags_from_comment_line(jobdatafile, comment="#", tarfile=None):
 # relations and descendant maps are used if we do bulk inserts
 
 
-def _proc_ancestors(pid_map, proc, ancestor_pid, relations=None, descendant_map={}):
+def _proc_ancestors(pid_map, proc, ancestor_pid, relations=None, descendant_map=None):
 
+    if descendant_map is None:
+        descendant_map = {}
     if ancestor_pid in pid_map:
         proc.depth += 1
         entries = pid_map[ancestor_pid]
@@ -995,7 +998,7 @@ def populate_process_table_from_staging(j):
     # The cleanup runs in the same transaction as the INSERT so both are
     # rolled back together on failure.
     if nprocs > 0:
-        cleanup_sql = "DELETE FROM processes WHERE jobid = '{}';\n".format(jobid)
+        cleanup_sql = f"DELETE FROM processes WHERE jobid = '{jobid}';\n"
         insert_sql = cleanup_sql + insert_sql
         logger.debug('prepended cleanup DELETE for job %s processes', jobid)
 
@@ -1013,15 +1016,14 @@ def populate_process_table_from_staging(j):
             logger.error('You do not have sufficient privileges for this operation')
         else:
             logger.error(
-                f'INSERT aka insert_sql[:{settings.max_log_statement_length}] = \n'
-                f' {insert_sql[:settings.max_log_statement_length]}')
+                'INSERT aka insert_sql[:%s] = \n %s',
+                settings.max_log_statement_length, insert_sql[:settings.max_log_statement_length])
             ## Only log the first 100 entries in the error string- it will largely be SQL statements
             if len(err_str) > settings.max_log_statement_length:
                 logger.error('error (type is %s) too long to show (%s)...', type(err_str), len(err_str))
                 logger.error('first %s errors in err_str list are...', settings.max_log_statement_length)
                 logger.error(''.join(err_str[:settings.max_log_statement_length]))
             else:
-                # some bugs require this line get uncommented
                 logger.error(err_str)
         return False
 

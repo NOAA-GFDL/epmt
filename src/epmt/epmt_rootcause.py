@@ -62,10 +62,12 @@ def rootcause_zscore(ref, input, features):
     return ref_computed, sorted(result_dict.items(), key=operator.itemgetter(1), reverse=True)
 
 
-def rootcause(ref, input, features, methods=[rootcause_zscore]):
+def rootcause(ref, input, features, methods=None):
     '''
     this function looks very much like the outlier detection functions and may be integrateable
     '''
+    if methods is None:
+        methods = [rootcause_zscore]
     # API input checking
     if ref.empty or input.empty:
         return False
@@ -141,4 +143,3 @@ def ex_one(features, n_features):
     print("Retval:\n", retval)
     print("Result:\n", df)
     print("Result:\n", dct)
-

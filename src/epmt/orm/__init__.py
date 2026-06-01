@@ -53,7 +53,7 @@ def orm_col_len(c):
         return c.count()
 
 
-def orm_db_size(findwhat=['database', 'table', 'index', 'tablespace'], usejson=True, usebytes=True):
+def orm_db_size(findwhat=None, usejson=True, usebytes=True):
     """
     Print size of database,tables,index,tablespace storage and row count
 
@@ -61,6 +61,8 @@ def orm_db_size(findwhat=['database', 'table', 'index', 'tablespace'], usejson=T
     usejson: Printed in JSON, default.
     usebytes: All data reported in bytes, default.
     """
+    if findwhat is None:
+        findwhat = ['database', 'table', 'index', 'tablespace']
     #from orm import orm_db_provider, orm_dump_schema, orm_sql, setup_db
     from sys import exc_info
     from datetime import datetime

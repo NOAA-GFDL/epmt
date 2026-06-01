@@ -10,9 +10,10 @@ cp preset_settings/<choose_file_to_match_your_storage>.py settings.py
 and then edit the copied over file
 """
 
-from epmt.epmtlib import get_install_root
-from os import path
 from getpass import getuser
+from os import path
+
+from epmt.epmtlib import get_install_root
 
 jobid_env_list = [
     "SLURM_JOB_ID",

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 EPMT Experiment Explore API
 ===========================
@@ -11,13 +10,14 @@ It's a higher-level API than EPMT Query and EPMT Outliers
 API, which it uses underneath.
 """
 
-from .orm import db_session
-import epmt.epmt_query as eq
+from logging import getLogger
+
 import numpy as np
+
+import epmt.epmt_query as eq
 import epmt.epmt_stat as es
 import epmt.epmt_settings as settings
-
-from logging import getLogger
+from epmt.orm import db_session
 
 logger = getLogger(__name__)
 
@@ -241,7 +241,7 @@ def exp_explore(exp_name, metric='duration', op=np.sum, limit=10):
     metric = metric or 'duration'  # defaults when using with command-line
     limit = limit or 10  # defaults when using with command-line
 
-    exp_jobs = eq.get_jobs(tags={'exp_name': exp_name}, fmt='orm')
+    eq.get_jobs(tags={'exp_name': exp_name}, fmt='orm')  # noqa: F841 - query primes ORM cache
     ordered_comp_list = exp_component_outliers(exp_name, metric, op, limit)
 
     agg_metric = np.sum([np.array(d['metrics']).sum() for d in ordered_comp_list])
@@ -278,7 +278,7 @@ def exp_explore(exp_name, metric='duration', op=np.sum, limit=10):
 
 
 @db_session
-def find_missing_time_segments(exp_name, jobs=[], components=[], time_segments=range(18540101, 20190101, 50000)):
+def find_missing_time_segments(exp_name, jobs=None, components=None, time_segments=range(18540101, 20190101, 50000)):
     '''
     Finds missing time segments in an experiment::Experiments
 
@@ -331,6 +331,10 @@ def find_missing_time_segments(exp_name, jobs=[], components=[], time_segments=r
       19740101, 19790101, 19840101, 19890101, 19940101, 19990101, 20040101, 20090101]
     }
     '''
+    if jobs is None:
+        jobs = []
+    if components is None:
+        components = []
     tag_filter = {'exp_name': exp_name}
     jobs = eq.get_jobs(jobs, fmt='orm', tags=[tag_filter])
     logger.debug('Looking for time segments: %s', sorted(time_segments))
@@ -346,7 +350,7 @@ def find_missing_time_segments(exp_name, jobs=[], components=[], time_segments=r
         exp_times = comp_tags['exp_time']
         if isinstance(exp_times, str):
             exp_times = [exp_times]
-        exp_times = set([int(t) for t in exp_times])
+        exp_times = {int(t) for t in exp_times}
         missing_times = set(time_segments) - exp_times
         if missing_times:
             print(f'{c} is missing {sorted(missing_times)}')
@@ -355,7 +359,7 @@ def find_missing_time_segments(exp_name, jobs=[], components=[], time_segments=r
 
 
 @db_session
-def exp_find_jobs(exp_name, components=[], exp_times=[], failed=None, **kwargs):
+def exp_find_jobs(exp_name, components=None, exp_times=None, failed=None, **kwargs):
     '''
     Finds jobs within an experiment::Experiments
 
@@ -403,6 +407,10 @@ def exp_find_jobs(exp_name, components=[], exp_times=[], failed=None, **kwargs):
     ...     exp_times=['18540101', '18840101'], failed = False)
     ['685000', '685003']
     '''
+    if components is None:
+        components = []
+    if exp_times is None:
+        exp_times = []
     if 'tags' in kwargs:
         logger.warning('If you use the "tags" option then "exp_name", '
                        '"components" and "exp_time" options will be ignored')

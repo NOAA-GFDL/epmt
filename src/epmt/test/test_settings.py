@@ -9,11 +9,10 @@ install_root = get_install_root()
 class EPMTSettings(unittest.TestCase):
 
     def test_default_settings(self):
-        default_settings_file = 'epmt_default_settings.py'
         # the test below will fail when we use pyinstaller so let's skip it
         # it's anyhow covered in the tests below
-        # self.assertTrue(path.exists(default_settings_file)
-        # and (path.getsize(default_settings_file) > 0))
+        #_default_settings_file = 'epmt_default_settings.py'
+        #self.assertTrue(path.exists(_default_settings_file) and path.getsize(_default_settings_file) > 0)
         try:
             import epmt.epmt_default_settings as defaults
             self.assertTrue(defaults is not None, "import of epmt_default_settings yielded None")

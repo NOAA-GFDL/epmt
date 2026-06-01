@@ -4,11 +4,12 @@ EPMT help command module - provides help functionality.
 from inspect import signature
 from sys import stderr
 
-def epmt_help_api(funcs=[]):
+def epmt_help_api(funcs=None):
     """
     Provide help documentation for EPMT API functions.
     """
-    import epmt.epmt_settings as settings
+    if funcs is None:
+        funcs = []
     import epmt.epmt_query as eq
     import epmt.epmt_outliers as eod
     import epmt.epmtlib as el

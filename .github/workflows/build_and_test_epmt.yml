@@ -26,6 +26,7 @@ jobs:
   build-linux:
     runs-on: ubuntu-latest
     strategy:
+      max-parallel: 1
       fail-fast: false
       matrix:
         db_backend: [sqlite, postgres]
@@ -515,4 +516,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: epmt-pip-install-TEST-${{ matrix.db_backend }}
-          path: src/dist/epmt-4.11.0.tar.gz
+          path: src/dist/epmt-5.0.0.post.tar.gz

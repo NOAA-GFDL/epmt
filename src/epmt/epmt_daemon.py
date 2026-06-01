@@ -3,7 +3,7 @@ EPMT daemon module - handles background daemon functionality.
 """
 
 from getpass import getuser
-from os import path, kill, unlink, getppid
+from os import path, kill, unlink
 from sys import exit as sysexit
 from sys import stdin, stdout, stderr
 from time import sleep, time
@@ -54,7 +54,7 @@ def is_daemon_running(pidf=PID_FILE):
     if int(pid) < 0:
         logger.error('PID %d for daemon is less than 0, this cant be true', int(pid))
         return False, -1
-    stat, msg = check_pid(int(pid))
+    stat, _msg = check_pid(int(pid))
     if not stat:
         logger.error("You should check PID %d and consider removing the stale lock file %s.",
                             int(pid), pidf)
