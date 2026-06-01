@@ -1,0 +1,36 @@
+name: mkdocs lint
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+
+# cancel running jobs if theres a newer push
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  mkdocs-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Files
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install mkdocs
+        run: |
+          pip install mkdocs
+
+      - name: Build docs with --strict (warnings as errors)
+        run: |
+          mkdocs build --strict -f epmtdocs/mkdocs.yml
