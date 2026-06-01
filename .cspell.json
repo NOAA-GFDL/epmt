@@ -22,6 +22,10 @@
         "build",
         "*.egg-info",
         "**/*.egg-info/**",
-        "notebooks"
+        "notebooks",
+        // sample/ contains test workload scripts and staged job data
+        "sample/**",
+        // test/data/ contains binary fixtures, CSVs, and outlier datasets
+        "src/epmt/test/data/**"
     ]
 }
