@@ -368,5 +368,3 @@ def csvjoiner(indir,
 
     logger.error("Missing dataList, masterHeader or masterHeaderFile: %s", str(fileList))
     return False, None, badfiles_renamed
-
-

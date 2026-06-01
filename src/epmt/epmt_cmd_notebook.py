@@ -64,4 +64,3 @@ def epmt_notebook(arglist):
             return False
 
     return True
-

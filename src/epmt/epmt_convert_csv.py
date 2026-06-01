@@ -384,4 +384,3 @@ def extract_jobid_from_collated_csv(collated_csv):
     Returns a jobid from a collated CSV file
     '''
     return collated_csv.split('papiex')[-1].split('-')[1]
-
