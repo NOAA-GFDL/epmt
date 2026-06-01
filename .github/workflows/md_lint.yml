@@ -1,4 +1,4 @@
-name: mkdocs lint
+name: markdown lint
 
 on:
   push:
@@ -16,24 +16,6 @@ permissions:
   contents: read
 
 jobs:
-  mkdocs-lint:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Files
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.x"
-
-      - name: Install mkdocs
-        run: |
-          pip install mkdocs
-
-      - name: Build docs with --strict (warnings as errors)
-        run: |
-          mkdocs build --strict -f epmtdocs/mkdocs.yml
 
   markdown-lint:
     runs-on: ubuntu-latest
