@@ -48,7 +48,7 @@ If you already have an environment created that you wish to install `epmt`, and 
 ```bash
 git clone https://github.com/NOAA-GFDL/epmt.git
 cd epmt
-pip install 
+pip install src/
 ```
 
 ### Verifying an Installation
