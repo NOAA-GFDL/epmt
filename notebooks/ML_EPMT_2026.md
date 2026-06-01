@@ -20,14 +20,16 @@ This repository directory holds only a subset of jupyter notebooks created as a 
 
 ### Dataset Overview
 The data for this project was sourced entirely from the **EPMT database**.
-* **Subset 1:** 1,000 data points (pulled ??/??/2026)
-* **Subset 2:** 40k data points (pulled 2/7/2026)
-* **Subset 3:** 133,872 data points (pulled 3/19/2026)
+* **Dataset 1:** 1,000 data points (pulled 1/29/2026)
+* **Dataset 2:** 40k data points (pulled 2/7/2026)
+* **Dataset 3:** 133,872 data points (pulled 3/19/2026)
 
 
 ### Data Splits & Features
-* **Features Used:** [Insert brief description of the input features/columns used here]
-* **Data Allocation:**
+* **Features Used:** 
+Part of the work entailed looking at features and and seeing the results. Ideally, all notebooks would have used split out data for training, validation and testing. However, not all notebooks do this, especially early on.
+
+In general, the break up of the data for training, validation and testing, were allocated in the following way:
   * **Training Set:** `XX%`
   * **Validation Set:** `XX%`
   * **Testing Set:** `XX%`
@@ -57,11 +59,11 @@ The models were evaluated using the following metrics:
 
 | Model | Training Accuracy | Validation Accuracy | Testing Accuracy | Notes |
 | :--- | :---: | :---: | :---: | :--- |
-| **LinearRegressor** | `0.00%` | `0.00%` | `0.00%` | Baseline performance |
-| **DecisionTree** | `0.00%` | `0.00%` | `0.00%` | Overfit on training data |
-| **RandomForest** | `0.00%` | `0.00%` | `0.00%` | Better generalization |
-| **Boosting** | `0.00%` | `0.00%` | `0.00%` | High training time |
-| **Multi-Layer Perceptron**| `0.00%` | `0.00%` | `0.00%` | Struggled with convergence|
+| **LinearRegressor** | `0.00%` | `0.00%` | `0.00%` | ?? |
+| **DecisionTree** | `0.00%` | `0.00%` | `0.00%` | ?? |
+| **RandomForest** | `0.00%` | `0.00%` | `0.00%` | ?? |
+| **Boosting** | `0.00%` | `0.00%` | `0.00%` | ?? |
+| **Multi-Layer Perceptron**| `0.00%` | `0.00%` | `0.00%` | ?? |
 | **Voting Ensemble** | `0.00%` | `0.00%` | `0.00%` | Combined model results |
 
 > 🏆 **Best Accuracy Achieved:** `XX.XX%` using the **[Insert Best Model Name Here]**.
@@ -98,46 +100,18 @@ print(f"Voting Ensemble R2 Score: {accuracy:.4f}")
 
 | Index | Notebook | Description | Dataset Size | Num. Features | Best Results |
 | :--- | :--- | :--- | :---: | :---: | :--- |
-| 1 | [JK_EPMT_Play1.ipynb](https://github.com/jjuyeonkim/ilaflott_epmt/blob/epmt_play/notebooks/JK_EPMT_Play1.ipynb) | Query EPMT Data into a simple csv file. The focus of this notebook is the EPMT_JOB_TAGS annotations for now, but the data will eventually be expanded. A little bit of visualization is also added to the end. | 1000 | 109 | LinearRegression -- MSE: 947203385827177.75 / $R^2$: 0.62 |
+| 1 | [JK_EPMT_Play1.ipynb](https://github.com/jjuyeonkim/ilaflott_epmt/blob/epmt_play/notebooks/JK_EPMT_Play1.ipynb) | Query EPMT Data into a simple csv file. The focus of this notebook is the EPMT_JOB_TAGS annotations for now, but the data will eventually be expanded. A little bit of visualization is also added to the end. | 1000 | 109 | LinearRegression<br>MSE: 9.4 x 10^14<br> $R^2$: 0.62<br>Training 75%<br>Validation Set: 25%<br> Testing Set:0% |
 | 2 | [JK_EPMT_Play2.ipynb](https://github.com/jjuyeonkim/ilaflott_epmt/blob/epmt_play/notebooks/JK_EPMT_Play2.ipynb) | Same as JK_EPMT_Play1, except dropped exp_time. Example correlation. | 1000 | ? | LinearRegression -- $R^2$: 0.06 |
 | 3 | [JK_EPMT_Play3.ipynb](https://github.com/jjuyeonkim/ilaflott_epmt/blob/epmt_play/notebooks/JK_EPMT_Play3.ipynb) | ? | ? | ? | $R^2$: ? |
 | 4 | [JK_EPMT_ExploreFeatures](https://github.com/jjuyeonkim/ilaflott_epmt/blob/epmt_play/notebooks/JK_EPMT_ExploreFeatures.ipynb) | This notebook is trying to explore beyond the 'EPMT_JOB_TAGS' within 'annotations' for rows within the EPMT database. This notebook was used to query around 40k rows, but things were commented out or only partially finished. ML Experiments not run.| 100 to ~40k | N/A | N/A |
 | 5 | [JK_EPMT_PullData.ipynb](https://github.com/jjuyeonkim/ilaflott_epmt/blob/epmt_play/notebooks/JK_EPMT_PullData.ipynb) | ? | ? | ? | ? | $R^2$: ? |
 | 6 | [EPMTDataCleanup.ipynb](https://github.com/jjuyeonkim/ilaflott_epmt/blob/epmt_play/notebooks/EPMTDataCleanup.ipynb) | Taking 40k rows of EPMT data pulled from the database and written to file on Feb 7th, 2026, and cleaning that up so that it can be more easily used for Machine Learning. Revised version will be written to file as csv, hopefully with data normalization and outliers removed. | ? | ? | ? | $R^2$: ? |
 | 7 | [EPMTDataCleanup_Next123.ipynb](https://github.com/jjuyeonkim/ilaflott_epmt/blob/epmt_play/notebooks/EPMTDataCleanup_Next123.ipynb) | Following up from EPMTDataCleanup.ipynb; Try without group information; Maybe not needing script_name AND exp_name -- too correlated (likely) - Taking out script_name and keeping exp_name; bronx-23 --- try this one only; With this data, we're trying just a bunch of models on it to see what happens.  | ? | ? | <ul><li>LinearRegressor</li><li>DecisionTree</li><li>RandomForest</li><li>Boosting</li><li>Multi-Layer Perceptron</li><li>Voting Ensemble</li></ul><br>Best R-squared was .44 |
-| 8 | [EPMTDataCleanup_Next5.ipynb](https://github.com/jjuyeonkim/ilaflott_epmt/blob/epmt_play/notebooks/EPMTDataCleanup_Next5.ipynb) | ? | ? |  ? |$R^2$: ? |
+| 8 | [EPMTDataCleanup_Next5.ipynb](https://github.com/jjuyeonkim/ilaflott_epmt/blob/epmt_play/notebooks/EPMTDataCleanup_Next5.ipynb) | More EPMT Cleanup - Next Idea No. "5"; Following up from EPMTDataCleanup_Next123.ipynb; Try starting from a small set of features; We determined which features are highly correlated to cpu_time and added them one at a time to predict. NOTE: Only num_features=85 is shown in the full notebook, but you can replace the num_features value to see the the r_squared values in the table results:<br><code>target = 'cpu_time'<br>features = df.corr(numeric_only=True)['cpu_time'].sort_values(ascending=False).keys().tolist()[1:n_features+1]</code> | 40k | 1 - 121 |<table><tr><th>num_features</th><th>$R^2$</th><tr><td>1</td><td>0.11</td></tr><tr><td>2</td><td>0.17</td></tr><tr><td>3</td><td>0.18</td></tr><tr><td>5</td><td>.21</td></tr><tr><td>45</td><td>.34</td></tr><tr><td>70</td><td>.39</td></tr><tr><td>80</td><td>.43</td></tr><tr><td>85</td><td>.44</td></tr><tr><td>90</td><td>.44</td></tr><tr><td>100<td>.44</td></tr></table> Best r_squared: 0.44 |
 | 9 | [EPMTDataCleanup_Next7.ipynb](https://github.com/jjuyeonkim/ilaflott_epmt/blob/epmt_play/notebooks/EPMTDataCleanup_Next7.ipynb) | ? | ? | ? | $R^2$: ? |
 | 10 | [EPMTDataCleanup_Next11a.ipynb](https://github.com/jjuyeonkim/ilaflott_epmt/blob/epmt_play/notebooks/EPMTDataCleanup_Next11a.ipynb) | ? | ? | ? |$R^2$: ? |
 | 11 | [EPMTDataCleanup_Next11b.ipynb](https://github.com/jjuyeonkim/ilaflott_epmt/blob/epmt_play/notebooks/EPMTDataCleanup_Next11b.ipynb) | ? | ? | ? |$R^2$: ? |
 | 12 | [EPMTDataCleanup_Next11e.ipynb](https://github.com/jjuyeonkim/ilaflott_epmt/blob/epmt_play/notebooks/EPMTDataCleanup_Next11e.ipynb) | ? | ? | ? |$R^2$: ? |
-
-
-### TO BE PROCESSED:
-
-* EPMTDataCleanup_Next5
-EPMT Data "Cleanup" - Next Idea No. "5"
-Following up from EPMTDataCleanup_Next123.ipynb
-5. Try starting from a small set of features
-
-We determined which features are highly correlated to cpu_time and added them one at a time to predict. NOTE: Only num_features=85 is shown below in the full notebook, but you can replace the num_features value to see the the r_squared values in the table below.
-
-target = 'cpu_time'
-features = df.corr(numeric_only=True)['cpu_time'].sort_values(ascending=False).keys().tolist()[1:n_features+1]
-
-num_features	r_squared
-1	0.11
-2	0.17
-3	0.18
-5	.21
-45	.34
-70	.39
-80	.43
-85	.44
-90	.44
-100	.44
-Dataset size: 30k
-Num Features: 121
-Best r_squared: 0.44
 
 
 DISCLAIMER: The template for this document was generated with the help of Gemini. It is currently being expanded, vetted, and populated with work results.
