@@ -7,11 +7,11 @@ Data Curation:
 
 Model Prototyping:
   - Executed different ML algorithms using extracted datasets
-  - Evaluated models using R_squared
+  - Evaluated models using R_squared and MSE
 
 
 **Notebooks:** [GitHub - ilaflott_epmt (epmt_play branch)](https://github.com/jjuyeonkim/ilaflott_epmt/tree/epmt_play)
-This repository directory holds only a subset of jupyter notebooks created as a result of this work. Some notebooks already existed.
+Only a subset of the notebooks in directory were created as a result of this work. Some notebooks already existed.
 
 
 **TODO - expand this paragraph**: With the best R_squared value at .44 and the mean squared error at <fill_in_blank>, the trained models as a part of this project aren't predicting cpu_time well. (https://en.wikipedia.org/wiki/Coefficient_of_determination, https://www.investopedia.com/terms/r/r-squared.asp)
@@ -20,21 +20,36 @@ This repository directory holds only a subset of jupyter notebooks created as a 
 
 ### Dataset Overview
 The data for this project was sourced entirely from the **EPMT database**.
-* **Dataset 1:** 1,000 data points (pulled 1/29/2026)
-* **Dataset 2:** 40k data points (pulled 2/7/2026)
-* **Dataset 3:** 133,872 data points (pulled 3/19/2026)
+* **Dataset 1:** 1,000 rows (pulled 1/29/2026)
+* **Dataset 2:** 10,000 rows (pulled ?/?/2026)
+* **Dataset 3:** 40,000 rows (pulled 2/7/2026)
+* **Dataset 4:** 133,872 rows (pulled 3/19/2026)
 
 
 ### Data Splits & Features
 * **Features Used:** 
 Part of the work entailed looking at features and and seeing the results. Ideally, all notebooks would have used split out data for training, validation and testing. However, not all notebooks do this, especially early on.
 
+Categorical features converted to numerical using one-hot encoding.
+
 In general, the break up of the data for training, validation and testing, were allocated in the following way:
   * **Training Set:** `XX%`
   * **Validation Set:** `XX%`
   * **Testing Set:** `XX%`
 
----
+### Outlier Handling and Normalization
+
+IQR - Trying to address outliers
+* Compute Q1 (25th percentile), Q3 (75th percentile), IQR (Q3-Q1)
+* Pick some outlier thresholds, suggested
+* lower: Q1-1.5*IQR
+* upper: Q3-1.5*IQR
+* Flag or remove/clip outliers
+
+Normalization
+* TODO
+
+### Outlier Handling and Normalization
 
 ## 🤖 Algorithms & Models Attempted
 The following machine learning architectures were evaluated during this project:
@@ -45,15 +60,15 @@ The following machine learning architectures were evaluated during this project:
 4. **Boosting:** (e.g., Gradient Boosting/XGBoost) For sequential error correction.
 5. **Multi-Layer Perceptron (MLP):** Neural network approach to map complex feature spaces.
 6. **Voting Ensemble:** Combining the strengths of the top-performing models.
-
+7. **SVM:** TODO
 ---
 
 ## 📈 Metrics & Results
 
 ### Performance Metrics
 The models were evaluated using the following metrics:
-* [e.g., Root Mean Squared Error (RMSE)]
-* [e.g., R-squared ($R^2$ Score)]
+* Mean Squared Error (MSE)
+* R-squared ($R^2$ Score)
 
 ### Comparison Table
 
@@ -97,21 +112,58 @@ print(f"Voting Ensemble R2 Score: {accuracy:.4f}")
 
 ## Notebooks
 
+The following notebooks were generated as a result of this project. The naming convention isn't important. The notebooks themselves contain code to extract data from the EPMT database, expore and extract features, and finally train and evaluate ML models in a feable attempt to predict cpu_time. There is, unfortunately, much repetition and redundancy in these notebooks. This table will hopefully provide an easier way to navigate through them and point out the less redundant parts.
 
 | Index | Notebook | Description | Dataset Size | Num. Features | Best Results |
 | :--- | :--- | :--- | :---: | :---: | :--- |
-| 1 | [JK_EPMT_Play1.ipynb](https://github.com/jjuyeonkim/ilaflott_epmt/blob/epmt_play/notebooks/JK_EPMT_Play1.ipynb) | Query EPMT Data into a simple csv file. The focus of this notebook is the EPMT_JOB_TAGS annotations for now, but the data will eventually be expanded. A little bit of visualization is also added to the end. | 1000 | 109 | LinearRegression<br>MSE: 9.4 x 10^14<br> $R^2$: 0.62<br>Training 75%<br>Validation Set: 25%<br> Testing Set:0% |
+| 1 | [JK_EPMT_Play1.ipynb](https://github.com/jjuyeonkim/ilaflott_epmt/blob/epmt_play/notebooks/JK_EPMT_Play1.ipynb) | Queries a small set of EPMT Data and writes to a csv file. The focus of this notebook was the EPMT_JOB_TAGS annotations. A little bit of visualization is also added to the end. Linear Regression model was trained. The validation and testing sets are blurred. | 1,000 | 109 | LinearRegression<br>MSE: 9.4 x 10^14<br> $R^2$: 0.62<br>Training 75%<br>Validation Set: 25%<br> Testing Set:0% |
 | 2 | [JK_EPMT_Play2.ipynb](https://github.com/jjuyeonkim/ilaflott_epmt/blob/epmt_play/notebooks/JK_EPMT_Play2.ipynb) | Same as JK_EPMT_Play1, except dropped exp_time. Example correlation. | 1000 | ? | LinearRegression -- $R^2$: 0.06 |
-| 3 | [JK_EPMT_Play3.ipynb](https://github.com/jjuyeonkim/ilaflott_epmt/blob/epmt_play/notebooks/JK_EPMT_Play3.ipynb) | ? | ? | ? | $R^2$: ? |
+| 3 | [JK_EPMT_Play3.ipynb](https://github.com/jjuyeonkim/ilaflott_epmt/blob/epmt_play/notebooks/JK_EPMT_Play3.ipynb) | Further reducing cardinality of features | 10,000 | ? | Linear Regression--<br>MSE: 3.24 x 10^18<br>$R^2$: 0.03<br><br>SVM--<br>$R^2$: -4.6 |
 | 4 | [JK_EPMT_ExploreFeatures](https://github.com/jjuyeonkim/ilaflott_epmt/blob/epmt_play/notebooks/JK_EPMT_ExploreFeatures.ipynb) | This notebook is trying to explore beyond the 'EPMT_JOB_TAGS' within 'annotations' for rows within the EPMT database. This notebook was used to query around 40k rows, but things were commented out or only partially finished. ML Experiments not run.| 100 to ~40k | N/A | N/A |
 | 5 | [JK_EPMT_PullData.ipynb](https://github.com/jjuyeonkim/ilaflott_epmt/blob/epmt_play/notebooks/JK_EPMT_PullData.ipynb) | ? | ? | ? | ? | $R^2$: ? |
-| 6 | [EPMTDataCleanup.ipynb](https://github.com/jjuyeonkim/ilaflott_epmt/blob/epmt_play/notebooks/EPMTDataCleanup.ipynb) | Taking 40k rows of EPMT data pulled from the database and written to file on Feb 7th, 2026, and cleaning that up so that it can be more easily used for Machine Learning. Revised version will be written to file as csv, hopefully with data normalization and outliers removed. | ? | ? | ? | $R^2$: ? |
+| 6 | [EPMTDataCleanup.ipynb](https://github.com/jjuyeonkim/ilaflott_epmt/blob/epmt_play/notebooks/EPMTDataCleanup.ipynb) | Taking 40k rows of EPMT data pulled from the database and written to file on Feb 7th, 2026, and cleaning that up so that it can be more easily used for Machine Learning. Normalization + IQR for outlier handling. Optimistic "cheating" case where we have trained a Linear Regression using features from the EPMT database that we won't have at inference time. Cheating features include: duration, time_waiting, read_bytes, write_bytes, minflt, majflt. These features were included to train a model that represents a really optimistic and unrealistic scenario, where we had runtime features to help us predict the cpu_time. | 40k | ? | $R^2$: 0.93 (Cheating a bit. Don't take this too seriously)<br>Training 75%<br>Validation Set: 25%<br> Testing Set:0% |
 | 7 | [EPMTDataCleanup_Next123.ipynb](https://github.com/jjuyeonkim/ilaflott_epmt/blob/epmt_play/notebooks/EPMTDataCleanup_Next123.ipynb) | Following up from EPMTDataCleanup.ipynb; Try without group information; Maybe not needing script_name AND exp_name -- too correlated (likely) - Taking out script_name and keeping exp_name; bronx-23 --- try this one only; With this data, we're trying just a bunch of models on it to see what happens.  | ? | ? | <ul><li>LinearRegressor</li><li>DecisionTree</li><li>RandomForest</li><li>Boosting</li><li>Multi-Layer Perceptron</li><li>Voting Ensemble</li></ul><br>Best R-squared was .44 |
 | 8 | [EPMTDataCleanup_Next5.ipynb](https://github.com/jjuyeonkim/ilaflott_epmt/blob/epmt_play/notebooks/EPMTDataCleanup_Next5.ipynb) | More EPMT Cleanup - Next Idea No. "5"; Following up from EPMTDataCleanup_Next123.ipynb; Try starting from a small set of features; We determined which features are highly correlated to cpu_time and added them one at a time to predict. NOTE: Only num_features=85 is shown in the full notebook, but you can replace the num_features value to see the the r_squared values in the table results:<br><code>target = 'cpu_time'<br>features = df.corr(numeric_only=True)['cpu_time'].sort_values(ascending=False).keys().tolist()[1:n_features+1]</code> | 40k | 1 - 121 |<table><tr><th>num_features</th><th>$R^2$</th><tr><td>1</td><td>0.11</td></tr><tr><td>2</td><td>0.17</td></tr><tr><td>3</td><td>0.18</td></tr><tr><td>5</td><td>.21</td></tr><tr><td>45</td><td>.34</td></tr><tr><td>70</td><td>.39</td></tr><tr><td>80</td><td>.43</td></tr><tr><td>85</td><td>.44</td></tr><tr><td>90</td><td>.44</td></tr><tr><td>100<td>.44</td></tr></table> Best r_squared: 0.44 |
-| 9 | [EPMTDataCleanup_Next7.ipynb](https://github.com/jjuyeonkim/ilaflott_epmt/blob/epmt_play/notebooks/EPMTDataCleanup_Next7.ipynb) | ? | ? | ? | $R^2$: ? |
-| 10 | [EPMTDataCleanup_Next11a.ipynb](https://github.com/jjuyeonkim/ilaflott_epmt/blob/epmt_play/notebooks/EPMTDataCleanup_Next11a.ipynb) | ? | ? | ? |$R^2$: ? |
-| 11 | [EPMTDataCleanup_Next11b.ipynb](https://github.com/jjuyeonkim/ilaflott_epmt/blob/epmt_play/notebooks/EPMTDataCleanup_Next11b.ipynb) | ? | ? | ? |$R^2$: ? |
-| 12 | [EPMTDataCleanup_Next11e.ipynb](https://github.com/jjuyeonkim/ilaflott_epmt/blob/epmt_play/notebooks/EPMTDataCleanup_Next11e.ipynb) | ? | ? | ? |$R^2$: ? |
+| 9 | [EPMTDataCleanup_Next7.ipynb](https://github.com/jjuyeonkim/ilaflott_epmt/blob/epmt_play/notebooks/EPMTDataCleanup_Next7.ipynb) | EPMT Data "Cleanup" - Next Idea No. "7" (30k data)<br>Following up from EPMTDataCleanup_Next5.ipynb<br><br>GridSearchCV - Trying a little bit of hyper parameter tuning.<br>Also, added back in SLURM_JOB_ACCOUNT (ex., gfdl_w), but it didn't seem to make a difference even though it's highly correlated to the cpu_time target. | ? | ? | $R^2$: ? |
+| 10 | [EPMTDataCleanup_Next11a.ipynb](https://github.com/jjuyeonkim/ilaflott_epmt/blob/epmt_play/notebooks/EPMTDataCleanup_Next11a.ipynb) | EPMT Data<br>"Cleanup" - Next Idea No. "11" (More data - 100k+ rows)<br>Following up from EPMTDataCleanup_Next7.ipynb | 100k+ | ? |$R^2$: ? |
+| 11 | [EPMTDataCleanup_Next11b.ipynb](https://github.com/jjuyeonkim/ilaflott_epmt/blob/epmt_play/notebooks/EPMTDataCleanup_Next11b.ipynb) | desc? | ? | ? |$R^2$: ? |
+| 12 | [EPMTDataCleanup_Next11e.ipynb](https://github.com/jjuyeonkim/ilaflott_epmt/blob/epmt_play/notebooks/EPMTDataCleanup_Next11e.ipynb) | desc? | ? | ? |$R^2$: ? |
 
+## Mis-steps and Possible Future Steps
+If I were to redo how I spent my time, I might do things differently.
+
+### Understand the data better
+Actually running some post-processing jobs to understand better how data is being populated within the EPMT data base could have provided more insight on the data itself. If I could go back in time, I'd try this exercise before blindly extracting the data and using it.
+
+### Expand Dataset collection over a longer period of time
+
+Current EPMT database is limited to roughly 3 weeks worth of data at a given point in time. It may be useful to take time to write scripts to collect EPMT data over a longer period of time to use as training data. To clarify, this doesn’t mean a process for backing up EPMT data in its entirety. Instead, it may be writing scripts to parse through archival data or setting up cron jobs to pull from the existing EPMT data on regular 3 week intervals. If we collected data over a year, I estimate we could have 1-2 million rows. This would be a much larger data set.
+
+### Try different ML algorithms
+
+TODO: list some
+
+### Try different Features
+
+TODO: list some
+
+* If we stored the actual scripts being run, we could potentially extract useful features to train on.
+
+### Explore Better Metrics
+
+I used R_squared and MSE for these notebooks, but there are more metrics out there to explore. 
+
+TODO: list some
+
+### More Time
+
+More than 4 hours per week would likely have helped.
+
+### And more and more...
+
+TODO: Compile a list from the "Next Step" sections of the notebooks
+* Try with and without group information
+* Use only bronx-23 rows
+* Break up "ocean" exp_component --- even further... 
 
 DISCLAIMER: The template for this document was generated with the help of Gemini. It is currently being expanded, vetted, and populated with work results.
