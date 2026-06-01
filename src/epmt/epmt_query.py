@@ -27,7 +27,7 @@ from epmt.orm import (
     setup_db, orm_to_dict, orm_get, orm_create, orm_commit,
     orm_findall, orm_is_query, orm_get_jobs, orm_get_procs,
     orm_get_refmodels, orm_jobs_col, orm_procs_col,
-    orm_delete_jobs, orm_delete_refmodels, db_session,
+    orm_delete_jobs, orm_delete_refmodels, db_session, desc,
     Job, Process, Operation, Host, ReferenceModel, UnprocessedJob,
 )
 import epmt.epmt_settings as settings
