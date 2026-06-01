@@ -82,9 +82,11 @@ using a `psql` client.
 
 A sample docker invocation is:
 
+<!-- markdownlint-disable MD013 -->
 ```bash
 docker run --rm --name postgres -v $PWD/migrations/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d -v /path/to/data/dir:/var/lib/postgresql/data -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=example -e POSTGRES_DB=EPMT -p 5432:5432   postgres:latest
 ```bash
+<!-- markdownlint-enable MD013 -->
 
 Here the admin user is `postgres` and has a password `example`.
 

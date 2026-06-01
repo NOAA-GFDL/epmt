@@ -398,6 +398,7 @@ epmt -vv submit -n /dir/to/jobdata
 
 Also, one can decode and dump the job_metadata file in a dir or compressed dir.
 
+<!-- markdownlint-disable MD013 -->
 ```bash
 $ epmt dump ~/Downloads/yrs05-25.20190221/CM4_piControl_C_atmos_00050101.papiex.gfdl.19712961.tgz 
 exp_component           atmos                                                   
@@ -421,6 +422,7 @@ job_pl_start            2019-02-20 19:58:41.274267
 job_pl_submit           2019-02-20 19:58:41.274463                              
 job_pl_username         Foo.Bar                                        
 ```
+<!-- markdownlint-enable MD013 -->
 
 ## Performance Metrics Data Dictionary
 
@@ -518,12 +520,14 @@ run.
 
 ### Workflows
 
+<!-- markdownlint-disable MD013 MD060 -->
 | Workflow | Trigger | Purpose |
 |---|---|---|
 | `docker_build_test.yml` | `push` to `main`, `pull_request` | Full build + test pipeline; restores cached artifacts before building |
 | `slurm_image_build.yml` | Weekly (Mon 06:00 UTC), `workflow_dispatch` | Builds the `slurm-cluster` Docker image from source and saves it to cache |
 | `weekly_tarball_build.yml` | Weekly (Mon 06:00 UTC), `workflow_dispatch` | Compiles `papiex` and downloads `epmt-dash`, then saves both to cache |
 | `build_and_test_epmt.yml` | `push` to `main`, `pull_request` | Source-tree unit tests (no Docker) |
+<!-- markdownlint-enable MD013 MD060 -->
 
 ### Caches and Invalidation
 
@@ -532,6 +536,7 @@ uses file modification times to decide whether a target must be rebuilt. Changin
 a prerequisite produces a new cache key, causing a cache miss and forcing a fresh
 build.
 
+<!-- markdownlint-disable MD013 MD033 MD060 -->
 | Cache | Cache key components | Invalidation trigger | Notes |
 |---|---|---|---|
 | `epmt-build` Docker image | `OS_TARGET` + `PYTHON_VERSION` +<br/>`SQLITE_VERSION` +<br/>`hashFiles(Dockerfile, requirements.txt.py3)` | Edit the Dockerfile or requirements file, or bump any version variable | Fully content-hash based — closest analogy to `make` |
@@ -539,6 +544,7 @@ build.
 | `test-release` Docker image | `OS_TARGET` + `PYTHON_VERSION` +<br/>`SQLITE_VERSION` +<br/>`hashFiles(Dockerfile, requirements.txt.py3)` +<br/>`github.sha` | Always rebuilds (by design) —<br/>`restore-keys` prefix reuses<br/>unchanged early layers via<br/>`--cache-from` | Image content changes<br/>every commit; layer reuse<br/>keeps it fast |
 | `slurm-cluster` Docker image | `IMAGE_TAG` +<br/>`SLURM_TAG` +<br/>`SLURM_CLUSTER_TAG` | Bump any of the three version<br/>variables in `docker_build_test.yml`<br/>and `slurm_image_build.yml` | Version-string based; upstream<br/>tag mutations without a version<br/>bump won't invalidate |
 | `epmt-dash` UI directory | `EPMT_DASH_SRC_BRANCH` | Change `EPMT_DASH_SRC_BRANCH`<br/>in `docker_build_test.yml`,<br/>`weekly_tarball_build.yml`,<br/>and `Makefile` | Branch-name based; new commits<br/>to same branch don't invalidate —<br/>weekly workflow bounds staleness<br/>to ≤1 week |
+<!-- markdownlint-enable MD013 MD033 MD060 -->
 
 ### Cache Invalidation Gap vs. `make`
 

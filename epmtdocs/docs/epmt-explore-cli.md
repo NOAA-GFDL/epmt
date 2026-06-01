@@ -232,4 +232,6 @@ cpu_time by time segment:
     19440101      15803303653       
 ```text
 
-The `cpu_time` data suggests that the `18590101` took less cpu cycles. Yet it took longer to finish. One hypothesis that could explain the seeming contradiction is if the node(s) where the `18590101` were time-sharing with other concurrently running jobs.
+The `cpu_time` data suggests that the `18590101` took less cpu cycles. Yet it took longer
+to finish. One hypothesis that could explain the seeming contradiction is if the node(s)
+where the `18590101` were time-sharing with other concurrently running jobs.

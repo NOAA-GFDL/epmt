@@ -12,14 +12,18 @@ a notebook-style interface.
 [![weekly_cache_builds](https://github.com/NOAA-GFDL/epmt/actions/workflows/weekly_cache_builds.yml/badge.svg)](https://github.com/NOAA-GFDL/epmt/actions/workflows/weekly_cache_builds.yml)
 [![build_conda](https://github.com/NOAA-GFDL/epmt/actions/workflows/build_conda.yml/badge.svg)](https://github.com/NOAA-GFDL/epmt/actions/workflows/build_conda.yml?query=branch%3Amain)
 
+<!-- markdownlint-disable MD060 -->
 | Workflow | Python 3.10 | Python 3.11 |
-|----------|-------------|------------|
+|----------|-------------|-------------|
 | **create_test_conda_env** | [![3.10](https://github.com/NOAA-GFDL/epmt/actions/workflows/create_test_conda_env.yml/badge.svg)](https://github.com/NOAA-GFDL/epmt/actions/workflows/create_test_conda_env.yml?query=branch%3Amain+python-version%3A3.10) | [![3.11](https://github.com/NOAA-GFDL/epmt/actions/workflows/create_test_conda_env.yml/badge.svg)](https://github.com/NOAA-GFDL/epmt/actions/workflows/create_test_conda_env.yml?query=branch%3Amain+python-version%3A3.11) |
+<!-- markdownlint-enable MD060 -->
 
+<!-- markdownlint-disable MD060 -->
 | Workflow | SQLite | PostgreSQL |
-|----------|--------|-----------|
+|----------|--------|------------|
 | **docker_build_test** | [![sqlite](https://github.com/NOAA-GFDL/epmt/actions/workflows/docker_build_test.yml/badge.svg)](https://github.com/NOAA-GFDL/epmt/actions/workflows/docker_build_test.yml?query=branch%3Amain+db_backend%3Asqlite) | [![postgres](https://github.com/NOAA-GFDL/epmt/actions/workflows/docker_build_test.yml/badge.svg)](https://github.com/NOAA-GFDL/epmt/actions/workflows/docker_build_test.yml?query=branch%3Amain+db_backend%3Apostgres) |
 | **build_and_test_epmt** | [![sqlite](https://github.com/NOAA-GFDL/epmt/actions/workflows/build_and_test_epmt.yml/badge.svg)](https://github.com/NOAA-GFDL/epmt/actions/workflows/build_and_test_epmt.yml?query=branch%3Amain+db_backend%3Asqlite) | [![postgres](https://github.com/NOAA-GFDL/epmt/actions/workflows/build_and_test_epmt.yml/badge.svg)](https://github.com/NOAA-GFDL/epmt/actions/workflows/build_and_test_epmt.yml?query=branch%3Amain+db_backend%3Apostgres) |
+<!-- markdownlint-enable MD060 -->
 
 ## Installation
 

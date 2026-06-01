@@ -1,8 +1,8 @@
 # Data Dictionary
 
-
 papiex collects the following data for each thread:
 
+<!-- markdownlint-disable MD013 MD033 -->
 | Key                        | Source                                 | Datatype        | Scope    | Description                                             |
 |--------------------------- |----------------------------------------|---------------- |--------- |-------------------------------------------------------- |
 | 1. tags                    | getenv("PAPIEX_TAGS")                  | Escaped string  | Process  | User specified tags for this executable                 |

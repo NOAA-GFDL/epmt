@@ -502,6 +502,7 @@ necessary.  Here is a sample; alter the names:
   library `Frob' (a library for tweaking knobs) written by James Random
   Hacker.
 
+<!-- markdownlint-disable-next-line MD033 -->
   <signature of Ty Coon>, 1 April 1990
   Ty Coon, President of Vice
 

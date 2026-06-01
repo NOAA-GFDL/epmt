@@ -10,7 +10,6 @@ Source provides commands to begin automatic performance instrumentation of all
 subsequent shell commands. Standard use of this is via the shell's eval method
 inside job scripts or batch system wrappers. For example:
 
-
 ```text
 eval `epmt source` in Bash or Csh
 eval `epmt source --slurm` for a SLURM prolog.
@@ -74,6 +73,7 @@ Information about a job
 The EPMT Dump command will return all metadata about a job, job username, job tags job exit code all can be found
 here.  This command can be run on job archives, a job in the database or directly a job_metadata file.
 
+<!-- markdownlint-disable MD013 -->
 ### Dump Job metadata from Archive
 
 ```text
@@ -168,3 +168,4 @@ You can pass the ***-k*** key switch and a requested key parameter also.
 ./epmt dump -k job_tags sample/ppr-batch-sow3/1909/2587750.tgz 
 {'exp_name': 'ESM4_hist-piAer_D1', 'exp_component': 'ocean_cobalt_sfc', 'exp_time': '19090101', 'atm_res': 'c96l49', 'ocn_res': '0.5l75', 'script_name': 'ESM4_hist-piAer_D1_ocean_cobalt_sfc_19090101'}
 ```text
+<!-- markdownlint-enable MD013 -->

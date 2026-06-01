@@ -81,7 +81,8 @@ epmt run functionality  Pass
 
 ### Perf Event System Setting
 
-For detailed hardware and software performance metrics to collected by non-privileged users, the following setting must be verified/modified:
+For detailed hardware and software performance metrics to collected by non-privileged users,
+the following setting must be verified/modified:
 
 ```text
  # A value of 3 means the system is totally disabled
@@ -94,7 +95,13 @@ For detailed hardware and software performance metrics to collected by non-privi
 
 ```bash
 
-This isn't necessary unless one would like to collect metrics exposed by [PAPI](http://icl.utk.edu/papi/), [libpfm](http://perfmon2.sourceforge.net/) and the [perfevent](http://web.eece.maine.edu/~vweaver/projects/perf_events/) subsystems. Collecting subsystem data is the premise of EPMT. See [Stack Overflow](https://stackoverflow.com/questions/51911368/what-restriction-is-perf-event-paranoid-1-actually-putting-on-x86-perf) for a discussion of the setting. A setting of 1 is perfectly safe for production systems.
+This isn't necessary unless one would like to collect metrics exposed by
+[PAPI](http://icl.utk.edu/papi/), [libpfm](http://perfmon2.sourceforge.net/) and the
+[perfevent](http://web.eece.maine.edu/~vweaver/projects/perf_events/) subsystems.
+Collecting subsystem data is the premise of EPMT.
+<!-- markdownlint-disable-next-line MD013 -->
+See [Stack Overflow](https://stackoverflow.com/questions/51911368/what-restriction-is-perf-event-paranoid-1-actually-putting-on-x86-perf)
+for a discussion of the setting. A setting of 1 is perfectly safe for production systems.
 
 ## Generation (compilation) of release
 
