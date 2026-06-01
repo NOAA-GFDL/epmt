@@ -16,8 +16,9 @@ from sqlalchemy.orm import backref, relationship
 import epmt.epmt_settings as settings
 from .general import Base, orm_get
 
+# required for flexibility to use both sqlite3 and postgres
 if 'postgres' in settings.db_params.get('url', ''):
-    from sqlalchemy.dialects.postgresql import JSONB as JSON
+    from sqlalchemy.dialects.postgresql import JSONB as JSON # pylint: disable=ungrouped-imports,shadowed-import
 
 # Control what gets exported when using "from .models import *"
 __all__ = [
@@ -316,4 +317,3 @@ class Process(with_metaclass(CommonMeta, Base)):
             return f"Process[{self.id}]"
         except:
             return "Process[<detached>]"
-
