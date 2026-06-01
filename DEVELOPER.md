@@ -422,56 +422,56 @@ environment. See the `src/epmt/models/` directory for fixed data stored related 
 object. Metric data is stored differently; the data collector's data dictionary
 can be found in papiex-oss/README.md. At the time of this writing, it looked
 like this:
-| Key                       	| Scope   	| Description                                            	|
-|---------------------------	|---------	|--------------------------------------------------------	|
-| 1. tags                   	| Process 	| User specified tags for this executable                	|
-| 2. hostname               	| Process 	| hostname                                               	|
-| 3. exename                	| Process 	| Name of the application, usually argv[0]               	|
-| 4. path                   	| Process 	| Path to the application                                	|
-| 5. args                   	| Process 	| All arguments to exe excluding argv[0]                 	|
-| 6. exitcode               	| Process 	| Exit code                                              	|
-| 7. exitsignal             	| Process 	| Exited due to a signal                                 	|
-| 8. pid                    	| Process 	| Process id                                              |
-| 9. generation             	| Process 	| Incremented after every exec() or PID wrap             	|
-| 10. ppid                  	| Process 	| Parent process id                                      	|
-| 11. pgid                  	| Process 	| Process group id                                       	|
-| 12. sid                   	| Process 	| Process session id                                     	|
-| 13. numtids               	| Process 	| Number of threads caught by instrumentation            	|
-| 14. numranks              	| Process 	| Number of MPI ranks detected                           	|
-| 15. tid                   	| Process 	| Thread id                                              	|
-| 16. mpirank               	| Thread  	| MPI rank                                               	|
-| 17. start                 	| Process 	| Microsecond timestamp at start                         	|
-| 18. end                   	| Process 	| Microsecond timestamp at end                           	|
-| 19. usertime              	| Thread  	| Microsecond user time                                  	|
-| 20. systemtime            	| Thread  	| Microsecond system time                                	|
-| 21. rssmax                	| Thread  	| Kb max resident set size                               	|
-| 22. minflt                	| Thread  	| Minor faults (TLB misses/new page frames)              	|
-| 23. majflt                	| Thread  	| Major page faults (requiring I/O)                      	|
-| 24. inblock               	| Thread  	| 512B blocks read from I/O                              	|
-| 25. outblock              	| Thread  	| 512B blocks written to I/O                             	|
-| 26. vol_ctxsw             	| Thread  	| Voluntary context switches (yields)                    	|
-| 27. invol_ctxsw           	| Thread  	| Involuntary context switches (preemptions)             	|
-| 28. cminflt               	| Process 	| minflt (20) for all wait()ed children                  	|
-| 29. cmajflt               	| Thread  	| majflt (21) for all wait()ed children                  	|
-| 30. cutime                	| Process 	| utime (17) for all wait()ed children                   	|
-| 31. cstime                	| Thread  	| stime (18) for all wait()ed children                   	|
-| 32. num_threads           	| Process 	| Threads in process at finish                           	|
-| 33. starttime             	| Thread  	| Timestamp in jiffies after boot thread was started     	|
-| 34. processor             	| Thread  	| CPU this thread last ran on                            	|
-| 35. delayacct_blkio_time  	| Thread  	| Jiffies process blocked in D state on I/O device       	|
-| 36. guest_time            	| Thread  	| Jiffies running a virtual CPU for a guest OS           	|
-| 37. rchar                 	| Thread  	| Bytes read via syscall (maybe from cache not dev I/O)  	|
-| 38. wchar                 	| Thread  	| Bytes written via syscall (maybe to cache not dev I/O) 	|
-| 39. syscr                 	| Thread  	| Read syscalls                                          	|
-| 40. syscw                 	| Thread  	| Write syscalls                                         	|
-| 41. read_bytes            	| Thread  	| Bytes read from I/O device                             	|
-| 42. write_bytes           	| Thread  	| Bytes written to I/O device                            	|
-| 43. cancelled_write_bytes 	| Thread  	| Bytes discarded by truncation                          	|
-| 44. time_oncpu            	| Thread  	| Nanoseconds spent running                              	|
-| 45. time_waiting          	| Thread  	| Nanoseconds runnable but waiting                       	|
-| 46. timeslices            	| Thread  	| Number of run periods on CPU                           	|
-| 47. rdtsc_duration        	| Thread  	| If PAPI, real time cycle duration of thread            	|
-| *                         	| Thread  	| PAPI metrics                                           	|
+| Key                        | Scope    | Description                                             |
+|--------------------------- |--------- |-------------------------------------------------------- |
+| 1. tags                    | Process  | User specified tags for this executable                 |
+| 2. hostname                | Process  | hostname                                                |
+| 3. exename                 | Process  | Name of the application, usually argv[0]                |
+| 4. path                    | Process  | Path to the application                                 |
+| 5. args                    | Process  | All arguments to exe excluding argv[0]                  |
+| 6. exitcode                | Process  | Exit code                                               |
+| 7. exitsignal              | Process  | Exited due to a signal                                  |
+| 8. pid                     | Process  | Process id                                              |
+| 9. generation              | Process  | Incremented after every exec() or PID wrap              |
+| 10. ppid                   | Process  | Parent process id                                       |
+| 11. pgid                   | Process  | Process group id                                        |
+| 12. sid                    | Process  | Process session id                                      |
+| 13. numtids                | Process  | Number of threads caught by instrumentation             |
+| 14. numranks               | Process  | Number of MPI ranks detected                            |
+| 15. tid                    | Process  | Thread id                                               |
+| 16. mpirank                | Thread   | MPI rank                                                |
+| 17. start                  | Process  | Microsecond timestamp at start                          |
+| 18. end                    | Process  | Microsecond timestamp at end                            |
+| 19. usertime               | Thread   | Microsecond user time                                   |
+| 20. systemtime             | Thread   | Microsecond system time                                 |
+| 21. rssmax                 | Thread   | Kb max resident set size                                |
+| 22. minflt                 | Thread   | Minor faults (TLB misses/new page frames)               |
+| 23. majflt                 | Thread   | Major page faults (requiring I/O)                       |
+| 24. inblock                | Thread   | 512B blocks read from I/O                               |
+| 25. outblock               | Thread   | 512B blocks written to I/O                              |
+| 26. vol_ctxsw              | Thread   | Voluntary context switches (yields)                     |
+| 27. invol_ctxsw            | Thread   | Involuntary context switches (preemptions)              |
+| 28. cminflt                | Process  | minflt (20) for all wait()ed children                   |
+| 29. cmajflt                | Thread   | majflt (21) for all wait()ed children                   |
+| 30. cutime                 | Process  | utime (17) for all wait()ed children                    |
+| 31. cstime                 | Thread   | stime (18) for all wait()ed children                    |
+| 32. num_threads            | Process  | Threads in process at finish                            |
+| 33. starttime              | Thread   | Timestamp in jiffies after boot thread was started      |
+| 34. processor              | Thread   | CPU this thread last ran on                             |
+| 35. delayacct_blkio_time   | Thread   | Jiffies process blocked in D state on I/O device        |
+| 36. guest_time             | Thread   | Jiffies running a virtual CPU for a guest OS            |
+| 37. rchar                  | Thread   | Bytes read via syscall (maybe from cache not dev I/O)   |
+| 38. wchar                  | Thread   | Bytes written via syscall (maybe to cache not dev I/O)  |
+| 39. syscr                  | Thread   | Read syscalls                                           |
+| 40. syscw                  | Thread   | Write syscalls                                          |
+| 41. read_bytes             | Thread   | Bytes read from I/O device                              |
+| 42. write_bytes            | Thread   | Bytes written to I/O device                             |
+| 43. cancelled_write_bytes  | Thread   | Bytes discarded by truncation                           |
+| 44. time_oncpu             | Thread   | Nanoseconds spent running                               |
+| 45. time_waiting           | Thread   | Nanoseconds runnable but waiting                        |
+| 46. timeslices             | Thread   | Number of run periods on CPU                            |
+| 47. rdtsc_duration         | Thread   | If PAPI, real time cycle duration of thread             |
+| *                          | Thread   | PAPI metrics                                            |
 
 
 
