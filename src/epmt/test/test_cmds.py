@@ -140,8 +140,7 @@ class EPMTCmds(unittest.TestCase):
 
         # a daemon loop should clear the backlog of unprocessed
         # and unanalyzed jobs
-        #       with capture() as (out,err):
-        with capture() as (out, err):
+        with capture() as (_out, _err):
             self.assertFalse(daemon_loop(
                 nullcontext(), maxiters=1, ingest=False,
                 post_process=True, analyze=False, retire=False, keep=True, recursive=False))
@@ -177,7 +176,7 @@ class EPMTCmds(unittest.TestCase):
         self.assertEqual(type(retval), bool, 'wrong list jobs return type')
         self.assertEqual(retval, True, 'wrong list jobs return value')
 
-        with capture() as (out, err):
+        with capture() as (_out, _err):
             retval = epmt_list_jobs(["685000"])
         self.assertEqual(type(retval), bool, 'wrong list jobs return type')
         self.assertEqual(retval, True, 'wrong list jobs return value')
@@ -256,7 +255,7 @@ class EPMTCmds(unittest.TestCase):
 
         tempdir = mkdtemp(prefix='epmt_', dir=gettempdir())
         copytree(f"{install_root}/test/data/corrupted_csv", tempdir + "/corrupted_csv")
-        with capture() as (out, err):
+        with capture() as (_out, _err):
             retval = epmt_stage([tempdir + "/corrupted_csv"], keep_going=True)
         self.assertTrue(retval, "corrupted CSV files but keep_going, should have returned True")
         self.assertTrue(path.exists(errorfile))
@@ -309,7 +308,7 @@ class EPMTCmds(unittest.TestCase):
 
         # drop the db and check that we get an empty list after dropping the db
         from epmt.orm import orm_drop_db
-        with capture() as (out, err):
+        with capture() as (_out, _err):
             orm_drop_db()
         jobs = eq.get_jobs(fmt='terse')
         self.assertEqual(len(jobs), 0)

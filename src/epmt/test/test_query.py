@@ -798,7 +798,7 @@ class QueryAPI(unittest.TestCase):
         eq.delete_refmodels(r['id'])
 
         # named reference models
-        with capture() as (out, err):
+        with capture() as (_out, err):
             r1 = eq.create_refmodel(jobs, name='test_model')
             r2 = eq.create_refmodel(jobs)
         self.assertEqual(r1['name'], 'test_model')

@@ -422,7 +422,7 @@ def mvod_scores(X=None, classifiers=None, warnopts='ignore'):
         while (X is None) or (X[-int(n_pts * contamination):-1].sum() == 0.0):
             X, Y = generate_data(n_train=n_pts, train_only=True, n_features=n_features, contamination=contamination)
         # store outliers and inliers in different numpy arrays
-        x_outliers, x_inliers = get_outliers_inliers(X, Y)
+        _x_outliers, _x_inliers = get_outliers_inliers(X, Y)
 
 
     (npts, ndim) = X.shape
