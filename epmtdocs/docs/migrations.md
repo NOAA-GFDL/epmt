@@ -3,7 +3,7 @@
 Migrations are supported for SQLAlchemy at present. We use
 alembic for migrations.
 
-### Requirements
+## Requirements
  - SQLAlchemy ORM
  - Preferably a database such as Postgres that supports `ALTER`
    SQLite works, but some migrations will give pain as SQLite 
@@ -29,7 +29,7 @@ is empty.
 
 Once the database is setup, you can apply migrations as explained below.
 
-### Creating a migration
+## Creating a migration
 
 Let's follow an example that shows how to add a column
 to the users table. We will use an SQLite local-file database.

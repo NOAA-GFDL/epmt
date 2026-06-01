@@ -34,3 +34,16 @@ jobs:
       - name: Build docs with --strict (warnings as errors)
         run: |
           mkdocs build --strict -f epmtdocs/mkdocs.yml
+
+  markdown-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Files
+        uses: actions/checkout@v4
+
+      - name: Lint markdown files
+        uses: DavidAnson/markdownlint-cli2-action@v19
+        with:
+          globs: |
+            epmtdocs/docs/**/*.md
+            *.md

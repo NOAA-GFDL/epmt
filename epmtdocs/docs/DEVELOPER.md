@@ -583,7 +583,7 @@ artifact inline so the pipeline never silently skips a required build step.
 
 
 
-### Virtual Environments:
+### Virtual Environments
 Note that often in virtual environments, hardware counters are not often available in the VM.
 
 
