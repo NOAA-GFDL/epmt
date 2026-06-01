@@ -24,6 +24,8 @@ jobs:
     runs-on: ubuntu-latest
 
     strategy:
+      max-parallel: 1
+      fail-fast: false
       matrix:
         python-version: ["3.11"]
       fail-fast: false  # let all versions run even if one fails

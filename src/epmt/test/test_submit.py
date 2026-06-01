@@ -565,8 +565,9 @@ class EPMTSubmit(unittest.TestCase):
     def test_unprocessed_jobs(self):
         from epmt.orm import UnprocessedJob
         from epmt.epmt_job import post_process_pending_jobs, post_process_job
-        with self.assertRaises(Exception):
-            UnprocessedJob['685003']
+        #with self.assertRaises(Exception):
+        #    UnprocessedJob['685003']
+        self.assertRaises(Exception, lambda: UnprocessedJob['685003'])            
         if settings.orm == 'sqlalchemy':
             # only sqlalchemy allows this option
             settings.post_process_job_on_ingest = False
@@ -592,8 +593,9 @@ class EPMTSubmit(unittest.TestCase):
         self.assertFalse('685003' in eq.get_unprocessed_jobs())
         self.assertFalse(post_process_job(j.jobid))
         self.assertFalse(orm_get(UnprocessedJob, '685003'))
-        with self.assertRaises(Exception):
-            UnprocessedJob['685003']
+        #with self.assertRaises(Exception):
+        #    UnprocessedJob['685003']
+        self.assertRaises(Exception, lambda: UnprocessedJob['685003'])
         self.assertTrue(eq.is_job_post_processed(j))
 
     @db_session

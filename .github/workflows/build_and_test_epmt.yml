@@ -26,6 +26,7 @@ jobs:
   build-linux:
     runs-on: ubuntu-latest
     strategy:
+      max-parallel: 1
       fail-fast: false
       matrix:
         db_backend: [sqlite, postgres]
