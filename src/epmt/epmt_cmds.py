@@ -92,7 +92,6 @@ def write_job_epilog(jobdatafile, metadata):
         pickle.dump(metadata, file)
         logger.debug("Pickled to %s", jobdatafile)
         return True
-    return False
 
 def PrintFail():
     print("\t" + bcolors.FAIL + "Fail" + bcolors.ENDC, flush=True)
@@ -457,7 +456,6 @@ def write_job_metadata(jobdatafile, data):
         logger.info("pickled to %s", jobdatafile)
         logger.debug("Data %s", data)
         return True
-    return False
     # collect env
 
 
