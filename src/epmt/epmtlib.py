@@ -303,10 +303,6 @@ def tag_from_string(s, delim=';', sep=':', tag_default_value='1'):
     Note, both key and values will be strings and no attempt will be made to
     guess the type for integer/floats
     '''
-    import warnings
-    with warnings.catch_warnings():
-        warnings.filterwarnings("ignore", category=DeprecationWarning)
-
     if isinstance(s, dict):
         return s
 

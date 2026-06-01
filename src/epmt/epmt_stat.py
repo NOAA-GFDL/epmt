@@ -104,10 +104,6 @@ def z_score(ys, params=()):
     (array([0.332 , 0.3285, 0.325 , 0.3215, 0.318 , 0.3145, 0.311 , 0.3075,
             0.304 , 0.3005, 3.1621]), 3.1621, 95.9091, 285.9118)
     '''
-    # suppress divide by 0 warnings. We handle the actual division
-    # issue by using np.nan_to_num
-    import warnings
-    warnings.filterwarnings("ignore", category=RuntimeWarning)
     logger = getLogger(__name__)  # you can use other name
     logger.debug('scoring using %s', 'z_score')
     ys = np.array(ys)
@@ -308,14 +304,10 @@ def uvod_classifiers():
     return funcs
 
 
-def mvod_classifiers(contamination=0.1, warnopts='ignore'):
+def mvod_classifiers(contamination=0.1):
     '''
     Returns a list of multivariate classifiers::Statistics
     '''
-    if warnopts:
-        from warnings import simplefilter
-        simplefilter(warnopts)
-
     from pyod.models.abod import ABOD
     from pyod.models.knn import KNN
     # from pyod.models.feature_bagging import FeatureBagging # not stable, wrong results
@@ -343,7 +335,7 @@ def mvod_classifiers(contamination=0.1, warnopts='ignore'):
     return classifiers
 
 
-def mvod_scores(X=None, classifiers=None, warnopts='ignore'):
+def mvod_scores(X=None, classifiers=None):
     '''
     Perform outlier scoring using multivariate classifiers::Statistics
 
@@ -368,9 +360,6 @@ def mvod_scores(X=None, classifiers=None, warnopts='ignore'):
                  KNN()
              ]
 
-    warnopts takes the options from the python warning module:
-        "default", "error", "ignore", "always", "module" and "once"
-
     Here is a run with random data:
 
     >>> x = mvod_scores()
@@ -386,13 +375,6 @@ def mvod_scores(X=None, classifiers=None, warnopts='ignore'):
     if classifiers is None:
         classifiers = []
 
-    if warnopts:
-        from warnings import simplefilter
-        # ignore all future warnings
-        # simplefilter(action='ignore', category=FutureWarning)
-        simplefilter(warnopts)
-
-
     # the contamination below, is *ONLY* used in the model
     # for prediction of outliers and used for random data
     # The API is confusing and it might appear that we are using the
@@ -402,7 +384,7 @@ def mvod_scores(X=None, classifiers=None, warnopts='ignore'):
     contamination = 0.1
 
     if not classifiers:
-        classifiers = mvod_classifiers(contamination, warnopts)
+        classifiers = mvod_classifiers(contamination)
 
     logger.debug('using classifiers: %s', [get_classifier_name(c) for c in classifiers])
 
@@ -783,9 +765,6 @@ def check_dist(data=None, dist='norm', alpha=0.05):
     '''
     if data is None:
         data = []
-    # https://stackoverflow.com/questions/40845304/runtimewarning-numpy-dtype-size-changed-may-indicate-binary-incompatibility
-    import warnings
-    warnings.filterwarnings("ignore")
 
     # Shapiro-Wilk Test
     from scipy.stats import shapiro
