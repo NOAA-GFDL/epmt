@@ -998,7 +998,7 @@ def populate_process_table_from_staging(j):
     # The cleanup runs in the same transaction as the INSERT so both are
     # rolled back together on failure.
     if nprocs > 0:
-        cleanup_sql = "DELETE FROM processes WHERE jobid = '{}';\n".format(jobid)
+        cleanup_sql = f"DELETE FROM processes WHERE jobid = '{jobid}';\n"
         insert_sql = cleanup_sql + insert_sql
         logger.debug('prepended cleanup DELETE for job %s processes', jobid)
 
@@ -1016,15 +1016,14 @@ def populate_process_table_from_staging(j):
             logger.error('You do not have sufficient privileges for this operation')
         else:
             logger.error(
-                f'INSERT aka insert_sql[:{settings.max_log_statement_length}] = \n'
-                f' {insert_sql[:settings.max_log_statement_length]}')
+                'INSERT aka insert_sql[:%s] = \n %s',
+                settings.max_log_statement_length, insert_sql[:settings.max_log_statement_length])
             ## Only log the first 100 entries in the error string- it will largely be SQL statements
             if len(err_str) > settings.max_log_statement_length:
                 logger.error('error (type is %s) too long to show (%s)...', type(err_str), len(err_str))
                 logger.error('first %s errors in err_str list are...', settings.max_log_statement_length)
                 logger.error(''.join(err_str[:settings.max_log_statement_length]))
             else:
-                # some bugs require this line get uncommented
                 logger.error(err_str)
         return False
 
