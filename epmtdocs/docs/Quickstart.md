@@ -12,7 +12,7 @@ them and place them in a folder.
 
 Just launch the installer and point it to the release tar.
 
-```
+```bash
 $ ./epmt-installer ./EPMT-2.1.0.tgz 
 
 Using release: /home/tushar/src/EPMT/EPMT-2.1.0.tgz
@@ -34,7 +34,7 @@ export PATH="/home/tushar/src/EPMT/epmt-2.1.0/epmt-install/epmt:$PATH"
 
 Or, for C shell/tcsh:
 setenv PATH "/home/tushar/src/EPMT/epmt-2.1.0/epmt-install/epmt:$PATH"
-```
+```bash
 
 Once the installer finishes successfully, you should follow the printed
 instructions and update your shell startup file. Then logout and login
@@ -54,15 +54,15 @@ Untar the release tar (EPMT-2.1.0.tgz), you will get three files
 
 Then set the environment variables below:
 
-```
+```bash
 EPMT_VERSION=2.1.0
 EPMT_PREFIX=/path/to/install
 EPMT_DOWNLOAD=/path/to/download
-```
+```bash
 
 Now perform the following steps:
 
-```
+```bash
 mkdir -p $EPMT_PREFIX
 cd $EPMT_PREFIX
 tar xf $EPMT_DOWNLOAD/epmt-$EPMT_VERSION.tgz
@@ -70,41 +70,44 @@ tar xf $EPMT_DOWNLOAD/papiex-epmt-$EPMT_VERSION.tgz
 tar xf $EPMT_DOWNLOAD/test-epmt-$EPMT_VERSION.tgz
 cp epmt-install/preset_settings/settings_sqlite_localfile_sqlalchemy.py epmt-install/epmt/settings.py
 $EPMT_PREFIX/epmt-install/epmt/epmt -V
-```
+```bash
 
 ***IMPORTANT***
 
-***The below instructions uses a SQLite database with an on-disk data store, which is scalable only to a few thousand jobs. You may use `settings_pg_localhost_sqlalchemy.py` to set up a connection to a PostGres database instance, which is the recommended configuration. `settings_sqlite_inmem_sqlalchemy.py` is also available for ephemeral testing.***
+***The below instructions uses a SQLite database with an on-disk data store, which is scalable only to a few
+thousand jobs. You may use `settings_pg_localhost_sqlalchemy.py` to set up a connection to a PostGres
+database instance, which is the recommended configuration. `settings_sqlite_inmem_sqlalchemy.py` is also
+available for ephemeral testing.***
 
 Modify install, output and stage paths, and possibly the database connection string, in your copied `settings.py` file.
 
 `vi $EPMT_PREFIX/epmt-install/epmt/settings.py`
 
-```
+```bash
 install_prefix = <value of EPMT_PREFIX>/papiex-epmt-install/
 epmt_output_prefix = "/tmp/epmt/"
 stage_command = "mv"
 stage_command_dest = "./"
-```
+```bash
 
 Now check everything works as expected.
 
-```
+```bash
 $EPMT_PREFIX/epmt-install/epmt/epmt -V
 $EPMT_PREFIX/epmt-install/epmt/epmt check
-```
+```bash
 
 If everything looks good, add `epmt` to your path. For ***Bash***:
 
-```
+```bash
 export PATH=$EPMT_PREFIX/epmt-install/epmt:$PATH
-```
+```bash
 
 or for ***C shell***:
 
-```
+```bash
 setenv PATH $EPMT_PREFIX/epmt-install/epmt:$PATH
-```
+```bash
 
 ## Usage
 
@@ -112,7 +115,7 @@ setenv PATH $EPMT_PREFIX/epmt-install/epmt:$PATH
 
 See examples in the `$EPMT_PREFIX/epmt-install/examples/` directory.
 
-```
+```bash
 $ cat epmt-example.csh
 #!/bin/tcsh
 
@@ -126,7 +129,7 @@ set f=`epmt stage`     # Move to medium term storage ($PWD)
 epmt submit $f         # Submit to DB, should do elsewhere
 
 $ sbatch epmt-example.csh
-```
+```bash
 
 ***IMPORTANT***
 
@@ -134,23 +137,28 @@ $ sbatch epmt-example.csh
 
 ### Automatic instrumentation using SLURM
 
-Using configured prolog and epilogs with SLURM tasks allows one to skip job instrumentation entirely, with the exception of job tags (***EPMT_JOB_TAGS***) and process tags (***PAPIEX_TAGS***). These are configured in `slurm.conf` for jobs submitted with `sbatch` but they can be tested on the command line when using `srun`.
+Using configured prolog and epilogs with SLURM tasks allows one to skip job instrumentation entirely,
+with the exception of job tags (***EPMT_JOB_TAGS***) and process tags (***PAPIEX_TAGS***). These are
+configured in `slurm.conf` for jobs submitted with `sbatch` but they can be tested on the command line
+when using `srun`.
 
-The above Csh job is equivalent to the below sequence using a prolog and epilog, ***with the exception of the trailing submit statement.***
+The above Csh job is equivalent to the below sequence using a prolog and epilog,
+***with the exception of the trailing submit statement.***
 
-```
+```bash
 srun -n1 \\
 --task-prolog=$EPMT_PREFIX/epmt-install/slurm/slurm_task_prolog_epmt.sh \\
 --task-epilog=$EPMT_PREFIX/epmt-install/slurm/slurm_task_epilog_epmt.sh \\
 sleep 1
-```
+```bash
 
-For this job to work using `sbatch` the following modifications in the `slurm.conf` would be made, substituting the appropriate path for EPMT_PREFIX:
+For this job to work using `sbatch` the following modifications in the `slurm.conf` would be made,
+substituting the appropriate path for EPMT_PREFIX:
 
-```
+```bash
 TaskProlog=EPMT_PREFIX/epmt-install/slurm/slurm_task_prolog_epmt.sh
 TaskEpilog=EPMT_PREFIX/epmt-install/slurm/slurm_task_epilog_epmt.sh
-```
+```bash
 
 ## Testing (Optional)
 
@@ -163,26 +171,26 @@ template before running the tests below.***
 Saving your existing `settings.py` and using an in-memory sqlite
 template for the tests:
 
-```
+```bash
 mv $EPMT_PREFIX/epmt-install/epmt/settings.py $EPMT_PREFIX/epmt-install/epmt/settings.py.backup
 cp $EPMT_PREFIX/epmt-install/preset_settings/settings_sqlite_inmem_sqlalchemy.py $EPMT_PREFIX/epmt-install/epmt/settings.py
-```
+```bash
 
 ### Run integration tests
 
-```
+```bash
 cd $EPMT_PREFIX/epmt-install/epmt
 pytest -x -vv test/integration/test_integration_*.py
-```
+```bash
 
 ### Run unit tests
 
-```
+```bash
 pytest src/epmt/test/
-```
+```bash
 
 Tip: Don't forget to restore your `settings.py` file after the tests!
 
-```
+```bash
 mv $EPMT_PREFIX/epmt-install/epmt/settings.py.backup $EPMT_PREFIX/epmt-install/epmt/settings.py
-```
+```bash

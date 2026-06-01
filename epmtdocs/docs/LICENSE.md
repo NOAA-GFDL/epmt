@@ -1,3 +1,7 @@
+# GNU Lesser General Public License v2.1
+
+<!-- markdownlint-disable MD046 -->
+
                   GNU LESSER GENERAL PUBLIC LICENSE
                        Version 2.1, February 1999
 

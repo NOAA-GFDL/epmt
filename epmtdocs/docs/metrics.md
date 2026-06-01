@@ -1,5 +1,5 @@
-Data Dictionary
----------------
+# Data Dictionary
+
 
 papiex collects the following data for each thread:
 

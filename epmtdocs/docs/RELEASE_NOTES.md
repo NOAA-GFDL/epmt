@@ -1,6 +1,6 @@
-Version 4.9.1
-=============
+# Release Notes
 
+## Version 4.9.1
   Release date: 09/28/2002
 
   The list includes features and fixes since version 4.7.3.
@@ -12,9 +12,7 @@ Version 4.9.1
 - PAPIEX 2.3.13
 - Removed bitrot throughout the dependencies
   
-Version 4.7.3
-=============
-
+## Version 4.7.3
   Release date: 07/29/2020
 
   The list includes features and fixes since version 4.5.2.
@@ -30,9 +28,7 @@ Version 4.7.3
 - bugs related to post-processing fixed
 - improvements to unit and integration tests
 
-Version 4.5.2
-=============
-
+## Version 4.5.2
   Release date: 06/19/2020
 
   The list includes features and fixes since version 3.7.22.
@@ -49,9 +45,7 @@ Version 4.5.2
 - Fixes and enhancements to the Query, Outlier detection and Statistics API
 - Outlier detection for processes and threads
 
-Version 3.7.22
-==============
-
+## Version 3.7.22
   Release date: 04/22/2020
 
   The list includes features added since version 3.3.20.
@@ -76,9 +70,7 @@ Version 3.7.22
 - Improved handling of staging and concatenation errors
 - Improvements to the GUI
 
-Version 3.3.20
-==============
-
+## Version 3.3.20
   Release date: 02/28/2020
 
   The list below includes features added since version 2.2.7.

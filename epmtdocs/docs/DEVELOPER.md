@@ -61,7 +61,7 @@ $ cat src/epmt/epmt_default_settings.py
 
 The following variables replace, at run-time, the values in the `db_params` dictionary found in `settings.py`:
 
-```
+```text
 EPMT_DB_PROVIDER
 EPMT_DB_USER
 EPMT_DB_PASSWORD
@@ -330,7 +330,7 @@ epmt submit
 
 The start/stop cycle can be removed with the `--auto` or `-a` flag, which performs start and stop for you:
 
-```
+```bash
 epmt -a run ./debug_the_world --outliers
 epmt submit
 ```
@@ -484,6 +484,7 @@ like this:
 ### Addition of new metrics
 
 Additional metrics can be configured either in two ways:
+
 - The `papiex_options` string in `settings.py` if using `epmt run` or `epmt source`
 - The value of the `PAPIEX_OPTIONS` environment variable if using `LD_PRELOAD` directly.
 
@@ -544,6 +545,7 @@ build.
 `make` detects prerequisite changes via file modification times regardless of
 version numbers. The GitHub Actions caches above use version strings or content
 hashes instead, so:
+
 - `epmt-build` is fully `make`-like — changing the Dockerfile or
   requirements file immediately produces a different hash and forces a rebuild.
 - `papiex` and `slurm-cluster` require a deliberate version bump in the

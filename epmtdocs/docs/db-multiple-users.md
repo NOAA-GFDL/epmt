@@ -1,14 +1,14 @@
+# EPMT with Multiple Database Users
+
 EPMT can work with multiple DB accounts with varying privilege levels.
 
-Single-account permissions
---------------------------
+## Single-account permissions
 
  Here a single DB account is used and all operations use the same
 singular DB account. In such a case, you can set the `db_params:url` parameter
 in `settings.py` to the singular account and password.
 
-Multiple accounts
------------------
+## Multiple accounts
 
 EPMT supports an environment variable `EPMT_DB_URL`, which can be
 set to a valid postgres URI of the form:
@@ -28,9 +28,9 @@ This account is of the owner of the EPMT database. This account can do
 all operations including creating and deleting tables. When EPMT is
 first-installed or after a new drop, it is recommended you run the following.
 
-```
+```bash
 EPMT_DB_URL=postgresql://<admin-user>:<admin-passwd>@postgres-host:5432/EPMT epmt -v migrate
-```
+```bash
 
 This will create the necessary tables and apply migrations. It is necessary
 to apply migrations using the admin account as shown above.
@@ -64,8 +64,7 @@ the DB URI for the R/O account. All other account credentials for R/W
 and admin user can be configured by setting `EPMT_DB_URL` from the environment
 when such privilege is needed.
 
-Configuring a docker postgres image with multiple user accounts
-===============================================================
+## Configuring a docker postgres image with multiple user accounts
 
 1. Edit `migrations/docker-entrypoint-initdb.d/init-user-db.sh` to suit
 your needs. You should only need to modify the passwords for `epmt-rw`
@@ -83,23 +82,23 @@ using a `psql` client.
 
 A sample docker invocation is:
 
-```
+```bash
 docker run --rm --name postgres -v $PWD/migrations/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d -v /path/to/data/dir:/var/lib/postgresql/data -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=example -e POSTGRES_DB=EPMT -p 5432:5432   postgres:latest
-```
+```bash
 
 Here the admin user is `postgres` and has a password `example`.
 
 To first apply migrations as the admin user, you would do:
 
-```
+```bash
 EPMT_DB_URL=postgresql://postgres:example@localhost:5432/EPMT epmt -v migrate
-```
+```bash
 
 Then you can submit a job using the R/W user as follows:
 
-```
+```bash
 EPMT_DB_URL=postgresql://epmt-rw:<password>@localhost:5432/EPMT epmt -v submit xyz.tgz
-```
+```bash
 
 Finally, an epmt command executed without `EPMT_DB_URL` will use the
 credentials in `settings.py` and default to the read-only user.

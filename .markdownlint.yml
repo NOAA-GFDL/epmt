@@ -6,60 +6,51 @@ default: true
 # Line length — docs contain long lines intentionally (tables, code examples)
 MD013:
   line_length: 120
+  tables: false
+  code_blocks: false
 
-## Hard tabs — used in hand-crafted tables and copied terminal output
-#MD010: false
-#
-## Inline HTML — used in several docs
-#MD033: false
-#
-## Table column alignment style — tabs in table cells cause false positives
-#MD060: false
-#
-## Multiple consecutive blank lines — pre-existing style in many docs
-#MD012: false
-#
-## Headings must be surrounded by blank lines — pre-existing style
-#MD022: false
-#
-## Fenced code blocks must be surrounded by blank lines — pre-existing style
-#MD031: false
-#
-## Trailing spaces — pre-existing in many docs
-#MD009: false
-#
-## Unordered list style (dash vs asterisk) — mixed style in existing docs
-#MD004: false
-#
-## Unordered list indentation — pre-existing style
-#MD007: false
-#
-## Dollar signs before commands (without output) — docs use this style
-#MD014: false
-#
-## Ordered list item prefix — pre-existing style
-#MD029: false
-#
-## Multiple top-level headings — some docs use this intentionally
-#MD025: false
-#
-## First line must be top-level heading — not enforced in this project
-#MD041: false
-#
-## Lists should be surrounded by blank lines — pre-existing style
-#MD032: false
-#
-## Bare URLs — pre-existing in several docs
-#MD034: false
-#
-## Code block style — mixed fenced/indented in existing docs (e.g. LICENSE)
-#MD046: false
-#
-## Fenced code blocks should have a language specified — not consistently done
-#MD040: false
-#
-## Table pipe style — pre-existing inconsistency
-#MD055: false
-#
-## Tables should be surrounded by blank lines — pre-existing style
-#MD058: false
+# Hard tabs — used in hand-crafted tables and copied terminal output
+MD010: false
+
+# Inline HTML — used in several docs (e.g. <br/> in tables, /proc/<pid>/ paths)
+MD033: false
+
+# Table column alignment style — tabs in table cells cause false positives
+MD060: false
+
+# Multiple consecutive blank lines — pre-existing style in many docs
+MD012: false
+
+# Headings must be surrounded by blank lines — pre-existing style
+MD022: false
+
+# Fenced code blocks must be surrounded by blank lines — pre-existing style
+MD031: false
+
+# Trailing spaces — pre-existing in many docs
+MD009: false
+
+# Unordered list style (dash vs asterisk) — mixed style in existing docs
+MD004: false
+
+# Unordered list indentation — pre-existing style
+MD007: false
+
+# Dollar signs before commands (without output) — docs use this style
+MD014: false
+
+# Ordered list item prefix — pre-existing style
+MD029: false
+
+# Bare URLs — pre-existing in several docs
+MD034: false
+
+# Code block style — enforce fenced for better language annotation support
+MD046:
+  style: "fenced"
+
+# Table pipe style — pre-existing inconsistency
+MD055: false
+
+# Tables should be surrounded by blank lines — pre-existing style
+MD058: false

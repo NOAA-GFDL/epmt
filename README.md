@@ -1,8 +1,9 @@
 # **Experiment Process / Metadata Tool** (`epmt`)
 
-`epmt` collects metadata and performance data about shell processes, down to individual threads in individual processes. Currently,
-`epmt` is particularly specialized for interfacing with Slurm batch jobs associated with earth modeling workflows, but is generalizable to
-other computational workflow contexts. It also offers entrypoints to analyzing your data by interfacing with `jupyter` for easy access to
+`epmt` collects metadata and performance data about shell processes, down to individual threads in individual
+processes. Currently, `epmt` is particularly specialized for interfacing with Slurm batch jobs associated with
+earth modeling workflows, but is generalizable to other computational workflow contexts. It also offers
+entrypoints to analyzing your data by interfacing with `jupyter` for easy access to
 a notebook-style interface.
 
 [![readthedocs](https://app.readthedocs.org/projects/epmt/badge/?version=latest&style=flat)](https://epmt.readthedocs.io/en/latest/)
@@ -22,8 +23,9 @@ a notebook-style interface.
 
 ## Installation
 
-These are not-yet *fully* functional installations, as `epmt` was designed in an era where virtual environments were not as ubiquitous as
-they are today. For full-featured build/installation approaches, consult the `Makefile`, `.github/workflows`, and [`DEVELOPER.md`](./DEVELOPER.md)
+These are not-yet *fully* functional installations, as `epmt` was designed in an era where virtual environments
+were not as ubiquitous as they are today. For full-featured build/installation approaches, consult the
+`Makefile`, `.github/workflows`, and [`DEVELOPER.md`](./DEVELOPER.md)
 
 ### With `conda` (recommended)
 
@@ -86,4 +88,5 @@ epmt submit
 
 ## Further Documentation
 
-For detailed information on configuration, data collection, SLURM integration, database submission, analysis, performance metrics, debugging, and CI/CD, see [DEVELOPER.md](DEVELOPER.md).
+For detailed information on configuration, data collection, SLURM integration, database submission, analysis,
+performance metrics, debugging, and CI/CD, see [DEVELOPER.md](DEVELOPER.md).

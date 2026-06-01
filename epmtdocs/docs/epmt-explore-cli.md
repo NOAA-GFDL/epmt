@@ -1,13 +1,15 @@
+# epmt explore CLI
+
 To reproduce this example, you will need the following test data:
 
-```
+```text
 epmt submit test/data/outliers_nb/*.tgz
-```
+```text
 
 You run the CLI by typing `epmt explore` and passing it an
 experiment name:
 
-```
+```text
 $ epmt explore ESM4_hist-piAer_D1
 
 top 10 components by sum(duration):
@@ -110,7 +112,7 @@ duration by time segment:
     19340101      44092005094       
     19390101      23934831859       
     19440101      38736281301       
-```
+```text
 
 The output is self-explanatory. The outliers are marked with asterisks,
 the more the asterisks the greater the outlier. We use multimode score
@@ -125,7 +127,7 @@ In the example above we use the default metric -- `duration`. It shows quite cle
 that the time-segment `18590101` is affected and took far longer.
 The output with `cpu_time` metric is also instructive. Have a look:
 
-```
+```text
 $ epmt explore --metric cpu_time ESM4_hist-piAer_D1
 
 top 10 components by sum(cpu_time):
@@ -228,6 +230,6 @@ cpu_time by time segment:
     19340101      16479797891       
     19390101      15447854905       
     19440101      15803303653       
-```
+```text
 
 The `cpu_time` data suggests that the `18590101` took less cpu cycles. Yet it took longer to finish. One hypothesis that could explain the seeming contradiction is if the node(s) where the `18590101` were time-sharing with other concurrently running jobs.
