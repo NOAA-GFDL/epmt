@@ -566,7 +566,7 @@ class EPMTSubmit(unittest.TestCase):
         from epmt.orm import UnprocessedJob
         from epmt.epmt_job import post_process_pending_jobs, post_process_job
         with self.assertRaises(Exception):
-            _u = UnprocessedJob['685003']
+            UnprocessedJob['685003']
         if settings.orm == 'sqlalchemy':
             # only sqlalchemy allows this option
             settings.post_process_job_on_ingest = False
@@ -593,7 +593,7 @@ class EPMTSubmit(unittest.TestCase):
         self.assertFalse(post_process_job(j.jobid))
         self.assertFalse(orm_get(UnprocessedJob, '685003'))
         with self.assertRaises(Exception):
-            _u = UnprocessedJob['685003']
+            UnprocessedJob['685003']
         self.assertTrue(eq.is_job_post_processed(j))
 
     @db_session
@@ -672,7 +672,7 @@ class EPMTSubmit(unittest.TestCase):
             # the orm_to_dict will trigger moving the job from staging
             # to processes table and post-processing it in case it's
             # not post_processes
-            _j_dict = orm_to_dict(j)
+            orm_to_dict(j)
         # at this point the processes will be in the process table
         # and would have been post-processed
         self.assertFalse(eq.is_job_in_staging(j))

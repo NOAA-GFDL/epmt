@@ -15,7 +15,7 @@ class EPMTDBSchema(unittest.TestCase):
 
     def test_schema(self):
         with capture() as (out, _err):
-            _retval = orm_dump_schema()
+            orm_dump_schema()
         # print('schema: ', out.getvalue())
         s = out.getvalue()
         # self.assertNotIn('alembic', s)

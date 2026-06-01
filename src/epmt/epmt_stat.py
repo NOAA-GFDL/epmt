@@ -394,7 +394,7 @@ def mvod_scores(X=None, classifiers=None, warnopts='ignore'):
 
 
     # the contamination below, is *ONLY* used in the model
-    # for preditiction of outliers and used for random data
+    # for prediction of outliers and used for random data
     # The API is confusing and it might appear that we are using the
     # parameter for the classifier, in fact, its' only used for
     # prediction of the outlier. The scores are the *same* regardless
@@ -422,7 +422,8 @@ def mvod_scores(X=None, classifiers=None, warnopts='ignore'):
         while (X is None) or (X[-int(n_pts * contamination):-1].sum() == 0.0):
             X, Y = generate_data(n_train=n_pts, train_only=True, n_features=n_features, contamination=contamination)
         # store outliers and inliers in different numpy arrays
-        _x_outliers, _x_inliers = get_outliers_inliers(X, Y)
+        #_x_outliers, _x_inliers = get_outliers_inliers(X, Y) # orig line
+        _, _ = get_outliers_inliers(X, Y)
 
 
     (npts, ndim) = X.shape

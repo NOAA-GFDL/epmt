@@ -775,7 +775,7 @@ class OutliersAPI(unittest.TestCase):
             'kern-6656-20190614-192044-outlier',
             'kern-6656-20190614-194024']
         with capture() as (out, _err):
-            _figure = eod.feature_scatter_plot(jobs, outfile=plotfile)
+            eod.feature_scatter_plot(jobs, outfile=plotfile)
         s = out.getvalue()
         self.assertIn('Plotly Cannot export static images, Feature coming soon', s)
 
