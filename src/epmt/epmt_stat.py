@@ -424,8 +424,6 @@ def mvod_scores(X=None, classifiers=None, warnopts='ignore'):
         # store outliers and inliers in different numpy arrays
         x_outliers, x_inliers = get_outliers_inliers(X, Y)
 
-        _n_inliers = len(x_inliers)
-        _n_outliers = len(x_outliers)
 
     (npts, ndim) = X.shape
     logger.debug('mvod: input length %s, dimensions %s', npts, ndim)

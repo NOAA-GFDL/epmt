@@ -809,10 +809,8 @@ def check_and_apply_migrations():
 
 @chdir_for_alembic_and_restore_cwd
 def get_db_schema_version():
-    from alembic import config
     from alembic.runtime import migration
     engine = _connect_engine()
-    _alembic_cfg = config.Config('alembic.ini')
     with engine.begin() as conn:
         context = migration.MigrationContext.configure(conn)
         database_schema_version = context.get_current_revision()

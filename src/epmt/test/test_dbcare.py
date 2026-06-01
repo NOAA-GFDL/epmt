@@ -137,7 +137,7 @@ class TestRetireJobs(unittest.TestCase):
         self.assertIn('685000', jobs_before)
 
         # use a threshold that's 1 day MORE than the job's age — should NOT delete
-        _result = eq.retire_jobs(ndays=ndays + 2)
+        eq.retire_jobs(ndays=ndays + 2)
         jobs_after = eq.get_jobs(['685000'], fmt='terse')
         self.assertIn('685000', jobs_after)
 
