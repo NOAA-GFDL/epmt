@@ -253,6 +253,13 @@ def file_len(fname):
 
 
 def determine_output_filename(instr):
+    '''
+    Derive the collated output filename from a papiex input CSV path.
+
+    Extracts the job ID from the parent directory name and the hostname
+    from the filename, then constructs a collated output filename.
+    Returns an empty string if parsing fails.
+    '''
     try:
         jobid = path.basename(path.dirname(path.abspath(instr)))
         logger.debug("jobid %s", jobid)
