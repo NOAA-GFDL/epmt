@@ -1095,7 +1095,7 @@ def epmt_submit(dirs, ncpus=1, dry_run=True, drop=False, keep_going=False,
     if not dirs:
         global_jobid, global_datadir, global_metadatafile = setup_vars()
         if not all( [ global_jobid , global_datadir , global_metadatafile ] ):
-            logger.error("none should be null: global_job_id %s, global_data_dir %s, global_metdadatafile %s",
+            logger.error("none should be null: global_job_id %s, global_data_dir %s, global_metadatafile %s",
                          global_jobid, global_datadir, global_metadatafile)
             return False
         dirs = [global_datadir]
@@ -1243,7 +1243,7 @@ def copy_files(src_dir, dest_dir='', patterns=None, prefix=''):
                  one will be created using mkdtemp. If specified,
                  a directory will be created if it does not exist.
         prefix : This option is only meaningful if `dest_dir` is
-                 not spcified, and mkdtemp is used to create a
+                 not specified, and mkdtemp is used to create a
                  temporary directory. In that case, the prefix if
                  set will be honored while creating `dest_dir` name.
       patterns : list, optional
@@ -1313,8 +1313,8 @@ def create_tar(tarfile, indir, remove_dir=False):
     '''
     Create a tar file
 
-        Parmeters
-        ---------
+        Parameters
+        ----------
           tarfile : string
                     Path to output tar file. If it exists it will
                     be silently overwritten
@@ -1546,7 +1546,7 @@ def submit_to_db(inputf, pattern, dry_run=True):
 @logfn
 def stage_job(indir, collate=True, compress_and_tar=True, keep_going=True):
     if not indir or len(indir) == 0:
-        logger.error("stage_job: indir is epmty")
+        logger.error("stage_job: indir is empty")
         return False
 
     if not settings.stage_command or not settings.stage_command_dest or len(

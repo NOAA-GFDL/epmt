@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 '''
-This script defines functions to converti collated CSV files from
+This script defines functions to convert collated CSV files from
 from the earlier comma-separated format to the new tab-separated
 collated TSV format.
 '''
@@ -160,7 +160,7 @@ def conv_csv_for_dbcopy(infile, outfile='', jobid='', input_fields=None):
                 metric_names = ",".join(thr_fields)
                 header = OUTPUT_CSV_SEP.join(OUTPUT_CSV_FIELDS).replace('threads_df', '{' + metric_names + '}')
                 # we create a copy as we don't want to modify the constant
-                # -- it's used elesewhere
+                # -- it's used elsewhere
                 output_fields = OUTPUT_CSV_FIELDS.copy()
                 output_fields[output_fields.index('threads_df')] = metric_names
                 # initialize the output file
@@ -221,7 +221,7 @@ def conv_csv_for_dbcopy(infile, outfile='', jobid='', input_fields=None):
             outrows += 1
             for f in output_fields:
                 outrow[f] = r[f]
-                # postgrsql requires arrays to use curly braces instead
+                # postgresql requires arrays to use curly braces instead
                 # of the square brackets we get with list objects in Python
                 if f == metric_names:
                     outrow[f] = json.dumps(r[f]).replace('[', '{').replace(']', '}')

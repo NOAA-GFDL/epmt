@@ -469,7 +469,7 @@ def _mk_pid_map(all_procs):
     pid_map = {}
     for p in all_procs:
         if p.pid in pid_map:
-            logger.debug('handled hash collision for PID (%d) -- process execed', p.pid)
+            logger.debug('handled hash collision for PID (%d) -- process executed', p.pid)
             pid_map[p.pid].append(p)
         else:
             pid_map[p.pid] = [p]
@@ -511,7 +511,7 @@ def _create_process_tree(pid_map):
                 # common case no hash collision
                 parent = entries[0]
             else:
-                # the process must have execed so we have
+                # the process must have executed so we have
                 # multiple records for the PID.
                 for e in entries:
                     assert e.pid == ppid
@@ -584,7 +584,7 @@ def mk_process_tree(j, all_procs=None, pid_map=None):
     # computing process inclusive times
     for proc in all_procs:
         if settings.bulk_insert:
-            # in bulk inserts, we cannnot rely on process.descendants to be
+            # in bulk inserts, we cannot rely on process.descendants to be
             # available, so we use a descendants map created during the
             # process tree creation step
             proc_descendants = desc_map.get(proc.id, set())
@@ -882,7 +882,7 @@ def populate_process_table_from_staging(j):
     we cannot use a native database row copy, because the
     field formats change and we need to do some field manipulations.
     In particular, thread metric sums are computed, and a flattened
-    1-D threads_df is convered to a JSON.
+    1-D threads_df is converted to a JSON.
 
     It is implicitly assumed that we are connecting to a Postgresql
     database (since SQLite doesn't support direct CSV copy in the
@@ -927,7 +927,7 @@ def populate_process_table_from_staging(j):
         start = dt.datetime.fromtimestamp(start / 1e6)
         end = dt.datetime.fromtimestamp(finish / 1e6)
 
-        # take care to escape characters using psycopg2's adapat
+        # take care to escape characters using psycopg2's adapt
         tags = psycopg2.extensions.adapt(dumps(tag_from_string(tags) if tags else {}))
         if args is None:
             args = ''
@@ -1027,7 +1027,7 @@ def populate_process_table_from_staging(j):
                 logger.error(err_str)
         return False
 
-    # DELETE SQL transactionm
+    # DELETE SQL transaction
     try:
         logger.debug('executing: orm_raw_sql(delete_sql,commit=True)')
         orm_raw_sql(delete_sql, commit=True)
@@ -1321,9 +1321,9 @@ def ETL_job_dict(raw_metadata, filedict, settings, tarfile=None):
             #            stdout.write(spinner.next())  # write the next character
             #            stdout.flush()                # flush stdout buffer (actual character display)
             # We need rows to skip
-            # oldproctag (after comment char) is outdated as a process tag but kept for posterities sake
-            skiprows, oldproctag = extract_tags_from_comment_line(f, tarfile=tarfile)
-            logger.debug("%s had %d comment rows, oldproctags %s", f, skiprows, oldproctag)
+            # old_proc_tag (after comment char) is outdated as a process tag but kept for posterities sake
+            skiprows, old_proc_tag = extract_tags_from_comment_line(f, tarfile=tarfile)
+            logger.debug("%s had %d comment rows, old_proc_tags %s", f, skiprows, old_proc_tag)
 
             if tarfile:
                 logger.debug('extracting %s from tar', f)
@@ -1437,7 +1437,7 @@ def ETL_job_dict(raw_metadata, filedict, settings, tarfile=None):
                 # If using old version of papiex, process tags are in the comment field
                 _proc_tag_start_ts = time.time()
                 if not p.tags:
-                    p.tags = tag_from_string(oldproctag) if oldproctag else {}
+                    p.tags = tag_from_string(old_proc_tag) if old_proc_tag else {}
                 # pickle and add tag dictionaries to a set
                 # remember to sort_keys during the pickle!
                 if p.tags:
@@ -1446,7 +1446,7 @@ def ETL_job_dict(raw_metadata, filedict, settings, tarfile=None):
                 _t = time.time()
 
                 # We shouldn't be seeing a pid repeat in a job.
-                # Theoretically it's posssible but it would complicate the pid map a bit
+                # Theoretically it's possible but it would complicate the pid map a bit
                 # assert(p.pid not in pid_map)
                 pid_map[p.pid] = p
                 all_procs.append(p)
@@ -1557,7 +1557,7 @@ def ETL_job_dict(raw_metadata, filedict, settings, tarfile=None):
         if settings.bulk_insert:
             # when doing bulk inserts we don't pass in all_procs
             # and pid_map as they have to be recreated using
-            # ORM objects and not the dotdicts we used for bulk
+            # ORM objects and not the dotdicts we used for bulk # inl: ... what are dotdicts?
             # inserts. Otherwise the calls to create_process_tree
             # will fail as they rely on relationships between the
             # orm objects, and in particular the primary IDs of the

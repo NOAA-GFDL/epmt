@@ -409,7 +409,7 @@ def get_jobs(
              (Job.jobid == '685000')
              (Job.jobid.in_(['685000', '685016']))
 
-             For ORM's, you may be able to use a lamdba function or a string
+             For ORM's, you may be able to use a lambda function or a string
              e.g., lambda j: count(j.processes) > 100 will filter jobs more than 100 processes
              or, 'j.duration > 100000' will filter jobs whose duration is more than 100000
 
@@ -497,7 +497,7 @@ def get_jobs(
              This will make aggregates across processes appear as part of the job
              If False, the job will contain job.proc_sums, which will be a dict
              of key/value pairs, where each is an process attribute, such as numtids,
-             and the value is the sum acorss all processes of the job.
+             and the value is the sum across all processes of the job.
 
     exact_tag_only: boolean, optional
              If set, tag will be considered matched if saved tag
@@ -686,7 +686,7 @@ def get_procs(jobs=None, tags=None, fltr=None, order=None, offset=0, limit=None,
              thread aggregates such as 'usertime', 'systemtime' are available
              as first-class members of the process. This option is silently
              ignored if output format 'fmt' is set to 'orm', and ORM
-             objects will not be merge_threads_sumsed.
+             objects will not merge_threads_sums.
 
     exact_tag_only: boolean, optional
              If set, tag will be considered matched if saved tag
@@ -846,8 +846,8 @@ def job_proc_tags(jobs, exclude=None, tag_filter='', fold=False):
 
     Returns
     -------
-    A collection of tags that comrise the the unique set of tags across
-    all the processes in the collecition of jobs.
+    A collection of tags that comprise the the unique set of tags across
+    all the processes in the collection of jobs.
 
     A list of dicts (if fold == False) or a dict (if fold == True)
 
@@ -1208,7 +1208,7 @@ op_tags: list of dicts or list of strings
          obtain the set of processes over which an aggregation
          is performed using get_op_metrics.
 
-methods: list of callables, optonal
+methods: list of callables, optional
          Is a list of methods that are used to obtain outlier
          scores. Each method is passed a vector consisting
          of the value of 'feature' for all the jobs. The
@@ -1239,7 +1239,7 @@ enabled: boolean, optional
          this option to True, you may also set this option to something
          like: pca = 2, in which case it will mean you want two components
          in the PCA. Or something like, pca = 0.95, which will be
-         intepreted as meaning do PCA and automatically select the number
+         interpreted as meaning do PCA and automatically select the number
          components to arrive at the number of components in the PCA.
          If set to True, a 0.85 variance ratio will be set to enable
          automatic selection of PCA components.
@@ -1880,7 +1880,7 @@ op_duration_method: string, optional
         #        group_concat(p.threads_sums, sep='@@@')) for p in procs)
 
         for row in procs_grp_by_job:
-            (j, nprocs, start, end, duration, excl_cpu, ntids, threads_sums_str) = row
+            (j, nprocs, start, end, duration, excl_cpu, n_tids, threads_sums_str) = row
             if op_duration_method == "finish-minus-start":
                 duration = (end - start).total_seconds() * 1e6
             elif op_duration_method == "sum-minus-overlap":
@@ -1889,7 +1889,7 @@ op_duration_method: string, optional
                 # background and wait).
                 # So we use Operation to correctly compute duration
                 # This is an expensive computation:
-                # O(NlogN) complexity, where N is the num. of processes
+                # O(N log N) complexity, where N is the num. of processes
                 op = Operation(j, t, exact_tags_only, op_duration_method="sum-minus-overlap")
                 duration = round(op.duration, 1)
             elif op_duration_method == "sum":
@@ -1912,7 +1912,7 @@ op_duration_method: string, optional
             # a more consistent user experience
             jobid = j.jobid if (isinstance(j, Job)) else j
             sum_dict.update({'job': jobid, 'jobid': jobid, 'tags': t, 'num_procs': nprocs,
-                            'numtids': ntids, 'cpu_time': excl_cpu, 'duration': duration})
+                            'numtids': n_tids, 'cpu_time': excl_cpu, 'duration': duration})
             all_procs.append(sum_dict)
 
     if group_by_tag:
@@ -2206,7 +2206,7 @@ def ops_costs(jobs=None, tags=None, metric='cpu_time'):
       jobs : list of strings or list of Job objects or ORM query
              Collection of jobs. If empty all jobs will be assumed
       tags : list of strings or list of dicts, optional
-             The `tags` specify the cumumlative set of operations
+             The `tags` specify the cumulative set of operations
              for which we want to determine the time taken.
       metric: string
              'cpu_time' or 'duration'
@@ -2379,7 +2379,7 @@ def annotate_job(jobid, annotation, replace=False):
                  annotations, depending on the value of `replace`
       replace  : boolean, optional
                  If replace is True, then *all* existing annotations
-                 will be overritten. Normally, this is set to False,
+                 will be overwritten. Normally, this is set to False,
                  in which case, the supplied annotations are merged into
                  the existing annotations.
 
@@ -2545,7 +2545,7 @@ def analyze_comparable_jobs(jobids, check_comparable=True, keys=('exp_name', 'ex
     logger.debug('Searching for trained models with tag: %s', model_tag)
     trained_models = get_refmodels(tag=model_tag)
     outlier_results = []
-    # can we make the if/then more DNRY?
+    # can we make the if/then more DRY?
     if trained_models:
         logger.debug('found %s trained models for job set', len(trained_models))
         for r in trained_models:
@@ -2556,7 +2556,7 @@ def analyze_comparable_jobs(jobids, check_comparable=True, keys=('exp_name', 'ex
             outlier_results.append({'model_id': model_id, 'results': outlier_detect_results})
     else:
         # no trained model found.
-        # Can we run a detect_outlier_jobs on the exisiting job set?
+        # Can we run a detect_outlier_jobs on the existing job set?
         if len(jobids) < 4:
             logger.warning(
                 '%s -- No trained model found, and too few jobs for outlier detection (need at least 4)', jobids)
@@ -2591,7 +2591,7 @@ def set_job_analyses(jobid, analyses, replace=False, size_limit=64 * 1024):
               represents the job analyses metadata
     replace : boolean, optional
               If replace is True, then *all* existing analyses
-              will be overritten. Normally, this is set to False,
+              will be overwritten. Normally, this is set to False,
               in which case, the supplied analyses are merged into
               the existing analyses.
  size_limit : Limit analyses field. If analyses is larger than
@@ -2624,13 +2624,13 @@ def get_job_analyses(jobid):
     '''
     Gets the analyses metadata for the specified job::Jobs
 
-    Paramaters
+    Parameters
     ----------
       jobid : string
 
     Returns
     -------
-    A dict (possibly empty) representing the current anaylses
+    A dict (possibly empty) representing the current analyses
     performed on the job
     '''
     j = orm_get(Job, jobid) if (isinstance(jobid, str)) else jobid
@@ -2848,7 +2848,7 @@ def compute_process_trees(jobs):
     It is safe to call this function on jobs that already have process trees
     computed as they will just be skipped.  It's also usually not necessary to
     call this function, as any API call that needs the process tree will
-    call this autmatically.
+    call this automatically.
 
     Examples
     --------
@@ -2981,8 +2981,8 @@ def procs_set(jobs, attr='exename'):
     >>> hosts
     ['pp208', 'pp212']
     '''
-    phist = procs_histogram(jobs, attr)
-    return sorted(phist.keys())
+    procs_hist = procs_histogram(jobs, attr)
+    return sorted(procs_hist.keys())
 
 
 @db_session
@@ -3011,7 +3011,7 @@ def add_features_df(jobs_df, features=None, key='jobid'):
               The original columns of `jobs_df` will be included.
               Feature names for the new columns will be based on the
               name of the callables passed
-added_fetaures: list of strings
+added_features: list of strings
               List of feature columns that were concatenated
 
     Notes
@@ -3164,7 +3164,7 @@ def post_process_jobs(jobs, check=True):
       jobs : list of strings, list of Job objects or an ORM job query
 
       check : boolean, optional, default = True
-              Check if the job has infact been processed before doing it again
+              Check if the job has in fact been processed before doing it again
 
     Returns
     -------

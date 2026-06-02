@@ -47,7 +47,7 @@ def rename_bad_files(outfile, errdir, badfiles):
         try:
             makedirs(ed)
         except OSError as e:
-            logger.error("makedirs(%s): %s, skipping renamng of bad CSV files!", ed, str(e))
+            logger.error("makedirs(%s): %s, skipping renaming of bad CSV files!", ed, str(e))
             return badfiles
     renamed_badfiles = []
     for f in badfiles:
@@ -66,7 +66,7 @@ def rename_bad_files(outfile, errdir, badfiles):
 
 def parseFile(inputfile, masterHeader, masterHeaderFile, delim, commentDelim):
     """
-    Take file and paramaters for parsing return tuple of csv data
+    Take file and parameters for parsing return tuple of csv data
     to be passed to writeCSV then verifyOut
 
         file - Single CSV File to parse for comment,header and data
@@ -116,7 +116,7 @@ def parseFile(inputfile, masterHeader, masterHeaderFile, delim, commentDelim):
 
 def parseLine(infile, line, masterHeader, masterHeaderFile, headerDelimCount, headerFound, delim):
     """
-    Parse single line of file with paramaters of current status, returning post status and line info
+    Parse single line of file with parameters of current status, returning post status and line info
 
     Check for 3 possible conditions:
       - line is comment
@@ -176,13 +176,13 @@ def parseLine(infile, line, masterHeader, masterHeaderFile, headerDelimCount, he
 def writeCSV(outfile, comments, masterHeader, dataList):
     """
     Write our output file
-    Here All Aggrigated data is written to an output file in the pwd
+    Here All Aggregated data is written to an output file in the pwd
 
     outfile - csv name to write to pwd
     ex:
         asus-collated-papiex-2-0.csv
 
-    comments - Aggrigated list of comments
+    comments - Aggregated list of comments
     ex:
         ['comment1','comment2','...']
 
@@ -190,7 +190,7 @@ def writeCSV(outfile, comments, masterHeader, dataList):
     ex:
         "tags,hostname,exename,path,args,exitcode,pid,..."
 
-    dataList - Aggrigated list of csv data
+    dataList - Aggregated list of csv data
     ex:
         [",asus,sleep,/bin/sleep,1,0,26577,0,26576,26497"]
 
@@ -272,7 +272,7 @@ def csvjoiner(indir,
               delim=',', comment='#', debug=0, keep_going=True, errdir="/tmp/"):
     """
     CSVJoiner will collate the csv files within the indir
-    The resulting collated file can be designated with outfile paramater.
+    The resulting collated file can be designated with outfile parameter.
         indir - String location of CSV Files to collate
         outfile - string file name for output
         delim - CSV Delimiter character defaults to comma
