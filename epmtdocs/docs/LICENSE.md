@@ -1,6 +1,6 @@
 # GNU Lesser General Public License v2.1
 
-<!-- markdownlint-disable MD046 -->
+<!-- markdownlint-disable MD029 -->
 
                   GNU LESSER GENERAL PUBLIC LICENSE
                        Version 2.1, February 1999
@@ -119,7 +119,7 @@ be combined with the library in order to run.
                   GNU LESSER GENERAL PUBLIC LICENSE
    TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION
 
-  1. This License Agreement applies to any software library or other
+  0. This License Agreement applies to any software library or other
 program which contains a notice placed by the copyright holder or
 other authorized party saying it may be distributed under the terms of
 this Lesser General Public License (also called "this License").
@@ -163,7 +163,7 @@ Library.
 and you may at your option offer warranty protection in exchange for a
 fee.
 
-  1. You may modify your copy or copies of the Library or any portion
+  2. You may modify your copy or copies of the Library or any portion
 of it, thus forming a work based on the Library, and copy and
 distribute such modifications or work under the terms of Section 1
 above, provided that you also meet all of these conditions:
@@ -212,7 +212,7 @@ with the Library (or with a work based on the Library) on a volume of
 a storage or distribution medium does not bring the other work under
 the scope of this License.
 
-  1. You may opt to apply the terms of the ordinary GNU General Public
+  3. You may opt to apply the terms of the ordinary GNU General Public
 License instead of this License to a given copy of the Library.  To do
 this, you must alter all the notices that refer to this License, so
 that they refer to the ordinary GNU General Public License, version 2,
@@ -228,7 +228,7 @@ subsequent copies and derivative works made from that copy.
   This option is useful when you wish to copy part of the code of
 the Library into a program that is not a library.
 
-  1. You may copy and distribute the Library (or a portion or
+  4. You may copy and distribute the Library (or a portion or
 derivative of it, under Section 2) in object code or executable form
 under the terms of Sections 1 and 2 above provided that you accompany
 it with the complete corresponding machine-readable source code, which
@@ -241,7 +241,7 @@ source code from the same place satisfies the requirement to
 distribute the source code, even though third parties are not
 compelled to copy the source along with the object code.
 
-  1. A program that contains no derivative of any portion of the
+  5. A program that contains no derivative of any portion of the
 Library, but is designed to work with the Library by being compiled or
 linked with it, is called a "work that uses the Library".  Such a
 work, in isolation, is not a derivative work of the Library, and
@@ -272,7 +272,7 @@ distribute the object code for the work under the terms of Section 6.
 Any executables containing that work also fall under Section 6,
 whether or not they are linked directly with the Library itself.
 
-  1. As an exception to the Sections above, you may also combine or
+  6. As an exception to the Sections above, you may also combine or
 link a "work that uses the Library" with the Library to produce a
 work containing portions of the Library, and distribute that work
 under terms of your choice, provided that the terms permit
@@ -334,7 +334,7 @@ accompany the operating system.  Such a contradiction means you cannot
 use both them and the Library together in an executable that you
 distribute.
 
-  1. You may place library facilities that are a work based on the
+  7. You may place library facilities that are a work based on the
 Library side-by-side in a single library together with other library
 facilities not covered by this License, and distribute such a combined
 library, provided that the separate distribution of the work based on
@@ -358,7 +358,7 @@ rights under this License.  However, parties who have received copies,
 or rights, from you under this License will not have their licenses
 terminated so long as such parties remain in full compliance.
 
-  1. You are not required to accept this License, since you have not
+  9. You are not required to accept this License, since you have not
 signed it.  However, nothing else grants you permission to modify or
 distribute the Library or its derivative works.  These actions are
 prohibited by law if you do not accept this License.  Therefore, by
@@ -367,7 +367,7 @@ Library), you indicate your acceptance of this License to do so, and
 all its terms and conditions for copying, distributing or modifying
 the Library or works based on it.
 
-  2. Each time you redistribute the Library (or any work based on the
+  10. Each time you redistribute the Library (or any work based on the
 Library), the recipient automatically receives a license from the
 original licensor to copy, distribute, link with or modify the Library
 subject to these terms and conditions.  You may not impose any further
@@ -375,7 +375,7 @@ restrictions on the recipients' exercise of the rights granted herein.
 You are not responsible for enforcing compliance by third parties with
 this License.
 
-  3. If, as a consequence of a court judgment or allegation of patent
+  11. If, as a consequence of a court judgment or allegation of patent
 infringement or for any other reason (not limited to patent issues),
 conditions are imposed on you (whether by court order, agreement or
 otherwise) that contradict the conditions of this License, they do not
@@ -406,7 +406,7 @@ impose that choice.
 This section is intended to make thoroughly clear what is believed to
 be a consequence of the rest of this License.
 
-  1. If the distribution and/or use of the Library is restricted in
+  12. If the distribution and/or use of the Library is restricted in
 certain countries either by patents or by copyrighted interfaces, the
 original copyright holder who places the Library under this License may add
 an explicit geographical distribution limitation excluding those countries,
@@ -414,7 +414,7 @@ so that distribution is permitted only in or among countries not thus
 excluded.  In such case, this License incorporates the limitation as if
 written in the body of this License.
 
-  2. The Free Software Foundation may publish revised and/or new
+  13. The Free Software Foundation may publish revised and/or new
 versions of the Lesser General Public License from time to time.
 Such new versions will be similar in spirit to the present version,
 but may differ in detail to address new problems or concerns.
@@ -427,7 +427,7 @@ the Free Software Foundation.  If the Library does not specify a
 license version number, you may choose any version ever published by
 the Free Software Foundation.
 
-  1. If you wish to incorporate parts of the Library into other free
+  14. If you wish to incorporate parts of the Library into other free
 programs whose distribution conditions are incompatible with these,
 write to the author to ask for permission.  For software which is
 copyrighted by the Free Software Foundation, write to the Free
@@ -438,7 +438,7 @@ and reuse of software generally.
 
                             NO WARRANTY
 
-  2. BECAUSE THE LIBRARY IS LICENSED FREE OF CHARGE, THERE IS NO
+  15. BECAUSE THE LIBRARY IS LICENSED FREE OF CHARGE, THERE IS NO
 WARRANTY FOR THE LIBRARY, TO THE EXTENT PERMITTED BY APPLICABLE LAW.
 EXCEPT WHEN OTHERWISE STATED IN WRITING THE COPYRIGHT HOLDERS AND/OR
 OTHER PARTIES PROVIDE THE LIBRARY "AS IS" WITHOUT WARRANTY OF ANY
@@ -448,7 +448,7 @@ PURPOSE.  THE ENTIRE RISK AS TO THE QUALITY AND PERFORMANCE OF THE
 LIBRARY IS WITH YOU.  SHOULD THE LIBRARY PROVE DEFECTIVE, YOU ASSUME
 THE COST OF ALL NECESSARY SERVICING, REPAIR OR CORRECTION.
 
-  3. IN NO EVENT UNLESS REQUIRED BY APPLICABLE LAW OR AGREED TO IN
+  16. IN NO EVENT UNLESS REQUIRED BY APPLICABLE LAW OR AGREED TO IN
 WRITING WILL ANY COPYRIGHT HOLDER, OR ANY OTHER PARTY WHO MAY MODIFY
 AND/OR REDISTRIBUTE THE LIBRARY AS PERMITTED ABOVE, BE LIABLE TO YOU
 FOR DAMAGES, INCLUDING ANY GENERAL, SPECIAL, INCIDENTAL OR
@@ -502,8 +502,7 @@ necessary.  Here is a sample; alter the names:
   library `Frob' (a library for tweaking knobs) written by James Random
   Hacker.
 
-<!-- markdownlint-disable-next-line MD033 -->
-  <signature of Ty Coon>, 1 April 1990
+  \<signature of Ty Coon\>, 1 April 1990
   Ty Coon, President of Vice
 
 That's all there is to it!
