@@ -115,8 +115,8 @@ duration by time segment:
 ```text
 
 The output is self-explanatory. The outliers are marked with asterisks,
-the more the asterisks the greater the outlier. We use multimode score
-using a number of univariate classifiers.
+the more the asterisks the greater the outlier. We use multimodal scoring
+by combining a number of univariate classifiers.
 
 You will notice that the first four time-segments take a bulk of the time.
 That's an artifact of the fact that we loaded all the jobs of the first

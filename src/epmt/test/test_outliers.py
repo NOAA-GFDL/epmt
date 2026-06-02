@@ -268,7 +268,7 @@ class OutliersAPI(unittest.TestCase):
         self.assertEqual(sorted_features, ['cpu_time', 'duration', 'num_procs'])
         # ensure df has the right feature order
         self.assertEqual(df_cols[2:], sorted_features)
-        # esnure scores_df has the right order
+        # ensure scores_df has the right order
         self.assertEqual(list(scores_df.columns)[1:], sorted_features)
 
         # ensure tag importance order is correct
@@ -833,7 +833,7 @@ class OutliersAPI(unittest.TestCase):
         self.assertEqual(r1.tags, {'exp_name': 'linux_kernel_test'})
         self.assertFalse(r1.op_tags)
         # pony and sqlalchemy have slightly different outputs
-        # in pony each value in modfied_z_score dictionary is a
+        # in pony each value in modified_z_score dictionary is a
         # a tuple, while in sqlalchemy it's a list. So, we use
         # assertIn to check if either match occurs
         self.assertIn(r1.computed,

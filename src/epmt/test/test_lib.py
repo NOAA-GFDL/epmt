@@ -50,8 +50,8 @@ class EPMTLib(unittest.TestCase):
         (encdf, encfeat) = dframe_encode_features(df, reversible=True)
         self.assertEqual(set(encfeat), {'D', 'A'})
         self.assertFalse(encdf.equals(df))
-        (decdf, decf) = dframe_decode_features(encdf, encfeat)
-        self.assertEqual(set(decf), {'D', 'A'})
+        (decdf, decfeat) = dframe_decode_features(encdf, encfeat)
+        self.assertEqual(set(decfeat), {'D', 'A'})
         self.assertTrue(decdf.equals(df))
 
     def test_hash_strings(self):

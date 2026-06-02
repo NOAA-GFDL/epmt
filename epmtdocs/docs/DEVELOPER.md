@@ -16,7 +16,7 @@ For installation and quick-start instructions, see [README.md](./README.md).
     - [Data Collection with SLURM epilog and prolog](#data-collection-with-slurm-epilog-and-prolog)
   - [The Second Mode, Data Submission](#the-second-mode-data-submission)
     - [Manual Submission Example](#manual-submission-example)
-    - [Compressed Directory Submission Exmple](#compressed-directory-submission-exmple)
+    - [Compressed Directory Submission Example](#compressed-directory-submission-exmple)
     - [Internal-batch Job Submission Example](#internal-batch-job-submission-example)
     - [Data From Current Session Submission Example](#data-from-current-session-submission-example)
   - [The Third Mode, Data Analysis and Visualization](#the-third-mode-data-analysis-and-visualization)
@@ -136,7 +136,7 @@ epmt run ./compute_the_world --debug
 epmt stop
 ```
 
-Or more succintlty by automating the start/stop cycle with the `--auto` or `-a` flag:
+Or more succinctly by automating the start/stop cycle with the `--auto` or `-a` flag:
 
 ```bash
 $ cat my_job_epmt2.sh
@@ -305,7 +305,7 @@ INFO:epmt_job:Staged import took 0:00:00.189151, 5.286781 processes per second
 INFO:epmt_cmds:Committed job 1 to database: Job[u'1']
 ```
 
-#### Compressed Directory Submission Exmple
+#### Compressed Directory Submission Example
 
 This might happen at the end of the day via a cron job:
 
@@ -339,7 +339,7 @@ epmt submit
 
 If not inside of a batch environment, `epmt` will *attempt to fake-and-bake a job id*. This is useful
 when performing interactive runs. You may not be able to submit these jobs to a shared database due to
-constraints on job ID uniqueness, sincet he session ID is not guaranteed to be unique across reboots,
+constraints on job ID uniqueness, since the session ID is not guaranteed to be unique across reboots,
 much less other systems. However, this use case is perfectly acceptable when using a private database:
 
 ```bash
@@ -378,7 +378,7 @@ for sharing access with machines on the local network, notebook token, and
 notebook password:
 
 ```bash
-epmt notebook -- --ip 0.0.0.0 --NotebookApp.token='thisisatoken' --NotebookApp.password='hereisa$upersecurepassword'
+epmt notebook -- --ip 0.0.0.0 --NotebookApp.token='thisisatoken' --NotebookApp.password='hereisasupersecurepassword'
 ```
 
 ## Debugging

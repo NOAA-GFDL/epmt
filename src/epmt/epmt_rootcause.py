@@ -64,7 +64,7 @@ def rootcause_zscore(ref, input, features):
 
 def rootcause(ref, input, features, methods=None):
     '''
-    this function looks very much like the outlier detection functions and may be integrateable
+    this function looks very much like the outlier detection functions and may be integrable
     '''
     if methods is None:
         methods = [rootcause_zscore]

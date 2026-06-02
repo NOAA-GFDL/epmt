@@ -85,7 +85,7 @@ class EPMTCmds(unittest.TestCase):
         #     "Invalid regular expression in papiex_options_byhost: key is *, value is MATCH5."
         # digging deeper gives us an error from re.match:
         #     "nothing to repeat at position 0"
-        # this seems to be intentional. real question is why isnt logging working as desired? apparently. i digress.
+        # this seems to be intentional. real question is why isn't logging working as desired? apparently. i digress.
         # print("A")
         # quell the error messages
         epmt_logging_init(-2)
@@ -236,7 +236,7 @@ class EPMTCmds(unittest.TestCase):
         from os import remove
         from shutil import copytree, rmtree
         from tempfile import gettempdir, mkdtemp
-        # re-create error file if it's still hanging around and we didnt clean up lasttime
+        # re-create error file if it's still hanging around and we didn't clean up lasttime
         errorfile = settings.error_dest + '/pp053-papiex-615503-0.csv.error'
         if path.exists(errorfile):
             remove(errorfile)

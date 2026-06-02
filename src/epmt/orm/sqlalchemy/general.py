@@ -350,7 +350,7 @@ def orm_procs_col(procs):
 def orm_jobs_col(jobs):
     """
     This is an internal function that returns a Job Query object.
-    The input can be collection of jobs spcified as a string, a list
+    The input can be collection of jobs specified as a string, a list
     of strings, list of dicts, a dataframe or a list of Job objects.
     """
     from pandas import DataFrame
@@ -480,7 +480,7 @@ def orm_get_procs(jobs, tags, fltr, order, limit, offset, when, hosts, exact_tag
         idx = 0
         org_qs = qs
         for t in tags:
-            # _tag_filter reqturs a query object corresponding to
+            # _tag_filter requires a query object corresponding to
             # the jobs that match a particular tag. We, then, do
             # do a UNION (OR operation) across these query sets.
             qst = _tag_filter(org_qs, t, exact_tag_only, Process)
@@ -529,7 +529,7 @@ def orm_get_jobs(qs, tags, fltr, order, limit, offset, when, before, after,
         idx = 0
         org_qs = qs
         for t in tags:
-            # _tag_filter reqturs a query object corresponding to
+            # _tag_filter requires a query object corresponding to
             # the jobs that match a particular tag. We, then, do
             # do a UNION (OR operation) across these query sets.
             qst = _tag_filter(org_qs, t, exact_tag_only)
