@@ -426,6 +426,7 @@ KUBECONFIG
 NOFILE
 perfevent
 gettid
+tids
 NOAAGFDL
 slurmctl
 encfeat
@@ -508,3 +509,16 @@ cvzf
 Frob
 codehilite
 tmpn
+hereisasupersecurepassword
+aggr
+perlbrew
+ENDC
+EEXIST
+reerr
+rdstc
+dotdicts
+asus
+outfd
+outcsv
+outtar
+tweakable
