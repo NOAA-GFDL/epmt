@@ -47,10 +47,10 @@ class EPMTLib(unittest.TestCase):
                            ['def', 2, 100, "Your Name"],
                            ['', 0, 45, "No name"]],
                           columns=['A', 'B', 'C', 'D'])
-        (encdf, encf) = dframe_encode_features(df, reversible=True)
-        self.assertEqual(set(encf), {'D', 'A'})
+        (encdf, encfeat) = dframe_encode_features(df, reversible=True)
+        self.assertEqual(set(encfeat), {'D', 'A'})
         self.assertFalse(encdf.equals(df))
-        (decdf, decf) = dframe_decode_features(encdf, encf)
+        (decdf, decf) = dframe_decode_features(encdf, encfeat)
         self.assertEqual(set(decf), {'D', 'A'})
         self.assertTrue(decdf.equals(df))
 
@@ -65,8 +65,8 @@ class EPMTLib(unittest.TestCase):
                            [_s, 2, 100, "Your Name"],
                            ['', 0, 45, "No name"]],
                           columns=['A', 'B', 'C', 'D'])
-        (encdf, encf) = dframe_encode_features(df)
-        self.assertEqual(set(encf), {'D', 'A'})
+        (encdf, encfeat) = dframe_encode_features(df)
+        self.assertEqual(set(encfeat), {'D', 'A'})
         self.assertFalse(encdf.equals(df))
         self.assertEqual(encdf['A'].dtype, np.dtype('int64'))
         self.assertEqual(encdf['D'].dtype, np.dtype('int64'))
