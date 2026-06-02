@@ -7,7 +7,7 @@
         {
             "name": "ok-unknown-words",
             "path": "./.cspell/ok-unknown-words.txt",
-            "addWords": false,
+            "addWords": false
         }
     ],
     "dictionaries": [
@@ -19,10 +19,13 @@
     "ignorePaths": [
         "cspell.json",
         "*.cdl",
+		// local packaging and buid byproducts
         "build",
         "*.egg-info",
         "**/*.egg-info/**",
-        "notebooks",
+		"epmtdocs/site/**",
+		// notebooks/ contains lots of html
+		"notebooks",
         // sample/ contains test workload scripts and staged job data
         "sample/**",
         // test/data/ contains binary fixtures, CSVs, and outlier datasets
