@@ -163,7 +163,7 @@ $(EPMT_RELEASE) dist:
 
 # runs setuptools
 # note that this step requires EPMT_RELEASE and PAPIEX_RELEASE, but we don't explicitly state it here, b.c.
-# when we go in the docker container, the time-zone changes and therefore thet timestamp comparison triggers re-making
+# when we go in the docker container, the time-zone changes and therefore the timestamp comparison triggers re-making
 # targets that do not need to be remade
 python-dist:
 	@echo "(python-dist) whoami: $(shell whoami)"
@@ -192,7 +192,7 @@ test-$(EPMT_RELEASE) dist-test:
 	@echo "WARNING removing directory to clean up: rm -rf epmt-install-tests"
 	rm -rf epmt-install-tests
 
-# this target 1) builds an image with an environment inwhich we'd like to build our applicaiton
+# this target 1) builds an image with an environment in which we'd like to build our application
 # 2) builds that application within a running container of that image
 # NOTE: bind mounts to current working directory, usually the repository directory
 docker-dist:
@@ -204,7 +204,7 @@ docker-dist:
 	@echo
 	@echo
 	@echo " - docker build <STUFF> Dockerfiles/Dockerfile.$(OS_TARGET)-epmt-build"
-	@echo "       we are creating a container environment inwhich to build the python distribution"
+	@echo "       we are creating a container environment inw hich to build the python distribution"
 	$(DOCKER_BUILD) Dockerfiles/Dockerfile.$(OS_TARGET)-epmt-build -t $(OS_TARGET)-epmt-build:$(EPMT_VERSION) \
 	--build-arg sqlite_version=$(SQLITE_VERSION) \
 	--build-arg sqlite_year=$(SQLITE_YEAR) \
@@ -212,7 +212,7 @@ docker-dist:
 	@echo
 	@echo
 	@echo " - docker run <STUFF> <use image built from Dockerfiles/Dockerfile.$(OS_TARGET)-epmt-build>"
-	@echo "       within a running contianer of the image we just built, now build the python application."
+	@echo "       within a running container of the image we just built, now build the python application."
 	@echo "       i.e. running make dist python-dist dist-test inside $(OS_TARGET)-epmt-build"
 	$(DOCKER_RUN) $(DOCKER_RUN_OPTS) --privileged \
 	--volume=$(PWD):$(PWD) \

@@ -20,7 +20,7 @@ Two shell functions/aliases are created to pause/restart instrumentation:
 
 ```text
 epmt_uninstrument - to pause automatic instrumentation
-epmt_instrument - to renable automatic instruction.
+epmt_instrument - to re-enable automatic instruction.
 ```text
 
 **SLURM USERS NOTE** Use in SLURM's prolog, requires a special syntax
