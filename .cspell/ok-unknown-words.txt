@@ -522,3 +522,12 @@ outfd
 outcsv
 outtar
 tweakable
+devel
+openmp
+flac
+nrows
+skiprows
+isin
+ndarray
+bitmask
+Uncaategorized
