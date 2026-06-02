@@ -16,7 +16,7 @@ For installation and quick-start instructions, see [README.md](./README.md).
     - [Data Collection with SLURM epilog and prolog](#data-collection-with-slurm-epilog-and-prolog)
   - [The Second Mode, Data Submission](#the-second-mode-data-submission)
     - [Manual Submission Example](#manual-submission-example)
-    - [Compressed Directory Submission Example](#compressed-directory-submission-exmple)
+    - [Compressed Directory Submission Example](#compressed-directory-submission-example)
     - [Internal-batch Job Submission Example](#internal-batch-job-submission-example)
     - [Data From Current Session Submission Example](#data-from-current-session-submission-example)
   - [The Third Mode, Data Analysis and Visualization](#the-third-mode-data-analysis-and-visualization)
