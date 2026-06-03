@@ -31,6 +31,9 @@ logger = getLogger(__name__)
 # db.bind(**settings.db_params)
 
 class bcolors:
+    '''
+    bold coloring for epmt check output
+    '''
     HEADER = '\033[95m'
     OKBLUE = '\033[94m'
     OKGREEN = '\033[92m'
@@ -370,10 +373,14 @@ def verify_papiex():
 
 
 def epmt_check():
-    '''Run all verification checks and return False if any required check fails.
+    '''
+    epmt check CLI command
+
+    Run all verification checks and return False if any required check fails.
     verify_papiex_options is guarded — its failure is logged but does not
     affect the return value (it requires hardware counter access unavailable
-    in most VM/container environments).'''
+    in most VM/container environments).
+    '''
 
     retval = True
 
@@ -536,6 +543,8 @@ def stopped_metadata_file(filename):
 @logfn
 def epmt_start_job(keep_going=True, other=None):
     '''
+    epmt start CLI command
+
     Record the start of a batch job.
 
     Reads the job ID and output paths from the environment via setup_vars,
@@ -580,6 +589,8 @@ def epmt_start_job(keep_going=True, other=None):
 @logfn
 def epmt_stop_job(keep_going=True, other=None):
     '''
+    epmt stop CLI command
+
     Record the completion of a batch job.
 
     Reads the job ID and output paths from the environment, merges stop
@@ -620,6 +631,8 @@ def epmt_stop_job(keep_going=True, other=None):
 @logfn
 def epmt_dump_metadata(filelist, key=None):
     '''
+    epmt dump CLI command
+
     Print job metadata from files or the database.
 
     If filelist is empty, resolves the current job's metadata file from
@@ -732,6 +745,8 @@ def annotate_metadata(metadatafile, annotations, replace=False):
 
 def epmt_annotate(argslist, replace=False):
     '''
+    epmt annotate CLI command
+
     args list is one of the following forms:
       ['key1=value1', 'key2=value2', ...]  - annotate stopped job within a batch env
       or
@@ -923,7 +938,9 @@ def get_papiex_options(s):
 @logfn
 def epmt_source(slurm_prolog=False, papiex_debug=False, monitor_debug=False, run_cmd=False):
     """
-    epmt_source - produces shell variables that enable transparent instrumentation
+    epmt source CLI command
+
+    produces shell variables that enable transparent instrumentation
     run_cmd: - used when instrumentation is done on the command line by the epmt run command
     """
 
@@ -1046,6 +1063,8 @@ def epmt_source(slurm_prolog=False, papiex_debug=False, monitor_debug=False, run
 @logfn
 def epmt_run(cmdline, wrapit=False, dry_run=False, debug=False):
     '''
+    epmt run CLI command
+
     Execute a command under papiex instrumentation.
 
     Builds the papiex environment setup script via epmt_source, then runs
@@ -1148,6 +1167,8 @@ def get_filedict(dirname, pattern, tar=False):
 def epmt_submit(dirs, ncpus=1, dry_run=True, drop=False, keep_going=False,
                 remove_on_success=False, move_on_failure=False):
     '''
+    epmt submit CLI command
+
     if remove_on_success is set, on successful ingest the .tgz or job dir will be deleted
     if move_on_failure is set, on failed ingested, the .tgz or dir is moved away
     if keep_going is set, exceptions will not be raised
@@ -1237,7 +1258,6 @@ def epmt_submit(dirs, ncpus=1, dry_run=True, drop=False, keep_going=False,
         # stringify the return values
         ret_dict[tid] = dumps(retval)
         logger.debug('submit_fn(): about to return')
-        return
 
     # we shouldn't use more processors than the number of discrete
     # work items. We don't currently split the work within a directory.
@@ -1649,6 +1669,9 @@ def submit_to_db(inputf, pattern, dry_run=True):
 
 @logfn
 def stage_job(indir, collate=True, compress_and_tar=True, keep_going=True):
+    '''
+    workhorse function for epmt stage
+    '''
     if not indir or len(indir) == 0:
         logger.error("stage_job: indir is empty")
         return False
@@ -1738,6 +1761,11 @@ def stage_job(indir, collate=True, compress_and_tar=True, keep_going=True):
 
 @logfn
 def epmt_stage(dirs, keep_going=True, collate=True, compress_and_tar=True):
+    '''
+    epmt stage CLI command
+
+    uses stage_job for the workload
+    '''
     if not dirs:
         global_jobid, global_datadir, global_metadatafile = setup_vars()
         if not all( [ global_jobid , global_datadir , global_metadatafile ] ):
@@ -1762,6 +1790,9 @@ def epmt_stage(dirs, keep_going=True, collate=True, compress_and_tar=True):
 def epmt_dbsize(findwhat=None,
                 usejson=True,
                 usebytes=True):
+    '''
+    epmt dbsize CLI command
+    '''
     if findwhat is None:
         findwhat = ['database', 'table', 'index', 'tablespace']
     from epmt.orm import orm_db_size
@@ -1772,7 +1803,9 @@ def epmt_dbsize(findwhat=None,
 
 
 def epmt_entrypoint(args):
-
+    '''
+    entrypoint to individual epmt command functions for cli.py
+    '''
     # I hate this sequence.
     if args.verbose is None:
         args.verbose = 0

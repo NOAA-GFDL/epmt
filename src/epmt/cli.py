@@ -32,6 +32,9 @@ class DefaultHelpParser(argparse.ArgumentParser):
 
 
 def main():
+    '''
+    primary functional bottleneck for all CLI commands, leading to epmt_cmds.epmt_entrypoint
+    '''
     # Generate config variable for epilog on long help
     config_string_file = StringIO()
     dump_config(config_string_file)

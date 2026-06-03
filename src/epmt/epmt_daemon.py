@@ -350,4 +350,6 @@ def signal_handler(signum, frame):
     # very next opportunity
     logger.info('Received signal; will terminate shortly')
     sig_count = 1
-    return None
+    ## inl: actually a useless return? signal stuff makes me anxious
+    ##      check back here again when possible TODO
+    #return None

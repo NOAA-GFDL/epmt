@@ -567,7 +567,7 @@ class EPMTSubmit(unittest.TestCase):
         from epmt.epmt_job import post_process_pending_jobs, post_process_job
         #with self.assertRaises(Exception):
         #    UnprocessedJob['685003']
-        self.assertRaises(Exception, lambda: UnprocessedJob['685003'])            
+        self.assertRaises(Exception, lambda: UnprocessedJob['685003'])
         if settings.orm == 'sqlalchemy':
             # only sqlalchemy allows this option
             settings.post_process_job_on_ingest = False

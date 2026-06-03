@@ -29,6 +29,9 @@ logger = getLogger(__name__)
 
 
 class InvalidFileFormat(RuntimeError):
+    '''
+    wrapped RuntimeError representing an error regarding file format
+    '''
     pass
 
 
