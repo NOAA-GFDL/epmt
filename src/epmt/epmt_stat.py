@@ -4,7 +4,7 @@ EPMT Statistics Module
 
 This module provides low-level statistical and numerical methods.
 
-Most methods use numpy ndarrays (as opposed to pandas dataframes).
+Most methods use numpy ndarray (as opposed to pandas dataframe).
 We deliberately do not include an EPMT-specific semantic knowledge
 in the functions of this module. The idea is to use them as pure
 stateless mathematical functions. No database connectivity is assumed
@@ -132,7 +132,7 @@ def iqr(ys, params=()):
             than computing the quartiles on the input vector.
             If not provided (default), the 25% and 75% quartiles
             are computed on the input vector. You should only
-            be prividing params when using this method against
+            be providing params when using this method against
             a trained model.
 
    RETURNS: A tuple (outliers, 0, Q1, Q3), where:
@@ -153,13 +153,13 @@ def iqr(ys, params=()):
             and Q3 stems from being able to use a trained model. We want
             to return some measure from the model run that can
             then be used later. The Q1 and Q3 are derived by solving
-            a simutaneous equations such that the min of the input
+            a simultaneous equations such that the min of the input
             vector fits in the lower bound and the max in the upper
             bound. IOW:
             Ymin = Q1 - 1.5 * (Q3 - Q1)
             Ymax = Q3 + 1.5 * (Q3 - Q1)
 
-            Solving the equations yeilds:
+            Solving the equations yields:
             Q1 = 3*Ymax/8 + 5*Ymin/8
             Q3 = 5*Ymax/8 + 3*Ymin/8
 
@@ -191,7 +191,7 @@ def iqr(ys, params=()):
     outliers = ((ys > upper_bound) | (ys < lower_bound)) + 0
     logger.debug('outliers vec: %s', outliers)
 
-    # If this vector were to be fitted, we can compute artifical
+    # If this vector were to be fitted, we can compute artificial
     # values of Q1 and Q3 based on the equation (see NOTES in the
     # documentation)
     fitted_Q1 = 3 * ys.max() / 8 + 5 * ys.min() / 8
@@ -351,7 +351,7 @@ def mvod_scores(X=None, classifiers=None, warnopts='ignore'):
     numpy array. Returns a numpy array of scores for each
     classifier (same length as the input) where each score
     represents to the anomaly score of the corresponding point
-    in the original array using that classifer.
+    in the original array using that classifier.
     The more the likelihood of a point being an outlier, the
     higher score it will have.
 
@@ -360,7 +360,7 @@ def mvod_scores(X=None, classifiers=None, warnopts='ignore'):
     classifiers will be selected using mvod_classifiers()
 
     X: Multi-dimensional np array. If not provided a random
-       two-dimenstional numpy array is generated
+       two-dimensional numpy array is generated
 
     classifiers is a list of classifier functions like so:
              [
@@ -470,7 +470,7 @@ def mvod_scores(X=None, classifiers=None, warnopts='ignore'):
             logger.debug('%s threshold: %s', clf_name, threshold)
     # print(scores)
     if not scores:
-        # some error occured and we didn't generate scores at all
+        # some error occurred and we didn't generate scores at all
         return False
     logger.debug('mvod: scores')
     logger.debug(scores)
@@ -594,7 +594,7 @@ def rca(ref, inp, features, methods=None):
 
     # if list(ref.columns.values) != list(inp.columns.values):
     #     logger.error('ref and inp MUST have the same columns and in the same order')
-    #     logger.error('ref has columns: {}\ninp has columns: {}'.format(ref.columns.values, inp.columns.values))
+    #     logger.error('ref has columns: {}\inp has columns: {}'.format(ref.columns.values, inp.columns.values))
     #     return (False, None, None)
 
     if (not features) or (features == '*'):
@@ -698,7 +698,7 @@ def pca_stat(inp_features, desired=2):
 
     logger.debug('input:\n%s', inp_features)
 
-    # the second paramer denotes the number of components usually
+    # the second parameter denotes the number of components usually
     # however if it is less than 1, then it denotes the desired variance.
     # In the latter case the number of components is automatically chosen
     # to achieve the desired variance.
@@ -886,14 +886,14 @@ def get_modes(X, max_modes=10):
     km_scores = []
     for i in range(1, max_modes):
         km = KMeans(n_clusters=i, random_state=0).fit(X_scaled)
-        preds = km.predict(X_scaled)
+        predictions = km.predict(X_scaled)
 
         logger.debug("Score for number of cluster(s) %s: %s", i, km.score(X_scaled))
         km_scores.append(-km.score(X_scaled))
 
         if i > 1:
             # silhouette method only works for n_clusters >= 2
-            silhouette = silhouette_score(X_scaled, preds)
+            silhouette = silhouette_score(X_scaled, predictions)
             km_silhouette.append(silhouette)
             logger.debug("Silhouette score for number of cluster(s) %s: %s", i, silhouette)
 
@@ -918,7 +918,7 @@ def get_modes(X, max_modes=10):
             num_modes = 1
 
     km = KMeans(n_clusters=num_modes, random_state=0).fit(X_scaled)
-    preds = km.predict(X_scaled)
+    predictions = km.predict(X_scaled)
     modes = scaler.inverse_transform(km.cluster_centers_).reshape(num_modes,)
     return modes
 

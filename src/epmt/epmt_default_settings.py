@@ -123,7 +123,7 @@ retire_jobs_ndays = 14   # specify in number of days; set to 0 to not retire job
 retire_models_ndays = 0  # specify in number of days; set to 0 to not retire models
 retire_jobs_per_delete_max = 20  # specify the chunk-size to delete jobs in
 
-# we expect the settings below to be overriden in settings.py
+# we expect the settings below to be overridden in settings.py
 # depending on the template of your choice
 orm = 'sqlalchemy'
 db_params = {

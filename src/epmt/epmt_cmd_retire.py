@@ -13,7 +13,7 @@ logger = getLogger(__name__)
 def epmt_retire(skip_unprocessed=False, dry_run=False):
     '''
     remove jobs from the database that are older than retirement threshold. can skip jobs that have yet to be 
-    postprocessed (and thus, are likely to have not been analysed yet). can also dry run and inform the user
+    postprocessed (and thus, are likely to have not been analyzed yet). can also dry run and inform the user
     of how many jobs and models the routine will likely delete
     '''
 

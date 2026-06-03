@@ -1,3 +1,7 @@
+'''
+tests for epmt.epmt_settings, epmt.epmt_default_settings
+'''
+
 import unittest
 from os import path
 
@@ -66,7 +70,7 @@ class EPMTSettings(unittest.TestCase):
         # for the keys in defaults but not in 'later', the settings will use the defaults
         for k in default_vars.keys():
             if k in later_vars:
-                continue  # overwritten, so shouldnt be equal
+                continue  # overwritten, so shouldn't be equal
             if k == 'epmt_settings_kind':
                 continue  # empty/null v 'default'
             # print('\n')

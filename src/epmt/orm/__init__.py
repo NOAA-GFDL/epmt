@@ -81,14 +81,14 @@ def orm_db_size(findwhat=None, usejson=True, usebytes=True):
     struct = {}
     for arg in findwhat:
         if arg == 'database':
-            databased = {}
+            database_data = {}
             try:
                 cmd = 'SELECT pg_database.datname, pg_database_size(pg_database.datname) AS size FROM pg_database'
                 sizes = orm_sql(cmd)
                 for name, size in sizes:
-                    databased[name] = int(size)
+                    database_data[name] = int(size)
                     logger.debug("database[%s]=%d", name, int(size))
-                struct[arg] = databased
+                struct[arg] = database_data
             except BaseException:
                 e = exc_info()[0]
                 logger.warning("DB size query failed: %s", e)

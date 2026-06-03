@@ -1,3 +1,7 @@
+'''
+tests for epmt.epmt_query
+'''
+
 import unittest
 from glob import glob
 from datetime import datetime
@@ -26,7 +30,7 @@ def setUpModule():
     setup_db(settings)
     do_cleanup()
     datafiles = f'{install_root}/test/data/query/*.tgz'
-    #    print('setUpModdule: importing {0}'.format(datafiles))
+    #    print('setUpModule: importing {0}'.format(datafiles))
     with capture() as (_out, _err):
         epmt_submit(sorted(glob(datafiles)), dry_run=False)
     # only use modz as the tests are written that way

@@ -32,6 +32,9 @@ class DefaultHelpParser(argparse.ArgumentParser):
 
 
 def main():
+    '''
+    primary functional bottleneck for all CLI commands, leading to epmt_cmds.epmt_entrypoint
+    '''
     # Generate config variable for epilog on long help
     config_string_file = StringIO()
     dump_config(config_string_file)
@@ -71,7 +74,7 @@ def main():
         "\teval `epmt source --slurm` for a SLURM prolog.\n\n"
         "Two shell functions/aliases are created to pause/restart instrumentation:\n\n"
         "\tepmt_uninstrument - to pause automatic instrumentation\n"
-        "\tepmt_instrument - to renable automatic instruction.\n\n\n"
+        "\tepmt_instrument - to re-enable automatic instruction.\n\n\n"
         "**SLURM USERS NOTE** Use in SLURM's prolog, requires a special syntax\n"
         "enabled here with the -s or --slurm option. For more info, see:\n"
         "https://slurm.schedmd.com/prolog_epilog.html")

@@ -1,3 +1,7 @@
+'''
+tests of epmt's database migration functionality
+'''
+
 import unittest
 from os import path, getcwd, chdir, remove
 

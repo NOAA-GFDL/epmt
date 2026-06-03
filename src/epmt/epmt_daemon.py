@@ -194,7 +194,7 @@ def daemon_loop(context, maxiters=0, post_process=True, analyze=True, retire=Fal
 
     logger.debug(
         '(context=%s,maxiters=%d,post_process=%s,analyze=%s,'
-        'retire=%s,ingest=%s,recursive=%s,keep=%s,moveaway=%s,verbose=%d)',
+        'retire=%s,ingest=%s,recursive=%s,keep=%s,move_away=%s,verbose=%d)',
         type(context),
         maxiters,
         post_process,
@@ -297,11 +297,11 @@ def daemon_loop(context, maxiters=0, post_process=True, analyze=True, retire=Fal
                 # Analyze If post-process and analyze
                 # Jobs that fail, should be removed and logged
                 from epmt.epmt_query import get_unprocessed_jobs, post_process_jobs
-                unpdj = get_unprocessed_jobs()
-                logger.info("%d unprocessed jobs found", len(unpdj))
-                ppd_jobs = post_process_jobs(unpdj, check=False)
-                # unpdj - ppd_jobs should be 0 in size, let's check
-                err_ppd_jobs = list(filter(lambda i: i not in ppd_jobs, unpdj))
+                unprocd_jobs = get_unprocessed_jobs()
+                logger.info("%d unprocessed jobs found", len(unprocd_jobs))
+                ppd_jobs = post_process_jobs(unprocd_jobs, check=False)
+                # unprocd_jobs - ppd_jobs should be 0 in size, let's check
+                err_ppd_jobs = list(filter(lambda i: i not in ppd_jobs, unprocd_jobs))
                 tot_pp_jobs += len(ppd_jobs)
                 logger.info('%s jobs post-processed, %s errors', len(ppd_jobs), len(err_ppd_jobs))
 
@@ -350,4 +350,6 @@ def signal_handler(signum, frame):
     # very next opportunity
     logger.info('Received signal; will terminate shortly')
     sig_count = 1
-    return None
+    ## inl: actually a useless return? signal stuff makes me anxious
+    ##      check back here again when possible TODO
+    #return None

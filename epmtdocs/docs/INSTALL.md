@@ -1,12 +1,16 @@
+# EPMT Installation Guide
+
 Experiment Performance Management Tool a.k.a Workflow DB
 
-This is a tool to collect metadata and performance data about an entire job down to the individual threads in individual processes. This tool uses **papiex** to perform the process monitoring. This tool is targeted at batch or ephemeral jobs, not daemon processes. 
+This is a tool to collect metadata and performance data about an entire job down to the individual threads in
+individual processes. This tool uses **papiex** to perform the process monitoring. This tool is targeted at
+batch or ephemeral jobs, not daemon processes.
 
 The software contained in this repository was written by Philip Mucci of Minimal Metrics LLC.
 
 ## Installation With Release File
 
-The release file includes EPMT, Data Collection Libraries, Notebook and EPMT Workflow GUI. 
+The release file includes EPMT, Data Collection Libraries, Notebook and EPMT Workflow GUI.
 
 For installing with a release file you'll need:
 
@@ -16,9 +20,9 @@ For installing with a release file you'll need:
 
 ### Run Install Script
 
-Use the provided epmt-installer script 
+Use the provided epmt-installer script
 
-```
+```bash
 $ ./epmt-installer EPMT-release-3.8.20-centos-7.tgz 
  Using release: /tmp/ep-inst/EPMT-release-3.8.20-centos-7.tgz
  
@@ -45,7 +49,7 @@ $ ./epmt-installer EPMT-release-3.8.20-centos-7.tgz
  If you prefer using modules, you can instead do:
      module load /tmp/ep-inst/epmt-3.8.20/modulefiles/epmt
  ***********************************************************************
-```
+```bash
 
 ### Add EPMT to path
 
@@ -55,7 +59,7 @@ $ export PATH="/tmp/ep-inst/epmt-3.8.20/epmt-install/epmt:$PATH"
 $ cd /tmp/
 $ epmt --version
 EPMT 3.8.20
-```
+```bash
 
 ### Verify installation
 
@@ -71,15 +75,14 @@ settings.papiex_options = PERF_COUNT_SW_CPU_CLOCK       Pass
 epmt stage functionality        Pass
 WARNING: epmtlib: No job name found, defaulting to unknown
 epmt run functionality  Pass
-```
-
+```bash
 
 ---
 
-
 ### Perf Event System Setting
 
-For detailed hardware and software performance metrics to collected by non-privileged users, the following setting must be verified/modified:
+For detailed hardware and software performance metrics to collected by non-privileged users,
+the following setting must be verified/modified:
 
 ```text
  # A value of 3 means the system is totally disabled
@@ -90,15 +93,20 @@ For detailed hardware and software performance metrics to collected by non-privi
  $ cat /proc/sys/kernel/perf_event_paranoid
  1
 
-```
+```bash
 
-This isn't necessary unless one would like to collect metrics exposed by [PAPI](http://icl.utk.edu/papi/), [libpfm](http://perfmon2.sourceforge.net/) and the [perfevent](http://web.eece.maine.edu/~vweaver/projects/perf_events/) subsystems. Collecting subsystem data is the premise of EPMT. See [Stack Overflow](https://stackoverflow.com/questions/51911368/what-restriction-is-perf-event-paranoid-1-actually-putting-on-x86-perf) for a discussion of the setting. A setting of 1 is perfectly safe for production systems.
+This isn't necessary unless one would like to collect metrics exposed by
+[PAPI](http://icl.utk.edu/papi/), [libpfm](http://perfmon2.sourceforge.net/) and the
+[perfevent](http://web.eece.maine.edu/~vweaver/projects/perf_events/) subsystems.
+Collecting subsystem data is the premise of EPMT.
+See [Stack Overflow](https://stackoverflow.com/questions/51911368/what-restriction-is-perf-event-paranoid-1-actually-putting-on-x86-perf)
+for a discussion of the setting. A setting of 1 is perfectly safe for production systems.
 
 ## Generation (compilation) of release
 
 This is done using Docker images.
 
-```
+```bash
 # You'll want to remove all the old images, bitrot!
 # Extreme case: docker rmi $(docker images -a)
 docker system prune -a
@@ -117,4 +125,4 @@ make release-all
 ls release-`date "+%d%m%Y"` # (it will be todays date stamp)
 EPMT-release-4.9.1-centos-7.tgz papiex-epmt-2.3.14-centos-7.tgz
 epmt-4.9.1-centos-7.tgz     test-epmt-4.9.1-centos-7.tgz
-```
+```bash

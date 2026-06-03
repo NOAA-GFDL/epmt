@@ -1,3 +1,7 @@
+'''
+tests for epmt run
+'''
+
 import os
 from os import environ
 import shutil
@@ -30,7 +34,7 @@ def remove_jobid_envs():
 
 jobid = '1011'
 tuser = 'testuser'
-odir = settings.epmt_output_prefix + get_username() + "/"
+outdir = settings.epmt_output_prefix + get_username() + "/"
 
 
 @timing
@@ -56,7 +60,7 @@ class EPMTShell(unittest.TestCase):
         with capture() as (_out, _err):
             results = epmt_run(['sleep 1'], wrapit=True, dry_run=False, debug=False)
 
-        self.assertTrue(jobid in os.listdir(odir))
+        self.assertIn(jobid, os.listdir(outdir))
         self.assertEqual(0, results)
     # Test run with a slurm job id env
 
@@ -67,18 +71,18 @@ class EPMTShell(unittest.TestCase):
         remove_stale_files()
         with capture() as (_out, _err):
             results = epmt_run(['sleep 1'], wrapit=True, dry_run=False, debug=False)
-            self.assertTrue(jobid in os.listdir(odir))
+            self.assertIn(jobid, os.listdir(outdir))
             self.assertEqual(0, results)
     # Test run with a slurm pb job id
 
-    def test_run_pbjobid(self):
+    def test_run_pbs_jobid(self):
         remove_jobid_envs()
         environ['PBS_JOB_ID'] = jobid
         from epmt.epmt_cmds import epmt_run
         remove_stale_files()
         with capture() as (_out, _err):
             results = epmt_run(['sleep 1'], wrapit=True, dry_run=False, debug=False)
-            self.assertTrue(jobid in os.listdir(odir))
+            self.assertIn(jobid, os.listdir(outdir))
             self.assertEqual(0, results)
     # Test run for missing jobid
 
@@ -142,7 +146,7 @@ class EPMTShell(unittest.TestCase):
 
             # Run
             results = epmt_run(['sleep 1'], wrapit=True, dry_run=False, debug=False)
-            self.assertTrue(jobid in os.listdir(odir))
+            self.assertIn(jobid, os.listdir(outdir))
             self.assertEqual(0, results, 'epmt_run returned False')
 
 

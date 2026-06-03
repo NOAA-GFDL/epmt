@@ -1,3 +1,7 @@
+# GNU Lesser General Public License v2.1
+
+<!-- markdownlint-disable MD029 -->
+
                   GNU LESSER GENERAL PUBLIC LICENSE
                        Version 2.1, February 1999
 
@@ -498,7 +502,7 @@ necessary.  Here is a sample; alter the names:
   library `Frob' (a library for tweaking knobs) written by James Random
   Hacker.
 
-  <signature of Ty Coon>, 1 April 1990
+  \<signature of Ty Coon\>, 1 April 1990
   Ty Coon, President of Vice
 
 That's all there is to it!

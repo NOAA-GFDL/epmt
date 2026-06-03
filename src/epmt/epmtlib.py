@@ -221,7 +221,7 @@ def init_settings(settings):
         settings.lazy_compute_process_tree = True
     if not hasattr(settings, 'epmt_settings_kind'):
         logger.warning('settings missing epmt_settings_kind field. filling in ourselves.')
-        settings.epmt_setttings_kind = 'filled_by_epmtlib_init_settings'
+        settings.epmt_settings_kind = 'filled_by_epmtlib_init_settings'
     if not hasattr(settings, 'db_params'):
         err_msg += "\n - missing settings.db_params"
     if err_msg:
@@ -295,7 +295,7 @@ def tag_from_string(s, delim=';', sep=':', tag_default_value='1'):
     We can also handle the case where a value is not set for
     a key, by assigning a default value for the key
     For example, for the input:
-        "multitheaded;app=fft" and a tag_default_value="1"
+        "multithreaded;app=fft" and a tag_default_value="1"
 
     the output would be:
         { "multithreaded": "1", "app": "fft" }
@@ -360,7 +360,7 @@ def tags_list(tags):
 def dict_in_list(d, L):
     '''
     Returns True if at least one dictionary in L is contained by d
-    where containment is defined as all keys of the containee
+    where containment is defined as all keys of the container
     are in the container with matching values. Container may have
     additional key/values.
 
@@ -431,7 +431,7 @@ def unique_dicts(dicts, exclude_keys=None):
     # the returned list ordering different in python 2/3
     # return list(map(dict, frozenset(frozenset(d.items()) for d in new_dicts)))
 
-    # here the code below gives a deterministic dentical ordering for python 2/3
+    # here the code below gives a deterministic identical ordering for python 2/3
     all_dicts_set = set()
     ordered_dicts = []
     for d in new_dicts:
@@ -789,7 +789,7 @@ def suggested_cpu_count_for_submit():
 def conv_to_datetime(t):
     """
     This converts a time specified as a string or a Unix timestamp
-    or a negative integer (signifiying a relative offset in days
+    or a negative integer (signifying a relative offset in days
     from the current time) to a python datetime object. If passed a
     datetime object it will be returned without modification
     E.g., of valid values of t:
@@ -1053,7 +1053,7 @@ def docs_func_section(func):
     '''
     Returns the section name (if any) for a function from its docstrings
 
-    We assume a doctstring summary line has a double-colon followed by
+    We assume a docstring summary line has a double-colon followed by
     a section name at the end of the summary line.
     '''
     summary_string = ((func.__doc__ or '').lstrip().split('\n')[0].strip())
