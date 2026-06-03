@@ -1,3 +1,7 @@
+'''
+tests for epmt.epmt_outliers
+'''
+
 from json import loads, dumps
 from glob import glob
 import unittest

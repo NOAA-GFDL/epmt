@@ -1,3 +1,7 @@
+'''
+monolithic tests of epmt start, dump, run, stop, dump, stage, and submit command chain in various shells
+'''
+
 import os
 from os import environ
 import shutil

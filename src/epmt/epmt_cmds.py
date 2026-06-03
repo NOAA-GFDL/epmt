@@ -1481,7 +1481,7 @@ def open_compressed_tar(inputf):
     Open a compressed or uncompressed tar archive.
 
     Returns (False, tarfile_object) on success, (True, None) on error,
-    and (False, None) if inputf does not end with a recognised extension.
+    and (False, None) if inputf does not end with a recognized extension.
     '''
     tar = None
     flags = None

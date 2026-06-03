@@ -1,3 +1,7 @@
+'''
+tests for epmt.epmt_settings, epmt.epmt_default_settings
+'''
+
 import unittest
 from os import path
 

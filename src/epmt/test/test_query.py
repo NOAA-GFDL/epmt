@@ -1,3 +1,7 @@
+'''
+tests for epmt.epmt_query
+'''
+
 import unittest
 from glob import glob
 from datetime import datetime

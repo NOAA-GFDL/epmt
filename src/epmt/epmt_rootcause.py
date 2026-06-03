@@ -1,3 +1,7 @@
+'''
+root-cause analysis functionality for epmt, used in outlier detection
+'''
+
 import pandas as pd
 import numpy as np
 

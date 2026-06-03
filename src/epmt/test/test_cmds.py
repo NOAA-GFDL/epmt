@@ -1,3 +1,7 @@
+'''
+tests for epmt.epmt_cmds
+'''
+
 from os import path
 from contextlib import nullcontext
 import unittest

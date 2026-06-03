@@ -1,3 +1,8 @@
+'''
+tests for epmt database schema
+'''
+
+
 import unittest
 
 from epmt import epmt_settings as settings

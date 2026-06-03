@@ -1,3 +1,7 @@
+'''
+tests for epmt.epmt_exp_explore
+'''
+
 from glob import glob
 import unittest
 
