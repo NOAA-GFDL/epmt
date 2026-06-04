@@ -1,19 +1,24 @@
 # EPMT Machine Learning Project (Q2+Q3 2026 - 10% time commitment)
 
-## 📋 Summary of Work
-Data Curation:
-  - Extracted Data from the EPMT database
-  - Attempted to clean up data for ML Training
+## Core Objective
 
-Model Prototyping to predict cpu_time:
-  - Executed different ML algorithms using extracted datasets
-  - Evaluated models using R_squared and MSE
+Exploratory machine learning effort undertaken to predict process CPU utilization (`cpu_time`) using metadata and historical performance logs extracted from the **EPMT (Experiment Process / Metadata Tool) database**.
 
-**Notebooks:** [GitHub - ilaflott_epmt (epmt_play branch)](https://github.com/jjuyeonkim/ilaflott_epmt/tree/epmt_play)
-Only a subset of the notebooks in directory were created as a result of this work. Some notebooks already existed.
+* The overarching goal is to build a model capable of forecasting a process's computational footprint (`cpu_time`) *prior to or at the start of execution*. This would have gotten us one step closer to enabling more intelligent workload scheduling and resource allocation on high-performance computing (HPC) clusters.
+* Within that overarching goal, the smaller goals of this work were data curation and model prototyping.<br><br>
+    Data Curation:
+    - Extracted Data from the EPMT database
+    - Attempted to clean up data for ML Training
 
+    Model Prototyping to predict cpu_time:
+    - Executed different ML algorithms using extracted datasets
+    - Evaluated models using R_squared and MSE
 
-**TODO - expand this paragraph**: With the best R_squared value at .44 and the mean squared error at <fill_in_blank>, the trained models as a part of this project aren't predicting cpu_time well. (https://en.wikipedia.org/wiki/Coefficient_of_determination, https://www.investopedia.com/terms/r/r-squared.asp)
+This document also exists for the purpose of making it easier for me to one day remember what I tried. The [notebooks](#notebooks) created for this work are listed below.
+
+## SPOILER - Negative Result
+
+Unfortunately, this work failed to produce a model that predicts cpu_time well. The best $R^2$ results were 0.44.
 
 ## 📊 Dataset Curation & Features
 
@@ -24,28 +29,24 @@ The data for this project was sourced entirely from the **EPMT database**.
 * **Dataset 3:** 40,000 rows (pulled 2/7/2026)
 * **Dataset 4:** 133,872 rows (pulled 3/19/2026)
 
+### Features
 
-### Data Splits & Features
-* **Features Used:** 
-Part of the work entailed looking at features and and seeing the results. Ideally, all notebooks would have used split out data for training, validation and testing. However, not all notebooks do this, especially early on.
+Most of the features explored and ultimately used were parsed from the 'EPMT_JOB_TAGS' field within the 'annotations' column of each row.
 
-Categorical features converted to numerical using one-hot encoding.
+Both numerical and categorical data were extracted from the EPMT database and explored. In general, categorical features converted to numerical using one-hot encoding or a variant of that to reduce the number of features. 
 
-**In general**, the break up of the data for training, validation and testing, were usually allocated in one of two ways:
+### Training, Validation, Testing Dataset Split
 
-### Training, Validation, Testing Dataset Division
+Initially, I didn't explicitly set aside a testing dataset, which is not ideal. I also varied the training set size from 50% to 75% of the dataset at first.
 
-**Initial (Less Ideal)**. In the beginning, I didn't set aside a strict testing set.
-  * **Training Set:** `75%`
-  * **Validation Set:** `25%`
-  * **Testing Set:** `0%`
-
-**Later (Better)**. Eventually, I set aside a set for testing.
+Eventually, I settled on a better split for training, validation, and testing:
   * **Training Set:** `60%`
   * **Validation Set:** `20%`
   * **Testing Set:** `20%`
 
-### Outlier Handling and Normalization
+### Outlier Handling
+
+Some outlier handling was performed to address long tails
 
 IQR - Trying to address outliers
 * Compute Q1 (25th percentile), Q3 (75th percentile), IQR (Q3-Q1)
@@ -54,23 +55,24 @@ IQR - Trying to address outliers
 * upper: Q3-1.5*IQR
 * Flag or remove/clip outliers
 
-Normalization
-* TODO
+### Handling skew
+
+* TODO Write more about what I tried. StandardScaler? log?
 
 ### Correlation Heatmaps
 
-TODO
+Heatmaps helped visualize correlations between features and the target cpu_time.
 
 ## 🤖 Algorithms & Models Attempted
 The following machine learning architectures were evaluated during this project:
 
-1. **LinearRegressor:** Baseline model to establish a performance floor.
-2. **DecisionTree:** To capture non-linear relationships.
-3. **RandomForest:** Ensemble method to reduce variance and overfitting.
-4. **Boosting:** (e.g., Gradient Boosting/XGBoost) For sequential error correction.
-5. **Multi-Layer Perceptron (MLP):** Neural network approach to map complex feature spaces.
-6. **Voting Ensemble:** Combining the strengths of the top-performing models.
-7. **SVM:** TODO
+1. **LinearRegressor:** Baseline model to start out.
+2. **SVM:** TODO
+3. **DecisionTree:** To capture non-linear relationships.
+4. **RandomForest:** Ensemble method to reduce variance and overfitting.
+5. **Boosting:** (e.g., Gradient Boosting/XGBoost) For sequential error correction.
+6. **Multi-Layer Perceptron (MLP):** Neural network approach to map complex feature spaces.
+7. **Voting Ensemble:** Combining the strengths of the top-performing models.
 ---
 
 ## 📈 Metrics & Results
@@ -130,7 +132,7 @@ The following notebooks were generated as a result of this project. The naming c
 | 2 | [JK_EPMT_Play2.ipynb](https://github.com/jjuyeonkim/ilaflott_epmt/blob/epmt_play/notebooks/JK_EPMT_Play2.ipynb) | Same as JK_EPMT_Play1, except dropped exp_time. Playing around with correlation heatmaps. Huge drop in $R^2$ when removing exp_time, even though correlation to cpu_time isn't that big. [NOTE: I didn't realize until later that my training/validation set is different than in Play1. This could have also accounted for the drop in r_squared. This was dumb on my part.] | 1000 | 108 | LinearRegression -- $R^2$: 0.06<br> Training 50%<br>Validation Set: 50%<br> Testing Set:0% |
 | 3 | [JK_EPMT_Play3.ipynb](https://github.com/jjuyeonkim/ilaflott_epmt/blob/epmt_play/notebooks/JK_EPMT_Play3.ipynb) | Further reduction compared to Play1 of features. Features based off of exp_time, exp_component, exp_platform, exp_target. | 10,000 | 54 | Linear Regression--<br>MSE: 3.24 x 10^18<br>$R^2$: 0.03<br><br>SVM--<br>$R^2$: -4.6<br> <br>Training 75%<br>Validation Set: 25%<br> Testing Set:0%|
 | 4 | [JK_EPMT_ExploreFeatures](https://github.com/jjuyeonkim/ilaflott_epmt/blob/epmt_play/notebooks/JK_EPMT_ExploreFeatures.ipynb) | Explore beyond the 'EPMT_JOB_TAGS' within 'annotations' for rows within the EPMT database. Queried around 40k rows, but things were commented out or only partially finished. ML experiments not run in this notebook. Eventually, the additional features that were explored weren't used because the features were collected after the experiments were run (i.e., they couldn't be used for prediction). | 100 to ~40k | N/A | N/A |
-| 5 | [EPMTDataCleanup.ipynb](https://github.com/jjuyeonkim/ilaflott_epmt/blob/epmt_play/notebooks/EPMTDataCleanup.ipynb) | Taking 40k rows of EPMT data pulled from the database and written to file on Feb 7th, 2026, and cleaning that up so that it can be more easily used for Machine Learning. Normalization + IQR for outlier handling. Optimistic "cheating" case where we have trained a Linear Regression using features from the EPMT database that we won't have at inference time. Cheating features include: duration, time_waiting, read_bytes, write_bytes, minflt, majflt. These features were included to train a model that represents a really optimistic and unrealistic scenario, where we had runtime features to help us predict the cpu_time. | 40k | 216 or 223 | $R^2$: 0.3 (less Cheating), 0.93 (Cheating a bit. Don't take this too seriously)<br>Training 75%<br>Validation Set: 25%<br> Testing Set:0% |
+| 5 | [EPMTDataCleanup.ipynb](https://github.com/jjuyeonkim/ilaflott_epmt/blob/epmt_play/notebooks/EPMTDataCleanup.ipynb) | Taking 40k rows of EPMT data pulled from the database and written to file on Feb 7th, 2026, and cleaning that up so that it can be more easily used for Machine Learning. Normalization + IQR for outlier handling. Optimistic "cheating" case where we have trained a Linear Regression using features from the EPMT database that we won't have at inference time. "Cheating" upper bound features include: duration, time_waiting, read_bytes, write_bytes, minflt, majflt. These features were included to train a model that represents a really optimistic and unrealistic scenario, where we had runtime features to help us predict the cpu_time. | 40k | 216 or 223 | $R^2$: 0.3 (less Cheating), 0.93 (Cheating a bit. Don't take this too seriously)<br>Training 75%<br>Validation Set: 25%<br> Testing Set:0% |
 | 6 | [EPMTDataCleanup_Next123.ipynb](https://github.com/jjuyeonkim/ilaflott_epmt/blob/epmt_play/notebooks/EPMTDataCleanup_Next123.ipynb) | Following up from EPMTDataCleanup.ipynb; Removing GROUP information from features; Because script_name AND exp_name appear too correlated, removing script_name and keeping exp_name; Only using bronx-23 data. Final features based off of SLURM_NTASKS, exp_time, exp_seg_months, LOADEDMODULES, exp_component, exp_fre_mod, exp_name, exp_platform, exp_target.  | 39,998 | 120 | Voting Ensemble including:<ul><li>LinearRegressor</li><li>DecisionTree</li><li>RandomForest</li><li>Boosting</li><li>Multi-Layer Perceptron</li></ul><br>Best R-squared was .44 <br><br>Training 75%<br>Validation Set: 25%<br> Testing Set:0%|
 | 7 | [EPMTDataCleanup_Next5.ipynb](https://github.com/jjuyeonkim/ilaflott_epmt/blob/epmt_play/notebooks/EPMTDataCleanup_Next5.ipynb) | More EPMT Cleanup - Next Idea No. "5"; Following up from EPMTDataCleanup_Next123.ipynb; Try starting from a small set of features; We determined which features are highly correlated to cpu_time and added them one at a time to predict. NOTE: Only num_features=85 is shown in the full notebook, but you can replace the num_features value to see the the r_squared values in the table results:<br><code>target = 'cpu_time'<br>features = df.corr(numeric_only=True)['cpu_time'].sort_values(ascending=False).keys().tolist()[1:n_features+1]</code> | 40k | 1 - 121 |<table><tr><th>num_features</th><th>$R^2$</th><tr><td>1</td><td>0.11</td></tr><tr><td>2</td><td>0.17</td></tr><tr><td>3</td><td>0.18</td></tr><tr><td>5</td><td>.21</td></tr><tr><td>45</td><td>.34</td></tr><tr><td>70</td><td>.39</td></tr><tr><td>80</td><td>.43</td></tr><tr><td>85</td><td>.44</td></tr><tr><td>90</td><td>.44</td></tr><tr><td>100<td>.44</td></tr></table> Best r_squared: 0.44 |
 | 8 | [EPMTDataCleanup_Next7.ipynb](https://github.com/jjuyeonkim/ilaflott_epmt/blob/epmt_play/notebooks/EPMTDataCleanup_Next7.ipynb) | GridSearchCV - Trying a little bit of hyper parameter tuning for RandomForestRegressor and HistGradientBoostingRegressor<br>Also, added back in SLURM_JOB_ACCOUNT (ex., gfdl_w), but it didn't seem to make a difference even though it's highly correlated to the cpu_time target. | 29,512 | 123 | Best $R^2$: 0.44<br><br>Training 75%<br>Validation Set: 25%<br> Testing Set:0% |
