@@ -5,74 +5,65 @@
 Exploratory machine learning effort undertaken to predict process CPU utilization (`cpu_time`) using metadata and historical performance logs extracted from the **EPMT (Experiment Process / Metadata Tool) database**.
 
 * The overarching goal is to build a model capable of forecasting a process's computational footprint (`cpu_time`) *prior to or at the start of execution*. This would have gotten us one step closer to enabling more intelligent workload scheduling and resource allocation on high-performance computing (HPC) clusters.
-* Within that overarching goal, the smaller goals of this work were data curation and model prototyping.<br><br>
-    Data Curation:
-    - Extracted Data from the EPMT database
-    - Attempted to clean up data for ML Training
+* **Project Scope:** This work focuses on two foundational phases:
+  * **Data Curation:** Extracting raw data from the EPMT database and engineering clean feature sets for ML training.
+  * **Model Prototyping:** Executing multiple machine learning algorithms and evaluating performance using Mean Squared Error (MSE) and Coefficient of Determination ($R^2$).
 
-    Model Prototyping to predict cpu_time:
-    - Executed different ML algorithms using extracted datasets
-    - Evaluated models using R_squared and MSE
+This document also exists for the purpose of making it easier for me to one day remember what I tried. The [notebooks](#notebooks) created for this work are listed below. Warning: These notebooks are a bit messy.
 
-This document also exists for the purpose of making it easier for me to one day remember what I tried. The [notebooks](#notebooks) created for this work are listed below.
+## SPOILER - Not the Greatest Results
 
-## SPOILER - Negative Result
+Unfortunately, this work failed to produce a model that predicts cpu_time well. The best $R^2$ results were 0.42 using the HistGradientBoostingRegressor.
 
-Unfortunately, this work failed to produce a model that predicts cpu_time well. The best $R^2$ results were 0.44.
+While this exploratory phase did not yield a model ready for production, it successfully established a strong baseline. This successfully explains 44% of the variance in CPU utilization. However, this may suggest that a significant portion of `cpu_time` variance is likely driven by features not yet explored from or not yet captured by the EPMT database.
 
-## 📊 Dataset Curation & Features
+## Dataset Curation & Features
 
-### Dataset Overview
-The data for this project was sourced entirely from the **EPMT database**.
-* **Dataset 1:** 1,000 rows (pulled 1/29/2026)
-* **Dataset 2:** 10,000 rows (pulled 1/29/2026)
-* **Dataset 3:** 40,000 rows (pulled 2/7/2026)
-* **Dataset 4:** 133,872 rows (pulled 3/19/2026)
+### Dataset Evolution
+The project iteratively scaled the dataset size over multiple data extractions from the **EPMT database**:
+* **Dataset 1:** 1,000 rows (Extracted 01/29/2026)
+* **Dataset 2:** 10,000 rows (Extracted 01/29/2026)
+* **Dataset 3:** 40,000 rows (Extracted 02/07/2026)
+* **Dataset 4:** 133,872 rows (Extracted 03/19/2026)
 
-### Features
-
-Most of the features explored and ultimately used were parsed from the 'EPMT_JOB_TAGS' field within the 'annotations' column of each row.
-
-Both numerical and categorical data were extracted from the EPMT database and explored. In general, categorical features converted to numerical using one-hot encoding or a variant of that to reduce the number of features. 
+### Feature Engineering & Encoding
+The primary features were parsed from within the `EPMT_JOB_TAGS` field (found inside the `annotations` column). 
+* **Categorical Data:** High-cardinality strings were transformed using one-hot encoding or engineered variants to control feature dimensionality.
+* **Numerical Data:** Extracted metric values were mapped directly to the feature matrix.
 
 ### Training, Validation, Testing Dataset Split
 
 Initially, I didn't explicitly set aside a testing dataset, which is not ideal. I also varied the training set size from 50% to 75% of the dataset at first.
 
 Eventually, I settled on a better split for training, validation, and testing:
-  * **Training Set:** `60%`
-  * **Validation Set:** `20%`
-  * **Testing Set:** `20%`
+* **Training Set (60%):** Used to optimize model weights and parameters.
+* **Validation Set (20%):** Used for hyperparameter tuning and architecture selection.
+* **Testing Set (20%):** Held back entirely as a clean, unbiased final performance check.
 
-### Outlier Handling
+### Target & Feature Distribution Adjustments (ex: [EPMTDataCleanup](EPMTDataCleanup.ipynb))
+* **Skew Correction:** Evaluated feature distributions using the Pandas `.skew()` method. Applied NumPy log transformations (`np.log1p`) to compensate for heavily right-skewed tail distributions.
+* **Outlier Mitigation:** Identified extreme anomalies using the Interquartile Range (IQR) method:
+  * $IQR = Q3 - Q1$
+  * $\text{Lower Bound} = Q1 - 1.5 \times IQR$
+  * $\text{Upper Bound} = Q3 + 1.5 \times IQR$
+  * Data points falling outside these boundaries were flagged, clipped, or pruned.
 
-Some outlier handling was performed to address long tails
+### Correlation Analysis
+Correlation heatmaps were utilized to visualize out the relationships between features and the target variable (`cpu_time`).  In some experiments, features not well correlated to the cpu_time were dropped.
 
-IQR - Trying to address outliers
-* Compute Q1 (25th percentile), Q3 (75th percentile), IQR (Q3-Q1)
-* Pick some outlier thresholds, suggested
-* lower: Q1-1.5*IQR
-* upper: Q3-1.5*IQR
-* Flag or remove/clip outliers
+## 🤖 Algorithms & Models Explored
+The following machine learning architectures were explored during this project:
 
-### Handling skew
+| Model / Architecture | Context | Documentation & Resources |
+| :--- | :--- | :--- |
+| **LinearRegressor** | Baseline. Gauge of linear relationships. | [Scikit-Learn LinearRegression](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LinearRegression.html) |
+| **Support Vector Regression (SVR)** | Non-linear feature maps using kernels. | [Scikit-Learn SVR](https://scikit-learn.org/stable/modules/generated/sklearn.svm.SVR.html) |
+| **DecisionTree** | Splits data into logical, orthogonal paths based on explicit feature thresholds. | [Scikit-Learn DecisionTreeRegressor](https://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeRegressor.html) |
+| **RandomForest** | Averages independent trees to reduce variance and handle extreme job outliers | [Scikit-Learn RandomForestRegressor](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestRegressor.html) |
+| **HistGradientBoostingRegressor** | Sequentially builds trees to fix prior errors using binned feature histograms. | [Scikit-Learn HistGradientBoostingRegressor](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.HistGradientBoostingRegressor.html) |
+| **Multi-Layer Perceptron (MLP)** | I think I just wanted to try at least one deep learning architecture... | [Scikit-Learn MLPRegressor](https://scikit-learn.org/stable/modules/generated/sklearn.neural_network.MLPRegressor.html) |
+| **Voting Ensemble** | Combines different models | [Scikit-Learn VotingRegressor](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.VotingRegressor.html) |
 
-* TODO Write more about what I tried. StandardScaler? log?
-
-### Correlation Heatmaps
-
-Heatmaps helped visualize correlations between features and the target cpu_time.
-
-## 🤖 Algorithms & Models Attempted
-The following machine learning architectures were evaluated during this project:
-
-1. **LinearRegressor:** Baseline model to start out.
-2. **SVM:** TODO
-3. **DecisionTree:** To capture non-linear relationships.
-4. **RandomForest:** Ensemble method to reduce variance and overfitting.
-5. **Boosting:** (e.g., Gradient Boosting/XGBoost) For sequential error correction.
-6. **Multi-Layer Perceptron (MLP):** Neural network approach to map complex feature spaces.
-7. **Voting Ensemble:** Combining the strengths of the top-performing models.
 ---
 
 ## 📈 Metrics & Results
@@ -82,44 +73,33 @@ The models were evaluated using the following metrics:
 * Mean Squared Error (MSE)
 * R-squared ($R^2$ Score)
 
-### Comparison Table
-
-| Model | Training Accuracy | Validation Accuracy | Testing Accuracy | Notes |
-| :--- | :---: | :---: | :---: | :--- |
-| **LinearRegressor** | `0.00%` | `0.00%` | `0.00%` | ?? |
-| **DecisionTree** | `0.00%` | `0.00%` | `0.00%` | ?? |
-| **RandomForest** | `0.00%` | `0.00%` | `0.00%` | ?? |
-| **Boosting** | `0.00%` | `0.00%` | `0.00%` | ?? |
-| **Multi-Layer Perceptron**| `0.00%` | `0.00%` | `0.00%` | ?? |
-| **Voting Ensemble** | `0.00%` | `0.00%` | `0.00%` | Combined model results |
-
-> 🏆 **Best Accuracy Achieved:** `XX.XX%` using the **[Insert Best Model Name Here]**.
-
 ---
 
 ## 💻 Code Snippets
-Below is an example snippet demonstrating how the models were trained and evaluated using sklearn.
+Below are example snippets demonstrating how the models were split, trained and evaluated using sklearn.
 
 ```python
-###### TODO: SWAP FOR RELEVANT SNIPPETS
+# Example: Training (60%), Validation (20%), Testing (20%) Dataset Split
+from sklearn.model_selection import train_test_split
 
-# Example: Training the Voting Ensemble
-from sklearn.ensemble import VotingRegressor
-from sklearn.metrics import r2_score
+X_train_val, X_test, y_train_val, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+X_train, X_val, y_train, y_val = train_test_split(X_train_val, y_train_val, test_size=0.25, random_state=42)
+```
 
-# Initialize the ensemble with our top models
-voting_model = VotingRegressor(estimators=[
-    ('rf', random_forest_model),
-    ('boost', boosting_model)
-])
+```python
+# Example: Training the HistGradientBoostingRegressor
+from sklearn.ensemble import HistGradientBoostingRegressor
+from sklearn.metrics import mean_squared_error, r2_score
 
-# Fit and predict
-voting_model.fit(X_train, y_train)
-predictions = voting_model.predict(X_test)
+gb_model = HistGradientBoostingRegressor(max_iter=100, learning_rate=0.1, max_depth=10, random_state=42)
+gb_model.fit(X_train, y_train)
 
-# Evaluate
-accuracy = r2_score(y_test, predictions)
-print(f"Voting Ensemble R2 Score: {accuracy:.4f}")
+gb_val_pred = gb_model.predict(X_val)
+gb_mse = mean_squared_error(y_val, gb_val_pred)
+gb_r2 = r2_score(y_val, gb_val_pred)
+
+print(f"Mean Squared Error: {gb_mse:.2f}")
+print(f"R-squared Score: {gb_r2:.2f}")
 ```
 
 ## Notebooks
@@ -141,41 +121,39 @@ The following notebooks were generated as a result of this project. The naming c
 | 11 | [EPMTDataCleanup_Next11b.ipynb](https://github.com/jjuyeonkim/ilaflott_epmt/blob/epmt_play/notebooks/EPMTDataCleanup_Next11b.ipynb) | Features based on exp_time, exp_target, exp_platform, exp_component, exp_name (c_XX, am_X), and SLURM_JOB_ACCOUNT features. | 106,447 | 56 | HistGradientBoostingRegressor<br><br>Best $R^2$: 0.42<br><br>Training 60%<br>Validation Set: 20%<br> Testing Set:20% |
 | 12 | [EPMTDataCleanup_Next11e.ipynb](https://github.com/jjuyeonkim/ilaflott_epmt/blob/epmt_play/notebooks/EPMTDataCleanup_Next11e.ipynb) | Features based on exp_component and SLURM_JOB_ACCOUNT | 106,447 | 38 | VotingRegressor Ensemble including RandomForestRegressor, DecisionTree, MLPRegressor, HistGradientBoostingRegressor<br><br>Best $R^2$: 0.27<br><br>Training 60%<br>Validation Set: 20%<br> Testing Set:20% |
 
-## Mis-steps and Possible Future Steps
-If I were to redo how I spent my time, I might do things differently.
 
-### Understand the data better
-Actually running some post-processing jobs to understand better how data is being populated within the EPMT data base could have provided more insight on the data itself. If I could go back in time, I'd try this exercise before blindly extracting the data and using it.
 
-### Expand Dataset collection over a longer period of time
 
-Current EPMT database is limited to roughly 3 weeks worth of data at a given point in time. It may be useful to take time to write scripts to collect EPMT data over a longer period of time to use as training data. To clarify, this doesn’t mean a process for backing up EPMT data in its entirety. Instead, it may be writing scripts to parse through archival data or setting up cron jobs to pull from the existing EPMT data on regular 3 week intervals. If we collected data over a year, I estimate we could have 1-2 million rows. This would be a much larger data set.
 
-### Try different ML algorithms
 
-TODO: list some
 
-### Try different Features
+## Retrospective Analysis & Future Engineering Roadmap
 
-TODO: list some
+Reflecting on the initial phase of this exploratory effort highlights several pivot points, data constraints, and potential for future iterations. Looking back now, I wish I'd done a few things differently.
 
-* If we stored the actual scripts being run, we could potentially extract useful features to train on.
+### 1. Understand the Data Better
+* **The Lesson:** Extracting data without understanding the underlying lifecycle of the database fields created a blind spot. 
+* **Future Action:** Actually running some post-processing jobs to understand better how data is being populated within the EPMT data base could have provided more insight on the data itself. If I could go back in time, I'd try this exercise before blindly extracting the data and using it. Understanding the data generation process beforehand will prevent feeding the models noisy features.
 
-### Explore Better Metrics
+### 2. Long-term Data Harvesting
+* **The Lesson:** The current EPMT database is restricted to a 3-week window, limiting the models' exposure to broader system patterns.
+* **Future Action:** Deploy automated lightweight cron jobs or data pipeline scripts to pull and append incremental 3-week snapshots over a rolling 12-month period. Scaling the data from ~133k rows to an estimated 1 to 2 million rows will provide the data volume necessary to properly train high-capacity deep learning models (MLPs) and capture long-term seasonal shifts in cluster utilization.
 
-I used R_squared and MSE for these notebooks, but there are more metrics out there to explore. 
+### 3. Try different ML Models/Algorithms
+To break past the current $R^2$ ceiling of 0.42, future iterations could move beyond standard Scikit-Learn structures.
 
-TODO: list some
+### 4. Save the Run Scripts
+The current feature space is restricted to flat metadata tags. Predictive accuracy could be heavily boosted by capturing the actual scripts being submitted and transforming them into textual embeddings would give the model features from the actual computational logic of the job.
 
-### More Time
+### 5. Transitioning to Tailored Optimization Metrics
+Relying strictly on Mean Squared Error (MSE) and standard $R^2$ treats all prediction errors equally. For workload scheduling, errors are asymmetrical. Future iterations could implement and optimize for different metrics such as:
+* **Mean Absolute Percentage Error (MAPE):** Evaluates error relative to the job size (e.g., being off by 5 minutes matters immensely for a 10-minute job, but is negligible for a 24-hour job).
+* **Custom Loss Functions:** TO BE DETERMINED
+
+### 6. More Time
 
 More than 4 hours per week would likely have helped.
 
-### And more and more...
+---
 
-TODO: Compile a list from the "Next Step" sections of the notebooks
-* Try with and without group information
-* Use only bronx-23 rows
-* Break up "ocean" exp_component --- even further... 
-
-DISCLAIMER: The template for this document was generated with the help of Gemini. It is currently being expanded, vetted, and populated with work results.
+*Disclaimer: The foundational structural template and context for this retrospective report were generated with the assistance of Gemini, and subsequently vetted, expanded, and populated with actual engineering findings.*
