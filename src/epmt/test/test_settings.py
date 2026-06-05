@@ -1,30 +1,27 @@
-#!/usr/bin/env python
-
-# don't do this for this one, i think....
-# from . import *
+'''
+tests for epmt.epmt_settings, epmt.epmt_default_settings
+'''
 
 import unittest
-from epmt.epmtlib import get_install_root
 from os import path
 
+from epmt.epmtlib import get_install_root
 
-#def setUpModule():
-#    global install_root
 install_root = get_install_root()
 
 
 class EPMTSettings(unittest.TestCase):
 
     def test_default_settings(self):
-        default_settings_file = 'epmt_default_settings.py'
         # the test below will fail when we use pyinstaller so let's skip it
         # it's anyhow covered in the tests below
-        # self.assertTrue(path.exists(default_settings_file)
-        # and (path.getsize(default_settings_file) > 0))
+        #_default_settings_file = 'epmt_default_settings.py'
+        #self.assertTrue(path.exists(_default_settings_file) and path.getsize(_default_settings_file) > 0)
         try:
             import epmt.epmt_default_settings as defaults
+            self.assertTrue(defaults is not None, "import of epmt_default_settings yielded None")
         except BaseException:
-            self.assertTrue(False, "default settings import failed")
+            self.fail("default settings import failed")
         self.assertEqual(defaults.orm, 'sqlalchemy')
         # default settings shouldn't have db_params set.
         # with self.assertRaises(AttributeError):
@@ -37,8 +34,9 @@ class EPMTSettings(unittest.TestCase):
                         (path.getsize(install_root + '/settings.py') > 0))
         try:
             import epmt.epmt_settings as settings
+            assert settings is not None
         except BaseException:
-            self.assertTrue(False, "could not load epmt_settings as settings")
+            self.fail("could not load epmt_settings as settings")
 
     def test_settings_overrides_defaults(self):
 
@@ -72,7 +70,7 @@ class EPMTSettings(unittest.TestCase):
         # for the keys in defaults but not in 'later', the settings will use the defaults
         for k in default_vars.keys():
             if k in later_vars:
-                continue  # overwritten, so shouldnt be equal
+                continue  # overwritten, so shouldn't be equal
             if k == 'epmt_settings_kind':
                 continue  # empty/null v 'default'
             # print('\n')

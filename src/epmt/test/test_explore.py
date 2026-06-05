@@ -1,9 +1,19 @@
-#!/usr/bin/env python
+'''
+tests for epmt.epmt_exp_explore
+'''
 
-# the import below is crucial to get a sane test environment
-from . import *
+from glob import glob
+import unittest
+
+from epmt import epmt_settings as settings
+from epmt import epmt_query as eq
+from epmt.orm import setup_db
+from epmt.epmt_cmds import epmt_submit
+from epmt.epmtlib import capture, timing, get_install_root
+
 import epmt.epmt_exp_explore as exp
 
+install_root = get_install_root()
 
 def do_cleanup():
     eq.delete_jobs(['685000', '685003'], force=True, remove_models=True)
@@ -11,11 +21,10 @@ def do_cleanup():
 
 @timing
 def setUpModule():
-    print('\n' + str(settings.db_params))
     setup_db(settings)
     do_cleanup()
-    datafiles = '{}/test/data/query/68500[03].tgz'.format(install_root)
-    print('setUpModdule: importing {0}'.format(datafiles))
+    datafiles = f'{install_root}/test/data/query/68500[03].tgz'
+    print(f'setUpModule: importing {datafiles}')
     epmt_submit(sorted(glob(datafiles)), dry_run=False)
 
 
@@ -64,7 +73,7 @@ class ExploreAPI(unittest.TestCase):
         self.assertEqual(jobs, ['685000'])
 
     def test_missing_segments(self):
-        with capture() as (out, err):
+        with capture() as (_out, _err):
             d = exp.find_missing_time_segments(
                 'ESM4_historical_D151', jobs=[
                     '685000', '685003'], time_segments=range(

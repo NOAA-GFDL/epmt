@@ -3,18 +3,58 @@ name: build_and_test_epmt
 on:
   push
 
+# Minimal permissions for security
+permissions:
+  contents: read
+
 # cancel running jobs if theres a newer push
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# ── Speed-up notes ────────────────────────────────────────────────────
+# • Python and SQLite source builds are cached via actions/cache so they
+#   are only compiled on the first run (or when versions change).
+#   The weekly_tarball_build workflow pre-warms this cache every Monday.
+# • Further ideas:
+#   1. Cache pip downloads: restore PIP_CACHE_DIR with actions/cache.
+#   2. Pre-build a Rocky 8 container image with all deps pre-installed.
+#   3. Combine individual pytest steps to reduce per-step overhead.
+
 
 jobs:
   build-linux:
     runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 1
+      fail-fast: false
+      matrix:
+        db_backend: [sqlite, postgres]
 
-    #service:
-    #  - postgres:latest
+    services:
+      postgres:
+        image: postgres:latest
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: example
+          POSTGRES_DB: EPMT
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      # Build environment versions — must match Makefile and weekly_tarball_build.yml
+      PYTHON_VERSION: "3.10.20"  # updated from 3.9.25 (drop EOL Python 3.9)
+      SQLITE_VERSION: "3490100"
+      SQLITE_YEAR: "2025"
+      # Tarball source identifiers — must match Makefile and weekly_tarball_build.yml
+      PAPIEX_VERSION: "2.3.16"
+      EPMT_DASH_SRC_BRANCH: "main"
+      OS_TARGET: "rocky-8"
+      # SLURM version — must match docker_build_test.yml
+      SLURM_TAG: "slurm-25-05-3-1"
 
     container:
       image: rockylinux:8
@@ -35,43 +75,88 @@ jobs:
             readline-devel sqlite-devel openssl-devel xz xz-devel libffi-devel \
             gcc-c++ gcc-gfortran tcl environment-modules perl bind-utils openssh-clients openssh-server
 
-      - name: install and configure sqlite3
+      # ── Python + SQLite from source: cached across runs ───────────────
+      # Cache key includes both versions so bumping either triggers a
+      # rebuild.  The weekly_tarball_build workflow pre-warms this cache
+      # every Monday; the build steps below are a fallback for misses.
+      - name: Cache Python and SQLite builds
+        id: cache-python-sqlite
+        uses: actions/cache@v4
+        with:
+          path: .cache/python-sqlite
+          key: python-sqlite-${{ env.PYTHON_VERSION }}-${{ env.SQLITE_VERSION }}-rocky8-v1
+
+      - name: Build SQLite from source
+        if: steps.cache-python-sqlite.outputs.cache-hit != 'true'
         run: |
+          mkdir -p $GITHUB_WORKSPACE/.cache/python-sqlite/usr/lib64
           cd /usr/src
           echo 'downloading sqlite3'
-          curl -o sqlite-amalgamation-3490100.zip https://www.sqlite.org/2025/sqlite-amalgamation-3490100.zip
-          unzip sqlite-amalgamation-3490100.zip
+          curl -o sqlite-amalgamation-${{ env.SQLITE_VERSION }}.zip \
+            https://www.sqlite.org/${{ env.SQLITE_YEAR }}/sqlite-amalgamation-${{ env.SQLITE_VERSION }}.zip
+          unzip sqlite-amalgamation-${{ env.SQLITE_VERSION }}.zip
           echo 'building libsqlite3 with json1 and other useful extensions'
-          cd sqlite-amalgamation-3490100
-          gcc -shared -fPIC -O2  -DSQLITE_ENABLE_JSON1 -DSQLITE_ENABLE_LOAD_EXTENSION -DSQLITE_MAX_VARIABLE_NUMBER=9999 sqlite3.c -o /usr/lib64/libsqlite3.so
+          cd sqlite-amalgamation-${{ env.SQLITE_VERSION }}
+          gcc -shared -fPIC -O2 -DSQLITE_ENABLE_JSON1 -DSQLITE_ENABLE_LOAD_EXTENSION \
+            -DSQLITE_MAX_VARIABLE_NUMBER=9999 sqlite3.c \
+            -o $GITHUB_WORKSPACE/.cache/python-sqlite/usr/lib64/libsqlite3.so
+          cp $GITHUB_WORKSPACE/.cache/python-sqlite/usr/lib64/libsqlite3.so /usr/lib64/libsqlite3.so
+          ldconfig
 
-      - name: install python3
+      - name: Build Python from source
+        if: steps.cache-python-sqlite.outputs.cache-hit != 'true'
         run: |
           cd /usr/src
           echo 'downloading python'
-          curl -o Python-3.9.22.tgz https://www.python.org/ftp/python/3.9.22/Python-3.9.22.tgz
-          tar xzf Python-3.9.22.tgz
-          cd Python-3.9.22
+          curl -o Python-${{ env.PYTHON_VERSION }}.tgz \
+            https://www.python.org/ftp/python/${{ env.PYTHON_VERSION }}/Python-${{ env.PYTHON_VERSION }}.tgz
+          tar xzf Python-${{ env.PYTHON_VERSION }}.tgz
+          cd Python-${{ env.PYTHON_VERSION }}
           echo 'building python3'
           ./configure --quiet --prefix=/usr --enable-shared --enable-optimizations --enable-loadable-sqlite-extensions
-          make --silent install > /dev/null
+          make --silent install DESTDIR=$GITHUB_WORKSPACE/.cache/python-sqlite > /dev/null
 
-      - name: configure python3 and upgrade pip and grab gcc-c++
+      - name: Deploy Python and SQLite
         run: |
+          cp -a .cache/python-sqlite/usr/* /usr/
           ldconfig
           python3 -V
-          pip3 install --upgrade pip
-          yum install -y gcc-c++
+          python3 -m pip install --upgrade pip
 
       - name: install requirements
         run: |
-          pip3 install -r requirements.txt.py3
+          python3 -m pip install -r requirements.txt.py3
+
+      # ── epmt-dash tarball: cached across runs ──────────────────────────────
+      # Cache key: branch name.  Update EPMT_DASH_SRC_BRANCH (env + Makefile)
+      # to invalidate.  The weekly_tarball_build workflow pre-warms this cache
+      # every Monday; the build below is a fallback for cache misses.
+      - name: Check Cache for epmt-dash
+        id: cache-epmt-dash
+        uses: actions/cache@v4
+        with:
+          path: src/epmt/ui
+          key: epmt-dash-${{ env.EPMT_DASH_SRC_BRANCH }}
 
       - name: make dash tarball
+        if: steps.cache-epmt-dash.outputs.cache-hit != 'true'
         run: |
           make epmt-dash
 
+      # ── papiex tarball (OUTSIDE_DOCKER): cached across runs ────────────────
+      # Cache key: version + OS target + "outside-docker" suffix to distinguish
+      # from the Docker-built variant cached by docker_build_test.
+      # The weekly_tarball_build workflow pre-warms this cache every Monday;
+      # the build below is a fallback for cache misses.
+      - name: Check Cache for papiex tarball (OUTSIDE_DOCKER)
+        id: cache-papiex
+        uses: actions/cache@v4
+        with:
+          path: papiex-epmt-${{ env.PAPIEX_VERSION }}-${{ env.OS_TARGET }}.tgz
+          key: papiex-outside-docker-${{ env.PAPIEX_VERSION }}-${{ env.OS_TARGET }}
+
       - name: make papiex tarball
+        if: steps.cache-papiex.outputs.cache-hit != 'true'
         run: |
           make OUTSIDE_DOCKER='YUP' papiex-dist
 
@@ -82,92 +167,353 @@ jobs:
       - name: pip install epmt pip-package
         run: |
           ls src/dist/epmt*gz
-          pip3 install src/dist/epmt*gz
+          python3 -m pip install src/dist/epmt*gz
 
-      - name: create links to papiex executables, adjust path, install bats for integration tests
+      - name: create links to papiex executables, adjust path
         run: |
-          mkdir -p /usr/lib/python3.9/site-packages/papiex-epmt-install
-          ln -s  /usr/lib/python3.9/site-packages/epmt/lib /usr/lib/python3.9/site-packages/papiex-epmt-install/
-          ln -s  /usr/lib/python3.9/site-packages/epmt/bin /usr/lib/python3.9/site-packages/papiex-epmt-install/
+          SITE_PACKAGES=$(python3 -c "import site; print(site.getsitepackages()[0])")
+          mkdir -p ${SITE_PACKAGES}/papiex-epmt-install
+          ln -s  ${SITE_PACKAGES}/epmt/lib ${SITE_PACKAGES}/papiex-epmt-install/
+          ln -s  ${SITE_PACKAGES}/epmt/bin ${SITE_PACKAGES}/papiex-epmt-install/
           export PATH='/usr/bin:${PATH}:/usr/local/libexec:/usr/local/bin'
-          /usr/lib/python3.9/site-packages/epmt/test/integration/libs/bats/install.sh /usr/local
 
-      - name: epmt version call 
+      - name: Configure epmt to use PostgreSQL
+        if: matrix.db_backend == 'postgres'
+        run: |
+          SITE_PACKAGES=$(python3 -c "import site; print(site.getsitepackages()[0])")
+          cat > ${SITE_PACKAGES}/epmt/settings.py << 'EOFSETTINGS'
+          def test_settings_import():
+              pass
+
+          orm = "sqlalchemy"
+          db_params = {"url": "postgresql://postgres:example@postgres:5432/EPMT", "echo": False}
+          bulk_insert = True
+          epmt_settings_kind = "pg_container"
+          EOFSETTINGS
+          echo "PostgreSQL settings installed at ${SITE_PACKAGES}/epmt/settings.py"
+          cat ${SITE_PACKAGES}/epmt/settings.py
+
+      - name: epmt version
         run: |
           epmt -v -V
 
-      - name: epmt check call
+      - name: epmt check
         run: |
           echo 2 > /proc/sys/kernel/perf_event_paranoid
           epmt -vv check
 
-      - name: test_anysh call 
+      - name: pip install pytest specifically
         run: |
-          python3 -m unittest -v epmt.test.test_anysh
+          python3 -m pip install pytest pytest-cov coverage
 
-      - name: test_cmds call 
+      - name: enable subprocess coverage for integration tests
         run: |
-          python3 -m unittest -v epmt.test.test_cmds
+          SITE_PACKAGES=$(python3 -c "import site; print(site.getsitepackages()[0])")
+          echo "import coverage; coverage.process_startup()" > ${SITE_PACKAGES}/coverage_subprocess.pth
+          echo "Installed coverage subprocess hook at ${SITE_PACKAGES}/coverage_subprocess.pth"
 
-      - name: test_db_migration call 
+      - name: test_anysh
         run: |
-          python3 -m unittest -v epmt.test.test_db_migration
+          TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/test_anysh.py
+        env:
+          COVERAGE_FILE: .coverage.anysh
 
-      - name: test_db_schema call 
-        run: |
-          python3 -m unittest -v epmt.test.test_db_schema
+      - name: test_check
+        run:  |
+          TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/test_check.py
+        env:
+          COVERAGE_FILE: .coverage.check
 
-      - name: test_explore call 
-        run: |
-          python3 -m unittest -v epmt.test.test_explore
+      - name: test_cmds
+        run:  |
+          TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/test_cmds.py
+        env:
+          COVERAGE_FILE: .coverage.cmds
 
-      - name: test_lib call 
+      - name: test_dbcare
         run: |
-          python3 -m unittest -v epmt.test.test_lib
+          TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/test_dbcare.py
+        env:
+          COVERAGE_FILE: .coverage.dbcare
 
-      - name: test_outliers call 
+      - name: test_help_dbcare_dbsize
         run: |
-          python3 -m unittest -v epmt.test.test_outliers
+          TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/test_help_dbcare_dbsize.py
+        env:
+          COVERAGE_FILE: .coverage.help_dbcare_dbsize
 
-      - name: test_query call 
+      - name: test_db_migration
         run: |
-          python3 -m unittest -v epmt.test.test_query
+          TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/test_db_migration.py
+        env:
+          COVERAGE_FILE: .coverage.db_migration
 
-      - name: test_run call 
+      - name: test_db_schema
         run: |
-          python3 -m unittest -v epmt.test.test_run
+          TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/test_db_schema.py
+        env:
+          COVERAGE_FILE: .coverage.db_schema
 
-      - name: test_settings call 
+      - name: test_explore
         run: |
-          python3 -m unittest -v epmt.test.test_settings
+          TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/test_explore.py
+        env:
+          COVERAGE_FILE: .coverage.explore
 
-      - name: test_shell call 
+      - name: test_lib
         run: |
-          python3 -m unittest -v epmt.test.test_shell
+          TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/test_lib.py
+        env:
+          COVERAGE_FILE: .coverage.lib
 
-      - name: test_stat call 
+      - name: test_outliers
         run: |
-          python3 -m unittest -v epmt.test.test_stat
+          TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/test_outliers.py
+        env:
+          COVERAGE_FILE: .coverage.outliers
 
-      - name: test_submit call 
+      - name: test_query
         run: |
-          python3 -m unittest -v epmt.test.test_submit
+          TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/test_query.py
+        env:
+          COVERAGE_FILE: .coverage.query
 
-      - name: epmt integration (GUARDED) call 
-        continue-on-error: true
+      - name: test_run
         run: |
-          epmt integration
+          TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/test_run.py
+        env:
+          COVERAGE_FILE: .coverage.run
 
-      - name: install pylint
+      - name: test_settings
         run: |
-          pip install pylint
+          TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/test_settings.py
+        env:
+          COVERAGE_FILE: .coverage.settings
 
-      - name: run pylint
+      - name: test_stat
         run: |
-          pylint --fail-under 6.0 --max-line-length 120 --max-args 6 -ry src/epmt
+          TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/test_stat.py
+        env:
+          COVERAGE_FILE: .coverage.stat
+
+      - name: test_submit
+        run: |
+          TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/test_submit.py
+        env:
+          COVERAGE_FILE: .coverage.submit
+
+      - name: integration, basic
+        run: |
+          TZ=UTC pytest -x -vv src/epmt/test/integration/test_integration_basic.py
+        env:
+          COVERAGE_FILE: .coverage.integration_basic
+          COVERAGE_PROCESS_START: coveragerc
+
+      - name: integration, escape
+        run: |
+          TZ=UTC pytest -x -vv src/epmt/test/integration/test_integration_escape.py
+        env:
+          COVERAGE_FILE: .coverage.integration_escape
+          COVERAGE_PROCESS_START: coveragerc
+
+      - name: integration, concat
+        run: |
+          TZ=UTC pytest -x -vv src/epmt/test/integration/test_integration_concat.py
+        env:
+          COVERAGE_FILE: .coverage.integration_concat
+          COVERAGE_PROCESS_START: coveragerc
+
+      - name: integration, daemon
+        run: |
+          TZ=UTC pytest -x -vv src/epmt/test/integration/test_integration_daemon.py
+        env:
+          COVERAGE_FILE: .coverage.integration_daemon
+          COVERAGE_PROCESS_START: coveragerc
+
+      - name: integration, annotate
+        run: |
+          TZ=UTC pytest -x -vv src/epmt/test/integration/test_integration_annotate.py
+        env:
+          COVERAGE_FILE: .coverage.integration_annotate
+          COVERAGE_PROCESS_START: coveragerc
+
+      - name: integration, explore
+        run: |
+          TZ=UTC pytest -x -vv src/epmt/test/integration/test_integration_explore.py
+        env:
+          COVERAGE_FILE: .coverage.integration_explore
+          COVERAGE_PROCESS_START: coveragerc
+
+      # ── SLURM installation (built from source, cached) ────────────────
+      - name: Check Cache for SLURM build
+        id: cache-slurm
+        uses: actions/cache@v4
+        with:
+          path: /tmp/slurm-install
+          key: slurm-${{ env.SLURM_TAG }}-rocky8-v1
+
+      - name: Install munge (SLURM auth dependency)
+        run: |
+          yum install -y epel-release
+          yum config-manager --set-enabled powertools
+          yum install -y munge munge-devel munge-libs
+
+      - name: Build SLURM from source
+        if: steps.cache-slurm.outputs.cache-hit != 'true'
+        run: |
+          git clone --depth 1 -b ${SLURM_TAG} https://github.com/SchedMD/slurm.git /tmp/slurm-src
+          cd /tmp/slurm-src
+          ./configure --prefix=/usr --sysconfdir=/etc/slurm
+          make -j$(nproc)
+          DESTDIR=/tmp/slurm-install make install
+          rm -rf /tmp/slurm-src
+
+      - name: Install SLURM binaries
+        run: |
+          cp -a /tmp/slurm-install/usr/* /usr/
+          ldconfig
+          for cmd in slurmctld slurmd sbatch sinfo scontrol squeue; do command -v $cmd || exit 1; done
+
+      - name: Start SLURM daemons for integration tests
+        run: |
+          set -e
+          HOSTNAME=$(hostname)
+          CPUS=$(nproc)
+
+          mkdir -p /etc/slurm
+          cat > /etc/slurm/slurm.conf << EOFSLURM
+          ClusterName=linux
+          SlurmctldHost=${HOSTNAME}
+          MpiDefault=none
+          ProctrackType=proctrack/linuxproc
+          ReturnToService=2
+          SlurmctldPidFile=/var/run/slurmd/slurmctld.pid
+          SlurmctldPort=6817
+          SlurmdPidFile=/var/run/slurmd/slurmd.pid
+          SlurmdPort=6818
+          SlurmdSpoolDir=/var/spool/slurmd
+          SlurmUser=root
+          StateSaveLocation=/var/lib/slurmd
+          SwitchType=switch/none
+          TaskPlugin=task/none
+          InactiveLimit=0
+          KillWait=30
+          MinJobAge=300
+          SlurmctldTimeout=300
+          SlurmdTimeout=300
+          Waittime=0
+          SchedulerType=sched/backfill
+          SelectType=select/cons_tres
+          SelectTypeParameters=CR_Core
+          AccountingStorageType=accounting_storage/none
+          SlurmctldDebug=info
+          SlurmctldLogFile=/var/log/slurm/slurmctld.log
+          SlurmdDebug=info
+          SlurmdLogFile=/var/log/slurm/slurmd.log
+          NodeName=${HOSTNAME} CPUs=${CPUS} RealMemory=1000 State=UNKNOWN
+          PartitionName=normal Nodes=ALL Default=YES MaxTime=INFINITE State=UP
+          EOFSLURM
+
+          cat > /etc/slurm/cgroup.conf << EOFCGROUP
+          CgroupPlugin=disabled
+          IgnoreSystemd=yes
+          EOFCGROUP
+
+          mkdir -p /var/spool/slurmd /var/lib/slurmd /var/log/slurm /var/run/slurmd
+
+          # Generate munge key and start munged
+          mkdir -p /etc/munge /var/log/munge /var/run/munge
+          dd if=/dev/urandom bs=1 count=1024 > /etc/munge/munge.key 2>/dev/null
+          chown -R munge:munge /etc/munge /var/log/munge /var/run/munge
+          chmod 0700 /etc/munge
+          chmod 0400 /etc/munge/munge.key
+          runuser -u munge -- /usr/sbin/munged
+
+          # Start SLURM controller (with -i to ignore stale state files)
+          /usr/sbin/slurmctld -i
+
+          # Start SLURM compute node daemon
+          /usr/sbin/slurmd
+
+          # Wait for SLURM node to register and become idle.
+          # ReturnToService=2 in slurm.conf handles the UNKNOWN->IDLE
+          # transition automatically once slurmd registers with slurmctld.
+          for i in $(seq 1 60); do
+            STATE=$(sinfo -N --noheader -o "%T" 2>/dev/null | head -1)
+            if [ "$STATE" = "idle" ]; then
+              echo "SLURM is ready (node idle):"
+              sinfo
+              sinfo -N
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "ERROR: SLURM node did not reach idle state"
+          sinfo -N 2>/dev/null || true
+          scontrol show node 2>/dev/null || true
+          tail -30 /var/log/slurm/slurmctld.log 2>/dev/null || true
+          tail -30 /var/log/slurm/slurmd.log 2>/dev/null || true
+          exit 1
+
+      - name: integration, slurm
+        run: |
+          TZ=UTC pytest -x -vv src/epmt/test/integration/test_integration_slurm.py
+        env:
+          COVERAGE_FILE: .coverage.integration_slurm
+          COVERAGE_PROCESS_START: coveragerc
+
+      - name: SLURM diagnostics (on failure)
+        if: failure()
+        run: |
+          echo "=== SLURM job output files ==="
+          for f in /tmp/slurm-*.out; do
+            [ -f "$f" ] && echo "--- $f ---" && cat "$f" && echo
+          done
+          echo "=== slurmctld log (last 50 lines) ==="
+          tail -50 /var/log/slurm/slurmctld.log 2>/dev/null || true
+          echo "=== slurmd log (last 50 lines) ==="
+          tail -50 /var/log/slurm/slurmd.log 2>/dev/null || true
+          echo "=== squeue ==="
+          squeue -l 2>/dev/null || true
+          echo "=== sacct ==="
+          sacct -l 2>/dev/null || true
+
+      - name: integration, collate-tsv
+        run: |
+          TZ=UTC pytest -x -vv src/epmt/test/integration/test_integration_collate_tsv.py
+        env:
+          COVERAGE_FILE: .coverage.integration_collate_tsv
+          COVERAGE_PROCESS_START: coveragerc
+
+      - name: integration, kernel-compile
+        run: |
+          TZ=UTC pytest -x -vv src/epmt/test/integration/test_integration_kernel_compile.py
+        env:
+          COVERAGE_FILE: .coverage.integration_kernel_compile
+          COVERAGE_PROCESS_START: coveragerc
+
+      - name:  Combine coverage data and generate report
+        continue-on-error:  true
+        run: |
+          ls -la .coverage.*
+          coverage combine --rcfile=coveragerc
+          coverage xml --rcfile=coveragerc -o coverage.xml
+          coverage report --rcfile=coveragerc --show-missing
+          ls -l coverage.xml
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.xml
+          flags: unittests
+          name: epmt-coverage
+          fail_ci_if_error: false
+          verbose: true
+          use_pypi: true
 
       - name: upload pip installable
         uses: actions/upload-artifact@v4
         with:
-          name: epmt-pip-install-TEST
-          path: src/dist/epmt-4.11.0.tar.gz
+          name: epmt-pip-install-TEST-${{ matrix.db_backend }}
+          path: src/dist/epmt-5.0.0.post.tar.gz

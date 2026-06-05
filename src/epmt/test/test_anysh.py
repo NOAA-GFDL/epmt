@@ -1,11 +1,17 @@
-#!/usr/bin/env python
+'''
+monolithic tests of epmt start, dump, run, stop, dump, stage, and submit command chain in various shells
+'''
 
-from . import *
-# import os
+import os
+from os import environ
+import shutil
+import unittest
 
-# These will be used in both tests
-# One can embed them in the class, but referring to them with
-# a class prefix is ugly
+from epmt import epmt_settings as settings
+from epmt import epmt_query as eq
+from epmt.orm import setup_db
+from epmt.epmtlib import timing, capture
+
 jobid = '1011'
 tuser = 'testuser'
 
@@ -16,8 +22,8 @@ def do_cleanup():
             os.remove(f)
         except OSError:
             pass
-    import shutil
-    for d in ['/tmp/epmt']:
+
+    for _d in ['/tmp/epmt']:
         try:
             shutil.rmtree('/tmp/epmt')
         except Exception:
@@ -28,9 +34,8 @@ def do_cleanup():
 @timing
 def setUpModule():
     setup_db(settings)
-#    print('\n' + str(settings.db_params))
     do_cleanup()
-    from os import environ
+
     environ['SLURM_JOB_ID'] = jobid
     environ['SLURM_JOB_USER'] = tuser
     settings.post_process_job_on_ingest = True
@@ -46,18 +51,15 @@ class EPMTShell(unittest.TestCase):
     def test_run_auto(self):
         from epmt.epmt_cmds import epmt_run
         do_cleanup()
-        with capture() as (out, err):
+        with capture() as (_out, _err):
             results = epmt_run(['sleep 1'], wrapit=True, dry_run=False, debug=False)
             self.assertEqual(0, results)
 
     def test_monolithic(self):
-        from epmt.epmt_cmds import epmt_check, epmt_source, epmt_start_job, epmt_dump_metadata, epmt_run, epmt_stop_job, epmt_stage, epmt_submit
-        with capture() as (out, err):
-            # Check will fail because of kernel paranoid, but we can't be
-            # sure it will always fail.
-            # TODO: Fix this so we can count on it to either always fail or always
-            # pass. Since we can't count on the kernel paranoid setting to be right,
-            # it might be better to set this up to always fail. But how?
+        from epmt.epmt_cmds import (epmt_source, epmt_start_job, epmt_dump_metadata,
+                                    epmt_run, epmt_stop_job, epmt_stage, epmt_submit)
+        with capture() as (_out, _err):
+            # TODO see if this works
             # results = epmt_check()
             # self.assertEqual(results, False)
 

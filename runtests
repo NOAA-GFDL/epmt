@@ -1,0 +1,203 @@
+#!/usr/bin/env bash
+# ────────────────────────────────────────────────────────────────────
+# runtests — modular test runner for an editable install of EPMT.
+#
+# Usage:
+#   source runtests            # load all functions into current shell
+#   run_unit_tests             # run every unit-test suite
+#   run_integration_tests      # run every integration-test suite
+#   run_all_tests              # unit + integration + lint
+#   run_test <name> [<name>…]  # cherry-pick: run_test lib stat query
+#
+# Individual suites (match CI step names):
+#   test_anysh  test_cmds  test_db_migration  test_db_schema
+#   test_explore  test_lib  test_outliers  test_query
+#   test_run  test_settings  test_shell  test_stat  test_submit
+#
+# Integration suites:
+#   integration_basic  integration_escape  integration_concat
+#   integration_daemon  integration_shell  integration_annotate
+#   integration_explore  integration_slurm  integration_collate_tsv
+#   integration_kernel_compile
+#
+# Other:
+#   epmt_preflight       — version + check (like CI preamble)
+#   run_lint             — pylint (epmt, ui, entry-point)
+#   run_coverage_report  — combine .coverage.* and print summary
+# ────────────────────────────────────────────────────────────────────
+
+# ── configuration ──────────────────────────────────────────────────
+EPMT_TEST_DIR="src/epmt/test"
+EPMT_INTEGRATION_DIR="src/epmt/test/integration"
+EPMT_COV_OPTS="--cov=epmt --cov-report=term --cov-config=coveragerc"
+EPMT_PYTEST_OPTS="-x -vv"
+
+# ── helpers ────────────────────────────────────────────────────────
+_epmt_run_suite() {
+    # $1 = test file path, $2 = coverage suffix
+    local testfile="$1" covsuffix="$2"
+    echo ""
+    echo "══════════════════════════════════════════════════════════"
+    echo "  $covsuffix"
+    echo "══════════════════════════════════════════════════════════"
+    COVERAGE_FILE=".coverage.${covsuffix}" \
+        TZ=UTC pytest ${EPMT_PYTEST_OPTS} ${EPMT_COV_OPTS} "$testfile"
+    return $?
+}
+
+_epmt_run_integration() {
+    local testfile="$1" covsuffix="$2"
+    echo ""
+    echo "══════════════════════════════════════════════════════════"
+    echo "  $covsuffix"
+    echo "══════════════════════════════════════════════════════════"
+    COVERAGE_FILE=".coverage.${covsuffix}" \
+    COVERAGE_PROCESS_START=coveragerc \
+        TZ=UTC pytest ${EPMT_PYTEST_OPTS} "$testfile"
+    return $?
+}
+
+# ── preflight ──────────────────────────────────────────────────────
+epmt_preflight() {
+    echo "── epmt version ──"
+    epmt -v -V
+    echo ""
+    echo "── epmt check ──"
+    epmt -vv check
+}
+
+# ── unit-test suites (one function per CI step) ───────────────────
+test_anysh()        { _epmt_run_suite "${EPMT_TEST_DIR}/test_anysh.py"        "anysh"; }
+test_cmds()         { _epmt_run_suite "${EPMT_TEST_DIR}/test_cmds.py"         "cmds"; }
+test_db_migration() { _epmt_run_suite "${EPMT_TEST_DIR}/test_db_migration.py" "db_migration"; }
+test_db_schema()    { _epmt_run_suite "${EPMT_TEST_DIR}/test_db_schema.py"    "db_schema"; }
+test_explore()      { _epmt_run_suite "${EPMT_TEST_DIR}/test_explore.py"      "explore"; }
+test_lib()          { _epmt_run_suite "${EPMT_TEST_DIR}/test_lib.py"          "lib"; }
+test_outliers()     { _epmt_run_suite "${EPMT_TEST_DIR}/test_outliers.py"     "outliers"; }
+test_query()        { _epmt_run_suite "${EPMT_TEST_DIR}/test_query.py"        "query"; }
+test_run()          { _epmt_run_suite "${EPMT_TEST_DIR}/test_run.py"          "run"; }
+test_settings()     { _epmt_run_suite "${EPMT_TEST_DIR}/test_settings.py"     "settings"; }
+test_shell()        { _epmt_run_suite "${EPMT_TEST_DIR}/test_shell.py"        "shell"; }
+test_stat()         { _epmt_run_suite "${EPMT_TEST_DIR}/test_stat.py"         "stat"; }
+test_submit()       { _epmt_run_suite "${EPMT_TEST_DIR}/test_submit.py"       "submit"; }
+test_help_dbcare_dbsize() { _epmt_run_suite "${EPMT_TEST_DIR}/test_help_dbcare_dbsize.py" "help_dbcare_dbsize"; }
+
+# ── integration suites ─────────────────────────────────────────────
+integration_basic()          { _epmt_run_integration "${EPMT_INTEGRATION_DIR}/test_integration_basic.py"          "integration_basic"; }
+integration_escape()         { _epmt_run_integration "${EPMT_INTEGRATION_DIR}/test_integration_escape.py"         "integration_escape"; }
+integration_concat()         { _epmt_run_integration "${EPMT_INTEGRATION_DIR}/test_integration_concat.py"         "integration_concat"; }
+integration_daemon()         { _epmt_run_integration "${EPMT_INTEGRATION_DIR}/test_integration_daemon.py"         "integration_daemon"; }
+integration_shell()          { _epmt_run_integration "${EPMT_INTEGRATION_DIR}/test_integration_shell.py"          "integration_shell"; }
+integration_annotate()       { _epmt_run_integration "${EPMT_INTEGRATION_DIR}/test_integration_annotate.py"       "integration_annotate"; }
+integration_explore()        { _epmt_run_integration "${EPMT_INTEGRATION_DIR}/test_integration_explore.py"        "integration_explore"; }
+integration_slurm()          { _epmt_run_integration "${EPMT_INTEGRATION_DIR}/test_integration_slurm.py"          "integration_slurm"; }
+integration_collate_tsv()    { _epmt_run_integration "${EPMT_INTEGRATION_DIR}/test_integration_collate_tsv.py"    "integration_collate_tsv"; }
+integration_kernel_compile() { _epmt_run_integration "${EPMT_INTEGRATION_DIR}/test_integration_kernel_compile.py" "integration_kernel_compile"; }
+
+# ── lint ───────────────────────────────────────────────────────────
+run_lint() {
+    echo ""
+    echo "── pylint: epmt module (excluding ui) ──"
+    pylint --rcfile pylintrc --fail-under 8.2 --ignore-paths src/epmt/ui src/epmt
+
+    echo ""
+    echo "── pylint: ui submodule (epmt-dash) ──"
+    pylint --rcfile pylintrc --fail-under 6.0 src/epmt/ui
+}
+
+# ── coverage report ────────────────────────────────────────────────
+run_coverage_report() {
+    echo ""
+    echo "── combining coverage data ──"
+    ls -1 .coverage.* 2>/dev/null
+    coverage combine --rcfile=coveragerc
+    coverage report  --rcfile=coveragerc --show-missing
+}
+
+# ── group runners ──────────────────────────────────────────────────
+_UNIT_SUITES=(
+    test_anysh test_cmds test_db_migration test_db_schema
+    test_explore test_lib test_outliers test_query
+    test_run test_settings test_shell test_stat test_submit
+    test_help_dbcare_dbsize
+)
+
+_INTEGRATION_SUITES=(
+    integration_basic integration_escape integration_concat
+    integration_daemon integration_shell integration_annotate
+    integration_explore integration_slurm integration_collate_tsv
+    integration_kernel_compile
+)
+
+run_unit_tests() {
+    epmt_preflight
+    local failed=()
+    for suite in "${_UNIT_SUITES[@]}"; do
+        "$suite" || failed+=("$suite")
+    done
+    echo ""
+    if [ ${#failed[@]} -eq 0 ]; then
+        echo "✓ All ${#_UNIT_SUITES[@]} unit-test suites passed."
+    else
+        echo "✗ ${#failed[@]} suite(s) failed: ${failed[*]}"
+    fi
+}
+
+run_integration_tests() {
+    local failed=()
+    for suite in "${_INTEGRATION_SUITES[@]}"; do
+        "$suite" || failed+=("$suite")
+    done
+    echo ""
+    if [ ${#failed[@]} -eq 0 ]; then
+        echo "✓ All ${#_INTEGRATION_SUITES[@]} integration-test suites passed."
+    else
+        echo "✗ ${#failed[@]} suite(s) failed: ${failed[*]}"
+    fi
+}
+
+run_all_tests() {
+    run_unit_tests
+    run_integration_tests
+    run_lint
+    run_coverage_report
+}
+
+# ── cherry-pick runner ─────────────────────────────────────────────
+# Usage: run_test lib stat query integration_basic
+run_test() {
+    local failed=()
+    for name in "$@"; do
+        local fn
+        # allow shorthand: "lib" -> "test_lib", or full name
+        if declare -f "test_${name}" > /dev/null 2>&1; then
+            fn="test_${name}"
+        elif declare -f "$name" > /dev/null 2>&1; then
+            fn="$name"
+        else
+            echo "Unknown test suite: $name"
+            failed+=("$name")
+            continue
+        fi
+        "$fn" || failed+=("$name")
+    done
+    echo ""
+    if [ ${#failed[@]} -eq 0 ]; then
+        echo "✓ All requested suites passed."
+    else
+        echo "✗ ${#failed[@]} suite(s) failed: ${failed[*]}"
+    fi
+}
+
+# ── when sourced, just announce; when executed, run all ────────────
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    # Script was executed directly (not sourced)
+    run_all_tests
+else
+    echo "runtests loaded. Functions available:"
+    echo "  epmt_preflight  run_unit_tests  run_integration_tests  run_all_tests"
+    echo "  run_test <name>…  run_lint  run_coverage_report"
+    echo "  Individual: ${_UNIT_SUITES[*]}"
+    echo "  Integration: ${_INTEGRATION_SUITES[*]}"
+fi
+

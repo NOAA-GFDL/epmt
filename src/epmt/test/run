@@ -28,7 +28,7 @@ echo ""
 echo "*** This script is broken and will be deprecated! ***"
 echo ""
 echo "Use 'make check' to run tests in development tree."
-echo "Use 'epmt unittest && epmt integration' to ru tests on production install."
+echo "Use 'pytest -x -vv src/epmt/test/integration/test_integration_*.py' to run integration tests."
 echo ""
 exit 1
 

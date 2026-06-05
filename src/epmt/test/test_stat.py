@@ -1,7 +1,8 @@
-#!/usr/bin/env python3
+'''
+tests for epmt.epmt_stat
+'''
 
-# the import below is crucial to get a sane test environment
-# from . import *
+
 import unittest
 import numpy as np
 import pandas as pd

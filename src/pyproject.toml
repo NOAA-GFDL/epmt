@@ -1,155 +1,150 @@
 [build-system]
 requires = [
-	#"setuptools == 69.0.2"
     "setuptools >= 61, <69",
-    "setuptools_scm[toml] >= 4, <6",
     "wheel >= 0.29.0"
 ]
 build-backend = "setuptools.build_meta"
 
 [project]
 name            = "epmt"
-version         = "4.11.0"
+dynamic         = ["version"]
 authors         = [ { name = "Minimal Metrics, LLC", email = "some.where@over.there" } ]
 description     = "Experiment Performance Metrics Toolkit"
 readme          = "README.md"
-requires-python = "==3.9.22"
-classifiers     = [ "Programming Language :: Python :: 3", ]
-# 20231102 caw: pyinstaller is pinned at 5.7.0, latest version doesn't allow the settings.py tactic.
+# 3.10/3.11 supported; 3.9 is EOL.
+# 3.12 requires upgrading pandas (1.5→2.x) and SQLAlchemy (1.4→2.x)
+# which dropped distutils; tracked in issue #105.
+requires-python = ">=3.10,<3.12"
+classifiers     = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+]
+# Runtime dependencies: only packages directly imported by epmt at runtime.
+# Transitive dependencies (e.g. Jinja2, Werkzeug, joblib) are resolved
+# automatically by pip and should NOT be listed here.
 dependencies = [
     "alembic",
-    "altgraph",
-    "appnope",
-    "astroid",
-    "attrs",
-    "backcall",
-    "bleach",
-    "Brotli",
-    "certifi",
-    "cffi",
-    "charset-normalizer",
-    "click",
-    "combo",
-    "contourpy",
-    "cycler",
-    "dash",
-    "dash-daq",
-    "dash-bootstrap-components",
-    "dash-table",
-    "decorator",
-    "defusedxml",
-    "Deprecated",
-    "docutils",
-    "entrypoints",
     "Flask",
-    "Flask-Compress",
-    "fonttools",
-    "frozendict",
-    "future",
-    "greenlet",
-    "idna",
-    "importlib-metadata",
+    "kneed",
+    "numpy==1.26.4",
+    "pandas==1.5.3",
+    "plotly",
+    "psycopg2-binary",
+    "py-cpuinfo",
+    "pyod",
+    "python-daemon",
+    "pytz",
+    "scikit-learn",
+    "scipy",
+    "six",
+    "SQLAlchemy==1.4.54",
+]
+
+[project.optional-dependencies]
+# Interactive notebook / IPython shell support
+notebook = [
     "ipykernel",
     "ipython",
-    "ipython-genutils",
     "ipywidgets",
-    "isort",
-    "itsdangerous",
-    "jedi",
-    "Jinja2",
-    "joblib",
-    "jsonschema",
     "jupyter",
     "jupyter-client",
     "jupyter-console",
     "jupyter-core",
-    "kiwisolver",
-    "kmodes",
-    "kneed",
-    "lazy-object-proxy",#"line-profiler",
-    "livereload",
-    "llvmlite",
-    "lockfile",
-    "lunr",
-    "macholib",
-    "Mako",
-    "Markdown",
-    "MarkupSafe",
-    "matplotlib",
-    "mccabe",#"memory-profiler",
-    "mistune",
-    "mkdocs",
-    "mkdocs-theme-bootstrap4",
-    "mkdocs-git-committers-plugin",
-    "more-itertools",
-    "nbconvert",
-    "nbformat",
-    "nltk",
+	"jupyter-server<2",
     "notebook<7",
-    "numba",
-    "numexpr",
-    "numpy==1.26.4",
-    "packaging",
-    "pandas==1.5.3",
-    "pandocfilters",
-    "parso",
-    "patsy",
-    "pexpect",
-    "pickleshare",
-    "Pillow",
-    "plotly",#"pony",
-    "prometheus-client",
-    "prompt-toolkit",
-    "psutil",
-    "psycopg2-binary",
-    "ptyprocess",
-    "py-cpuinfo",
-    "pycparser",
-    "PyGithub",
-    "Pygments",
+	"jupyterlab<4",
+    "qtconsole",
+]
+# Dash-based web UI
+ui = [
+    "dash",
+    "dash-bootstrap-components",
+    "dash-daq",
+    "dash-table",
+]
+# Documentation generation
+docs = [
+    "livereload",
+    "mkdocs",
+    "mkdocs-git-committers-plugin",
+    "mkdocs-theme-bootstrap4",
+]
+# testing, linting and static analysis
+devtest = [
+    "pylint",
+    "pytest",
+]
+# 20231102 caw: pyinstaller is pinned at 5.7.0, latest version doesn't allow the settings.py tactic.
+build = [
     "pyinstaller==5.7.0",
     "pyinstaller-hooks-contrib==2023.11",
-    "PyJWT",
-    "PyNaCl",
-    "pyod",
-    "pyparsing",
-    "pyrsistent",
-    "python-daemon",
-    "python-dateutil",
-    "python-editor",
-    "pytz",
-    "pyYAML",
-    "pyzmq",
-    "qtconsole",
-    "regex",
-    "requests",
-    "retrying",
-    "scikit-learn",
-    "scipy",
-    "seaborn",
-    "Send2Trash",
-	"setuptools",
-    "six",
-    "SQLAlchemy==1.4.54",
-    "statsmodels",
-    "suod",
-    "terminado",
-    "testpath",
-    "threadpoolctl",
-    "tornado",
-    "tqdm",
-    "traitlets",
-    "typed-ast",
-    "typing_extensions",
-    "tzlocal",
-    "urllib3",
-    "wcwidth",
-    "webencodings",
-    "werkzeug",
-    "widgetsnbextension",
-    "wrapt",
-    "zipp",
 ]
+# Shorthand: install everything (mirrors the old flat dependency list)
+all = [
+    "epmt[notebook,ui,docs,devtest,build]",
+]
+
+[project.scripts]
+epmt = "epmt.cli:main"
+
 [project.urls]
 "Homepage" = "https://gitlab.com/minimal-metrics-llc/epmt/epmt"
 "Bug Tracker" = "https://gitlab.com/minimal-metrics-llc/epmt/epmt/-/issues"
+
+[tool.setuptools]
+include-package-data = false
+
+[tool.setuptools.dynamic]
+version = {attr = "epmt.epmtlib.__version__"}
+
+[tool.setuptools.packages.find]
+where = ["."]
+
+[tool.setuptools.package-data]
+epmt = [
+    "lib/*.so*",
+
+    "alembic.ini",
+    "preset_settings/*.py",
+
+    "epmt_migrations/README",
+    "epmt_migrations/env.py",
+    "epmt_migrations/script.py.mako",
+    "epmt_migrations/docker-entrypoint-initdb.d/init-user-db.sh",
+    "epmt_migrations/versions/*",
+
+    "test/run",
+    "test/test_run.sh",
+    "test/test_source.csh",
+
+    "test/data/corrupted_csv/*",
+    "test/data/csv/*",
+    "test/data/daemon/627919.tgz",
+    "test/data/daemon/ingest/*",
+    "test/data/misc/*",
+    "test/data/outliers/*",
+    "test/data/outliers_nb/625151.tgz",
+    "test/data/outliers_nb/627907.tgz",
+    "test/data/outliers_nb/629322.tgz",
+    "test/data/outliers_nb/633114.tgz",
+    "test/data/outliers_nb/675992.tgz",
+    "test/data/outliers_nb/680163.tgz",
+    "test/data/outliers_nb/685001.tgz",
+    "test/data/outliers_nb/691209.tgz",
+    "test/data/outliers_nb/693129.tgz",
+    "test/data/query/*",
+    "test/data/submit/692500.tgz",
+    "test/data/submit/804268.tgz",
+    "test/data/submit/804280.tgz",
+    "test/data/submit/3455/*",
+    "test/data/tsv/collated-tsv-2220.tgz",
+    "test/data/tsv/12340/*",
+
+    "test/integration/conftest.py",
+    "test/integration/test_integration_*.py",
+    "test/integration/epmt-annotate.sh",
+    "test/integration/epmt-escape-workload.sh",
+
+    "test/shell/*",
+]

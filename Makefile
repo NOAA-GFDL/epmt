@@ -1,18 +1,10 @@
 .ONESHELL:
 
 # OS / python / SQLITE_VERSION
-#OS_TARGET=centos-7
 OS_TARGET=rocky-8
-
-#PYTHON_VERSION=3.9.16
-#PYTHON_VERSION=3.9.21
-PYTHON_VERSION=3.9.22
-
-#SQLITE_YEAR=2023
-#SQLITE_VERSION=3430100
+PYTHON_VERSION=3.10.20  # updated from 3.9.25 (drop EOL Python 3.9)
 SQLITE_YEAR=2025
 SQLITE_VERSION=3490100
-
 
 # conda
 CONDA_ACTIVATE = source $$(conda info --base)/etc/profile.d/conda.sh ; conda activate ; conda activate ;
@@ -25,35 +17,31 @@ DOCKER_RUN:=docker run
 #DOCKER_RUN_OPTS:=--rm -it
 DOCKER_RUN_OPTS:=-it
 
-# docker build opts
+# docker build commands, with the options included (unlike the approach to docker run above)
 #DOCKER_BUILD:=docker build --pull=false -f 
 #DOCKER_BUILD:=docker -D build --pull=false -f
-
 DOCKER_BUILD:=docker build -f 
 #DOCKER_BUILD:=docker -D build -f
-
 #DOCKER_BUILD:=docker build --no-cache -f
 #DOCKER_BUILD:=docker -D build --no-cache -f
 
-# minimal-metrics src url for the epmt project- includes this repo, papiex, and epmt-dash (aka ui)
+# minimal-metrics epmt project url. contains epmt, epmt-dash, and papiex srcs
 MM_SRC_URL_BASE=https://gitlab.com/minimal-metrics-llc/epmt
-INL_SRC_URL_BASE=https://github.com/ilaflott
+# NOAA-GFDL github url. contains epmt, epmt-dash, and papiex srcs
+NOAAGFDL_SRC_URL_BASE=https://github.com/noaa-gfdl
 
 # papiex details
-PAPIEX_VERSION?=2.3.15
+PAPIEX_VERSION?=2.3.16
 PAPIEX_SRC?=papiex
 PAPIEX_SRC_BRANCH=main
-#PAPIEX_SRC_BRANCH=centos7_yum_fix
-#PAPIEX_SRC_BRANCH=rocky8_docker
-#PAPIEX_SRC_BRANCH=rocky8_docker_mchip_mac
-#PAPIEX_SRC_TARBALL=papiex-epmt.tar.gz
 PAPIEX_SRC_TARBALL=$(PAPIEX_SRC_BRANCH).tar.gz
-#PAPIEX_SRC_URL=$(MM_SRC_URL_BASE)/papiex/-/archive/$(PAPIEX_SRC_BRANCH)/$(PAPIEX_SRC_TARBALL)
-PAPIEX_SRC_URL=$(INL_SRC_URL_BASE)/papiex/archive/$(PAPIEX_SRC_TARBALL)
+PAPIEX_SRC_URL=$(NOAAGFDL_SRC_URL_BASE)/papiex/archive/$(PAPIEX_SRC_TARBALL)
 PAPIEX_RELEASE=papiex-epmt-$(PAPIEX_VERSION)-$(OS_TARGET).tgz
+CONFIG_PAPIEX_PAPI?=y
+CONFIG_PAPIEX_DEBUG?=y
 
 # epmt details
-EPMT_VERSION=$(shell sed -n '/_version = /p' src/epmt/epmtlib.py | sed 's/ //g; s/,/./g; s/.*(\(.*\))/\1/')
+EPMT_VERSION=$(shell python3 -c "exec(open('src/epmt/epmtlib.py').read().split('def ')[0]); from packaging.version import Version; print(Version(__version__))")
 EPMT_RELEASE=epmt-$(EPMT_VERSION)-$(OS_TARGET).tgz
 EPMT_FULL_RELEASE=EPMT-release-$(EPMT_VERSION)-$(OS_TARGET).tgz
 EPMT_PYTHON_FULL_RELEASE=epmt-$(EPMT_VERSION).tar.gz
@@ -61,16 +49,10 @@ EPMT_INSTALL_PATH=/opt/minimalmetrics
 EPMT_INSTALL_PREFIX=$(EPMT_INSTALL_PATH)/epmt-$(EPMT_VERSION)/epmt-install
 
 # <root>/src/epmt/ui submodule details
-#EPMT_DASH_SRC_BRANCH=main
-EPMT_DASH_SRC_BRANCH=autopep8.poke
-#EPMT_DASH_SRC_TARBALL=epmt-dash-$(EPMT_DASH_SRC_BRANCH).tar.gz
-EPMT_DASH_SRC_TARBALL=$(EPMT_DASH_SRC_BRANCH).tar.gz
-EPMT_DASH_SRC_URL=$(INL_SRC_URL_BASE)/epmt-dash/archive/$(EPMT_DASH_SRC_TARBALL)
-#EPMT_DASH_SRC_TARBALL=epmt-dash.tar.gz
-#EPMT_DASH_SRC_BRANCH=multi_page
-#EPMT_DASH_SRC_URL=$(MM_SRC_URL_BASE)/epmt-dash/-/archive/$(EPMT_DASH_SRC_BRANCH)/$(EPMT_DASH_SRC_TARBALL)
+EPMT_DASH_SRC_BRANCH=main
+EPMT_DASH_SRC_TARBALL=epmt-dash-$(EPMT_DASH_SRC_BRANCH).tar.gz
+EPMT_DASH_SRC_URL=$(NOAAGFDL_SRC_URL_BASE)/epmt-dash/archive/$(EPMT_DASH_SRC_BRANCH).tar.gz
 EPMT_DASH_SRC=src/epmt/ui
-#EPMT_DASH_SRC=ui
 
 ## other details
 #PYINSTALLER_DIST_DIR=epmt-install # does this make sense???
@@ -90,7 +72,7 @@ PWD=$(shell pwd)
 	clean-extra clean-all clean distclean dashclean dockerclean papiexclean \\
 	check check-epmt-check check-integration-tests check-unittests
 
-# general things? 
+# general
 epmt-build compile build:
 	@echo "(epmt-build compile build) whoami: $(shell whoami)"
 	cd src/epmt
@@ -99,32 +81,38 @@ epmt-build compile build:
 lint:
 	@echo "(lint) whoami: $(shell whoami)"
 	cd src
-	python3 -m pylint --fail-under 5.5 --max-line-length 120 --max-args 6 -ry src/epmt
+	python3 -m pylint --fail-under 8.2 --max-line-length 120 --max-args 6 -ry src/epmt
 
-# install a virtual environment
+# virtual environment options
 install-py3-conda:
 	@echo "(install-py3-conda) whoami: $(shell whoami)"
-	set -e; echo "Installing Python $(PYTHON_VERSION) using conda" ; \
+	set -e ; \
+	echo "Installing Python $(PYTHON_VERSION) using conda" ; \
 	conda create -n $(EPMT_VERSION)_py$(PYTHON_VERSION) python=$(PYTHON_VERSION) -y ; \
-	$(CONDA_ACTIVATE) $(EPMT_VERSION)_py$(PYTHON_VERSION) ; $(MAKE) install-deps ; \
-	echo ; echo "Your virtual python environment is epmt-$(EPMT_VERSION)_py$(PYTHON_VERSION)." ;
+	$(CONDA_ACTIVATE) $(EPMT_VERSION)_py$(PYTHON_VERSION) ; \
+	$(MAKE) install-deps ; \
+	echo ; \
+	echo "Your virtual python environment is epmt-$(EPMT_VERSION)_py$(PYTHON_VERSION)." ;
 
 install-py3-pyenv:
 	@echo "(install-py3-pyenv) whoami: $(shell whoami)"
-	set -e; echo "Installing Python $(PYTHON_VERSION) using pyenv"  
-	PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install -s $(PYTHON_VERSION)  ; \
+	set -e ; \
+	echo "Installing Python $(PYTHON_VERSION) using pyenv" ; \
+	PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install -s $(PYTHON_VERSION) ; \
 	pyenv virtualenv $(PYTHON_VERSION) epmt-$(EPMT_VERSION)_py$(PYTHON_VERSION) ; \
-	pyenv local epmt-$(EPMT_VERSION)_py$(PYTHON_VERSION) ; $(MAKE) install-deps ; \
-	echo ; echo "Your virtual python environment is epmt-$(EPMT_VERSION)_py$(PYTHON_VERSION)." ;
+	pyenv local epmt-$(EPMT_VERSION)_py$(PYTHON_VERSION) ; \
+	$(MAKE) install-deps ; \
+	echo ; \
+	echo "Your virtual python environment is epmt-$(EPMT_VERSION)_py$(PYTHON_VERSION)." ;
 
 install-deps:
 	@echo "(install-deps) whoami: $(shell whoami)"
-	set -e ; pip3 install --upgrade pip ; pip3 install -r requirements.txt.py3 ; \
-	pip3 install -r $(EPMT_DASH_SRC)/requirements-ui.txt.py3
-#	pip3 install -r src/epmt/ui/requirements-ui.txt.py3
+	set -e ; \
+	pip3 install --upgrade pip ; \
+	pip3 install -r requirements.txt.py3 ; \
+	pip3 install -r $(EPMT_DASH_SRC)/requirements-ui.txt.py3 ;
 
-# This target runs pyinstaller, outputs a tarball with
-# epmt + all dependencies included
+# This target runs pyinstaller, outputs a tarball with epmt + all dependencies included
 $(EPMT_RELEASE) dist:
 	@echo "(EPMT_RELEASE dist) whoami: $(shell whoami)"
 	@echo "WARNING removing directories: rm -rf epmt-install build"
@@ -175,16 +163,18 @@ $(EPMT_RELEASE) dist:
 
 # runs setuptools
 # note that this step requires EPMT_RELEASE and PAPIEX_RELEASE, but we don't explicitly state it here, b.c.
-# when we go in the docker container, the time-zone changes and therefore thet timestamp comparison triggers re-making
+# when we go in the docker container, the time-zone changes and therefore the timestamp comparison triggers re-making
 # targets that do not need to be remade
 python-dist:
 	@echo "(python-dist) whoami: $(shell whoami)"
 	@echo "**********************************************************"
-	@echo "************** python3 setup.py sdist ********************"
+	@echo "********** python3 -m build --sdist **********************"
 	@echo "**********************************************************"	
-	cd src && echo "GOOD: cd src" || echo "I FAILED: cd src"; \
-	tar zxf ../$(PAPIEX_RELEASE) && echo "GOOD: tar -zxf ../PAPIEX_RELEASE" || echo "I FAILED: tar zxf ../PAPIEX_RELEASE"; \
-	python3 setup.py sdist && echo "GOOD: python3 setup.py sdist" || echo "I FAILED: python3 setup.py sdist"; \
+	cd src && echo "GOOD: cd src" || echo "I FAILED: cd src" ; \
+	tar zxf ../$(PAPIEX_RELEASE) && echo "GOOD: tar -zxf ../PAPIEX_RELEASE" || echo "I FAILED: tar zxf ../PAPIEX_RELEASE" ; \
+	mkdir -p epmt/lib && cp -a papiex-epmt-install/lib/*.so* epmt/lib/ && echo "GOOD: cp papiex libs to epmt/lib" || echo "I FAILED: cp papiex libs to epmt/lib" ; \
+	pip3 install --quiet build && echo "GOOD: pip3 install build" || echo "I FAILED: pip3 install build" ; \
+	python3 -m build --sdist && echo "GOOD: python3 -m build --sdist" || echo "I FAILED: python3 -m build --sdist" ; \
 	chmod a+r dist/* && echo "GOOD: chmod a+r dist/*" || echo "I FAILED: chmod a+r dist/*"
 
 # creates a tarball containing test directories. If the test directory exists, clobber and re-create
@@ -202,7 +192,7 @@ test-$(EPMT_RELEASE) dist-test:
 	@echo "WARNING removing directory to clean up: rm -rf epmt-install-tests"
 	rm -rf epmt-install-tests
 
-# this target 1) builds an image with an environment inwhich we'd like to build our applicaiton
+# this target 1) builds an image with an environment in which we'd like to build our application
 # 2) builds that application within a running container of that image
 # NOTE: bind mounts to current working directory, usually the repository directory
 docker-dist:
@@ -214,7 +204,7 @@ docker-dist:
 	@echo
 	@echo
 	@echo " - docker build <STUFF> Dockerfiles/Dockerfile.$(OS_TARGET)-epmt-build"
-	@echo "       we are creating a container environment inwhich to build the python distribution"
+	@echo "       we are creating a container environment in which to build the python distribution"
 	$(DOCKER_BUILD) Dockerfiles/Dockerfile.$(OS_TARGET)-epmt-build -t $(OS_TARGET)-epmt-build:$(EPMT_VERSION) \
 	--build-arg sqlite_version=$(SQLITE_VERSION) \
 	--build-arg sqlite_year=$(SQLITE_YEAR) \
@@ -222,7 +212,7 @@ docker-dist:
 	@echo
 	@echo
 	@echo " - docker run <STUFF> <use image built from Dockerfiles/Dockerfile.$(OS_TARGET)-epmt-build>"
-	@echo "       within a running contianer of the image we just built, now build the python application."
+	@echo "       within a running container of the image we just built, now build the python application."
 	@echo "       i.e. running make dist python-dist dist-test inside $(OS_TARGET)-epmt-build"
 	$(DOCKER_RUN) $(DOCKER_RUN_OPTS) --privileged \
 	--volume=$(PWD):$(PWD) \
@@ -247,30 +237,28 @@ epmt-dash: $(EPMT_DASH_SRC)
 
 $(EPMT_DASH_SRC): $(EPMT_DASH_SRC_TARBALL)
 	@echo "(EPMT_DASH_SRC) whoami: $(shell whoami)"
-	@echo " ------ GRAB EPMT-DASH SUBODULE (UI) ------- "
+	@echo " ------ GRAB EPMT-DASH SUBMODULE (UI) ------- "
 	@echo   "EPMT_DASH_SRC_TARBALL = ${EPMT_DASH_SRC_TARBALL}"
 	@echo   "EPMT_DASH_SRC_BRANCH  = ${EPMT_DASH_SRC_BRANCH}"
 	@echo   "EPMT_DASH_SRC_URL     = ${EPMT_DASH_SRC_URL}"
 	@echo
 	@echo
-#	@echo "cloning ${EPMT_DASH_SRC}"
-#	git clone https://github.com/ilaflott/epmt-dash $(EPMT_DASH_SRC)
-	echo "untarring ${EPMT_DASH_SRC_TARBALL}"; \
-	tar zxf $(EPMT_DASH_SRC_TARBALL); \
-	mv `tar ztf ${EPMT_DASH_SRC_TARBALL} | head -1` $(EPMT_DASH_SRC); \
-	echo "top-level dir contents of EPMT_DASH_SRC=${EPMT_DASH_SRC}..."; \
-	ls $(EPMT_DASH_SRC); \
-	echo "making symbolic link to epmt/ui/docs/index.md"; \
+	echo "untarring ${EPMT_DASH_SRC_TARBALL}" ; \
+	tar zxf $(EPMT_DASH_SRC_TARBALL) ; \
+	mv `tar ztf ${EPMT_DASH_SRC_TARBALL} | head -1` $(EPMT_DASH_SRC) ; \
+	echo "top-level dir contents of EPMT_DASH_SRC=${EPMT_DASH_SRC}..." ; \
+	ls $(EPMT_DASH_SRC) ; \
+	echo "making symbolic link to epmt/ui/docs/index.md" ; \
 	cd epmtdocs/docs && \
 	ln -s ../../$(EPMT_DASH_SRC)/docs/index.md index.md || \
-	echo "symbolic link creation failed. but it's OK."; \
+	echo "symbolic link creation failed. but it's OK." ; \
 	cd -
 
 $(EPMT_DASH_SRC_TARBALL):
 	@echo "(EPMT_DASH_SRC_TARBALL) whoami: $(shell whoami)"
-	echo "grabbing epmt-dash via curl"; \
-	curl -L -O $(EPMT_DASH_SRC_URL); \
-	ls $(EPMT_DASH_SRC_TARBALL); \
+	echo "grabbing epmt-dash via curl" ; \
+	curl -L --fail --retry 3 --retry-delay 5 -o $(EPMT_DASH_SRC_TARBALL) $(EPMT_DASH_SRC_URL) ; \
+	ls $(EPMT_DASH_SRC_TARBALL) ; \
 # ----------- \end EPMT_DASH THINGS ---------- #
 
 
@@ -295,27 +283,27 @@ $(PAPIEX_SRC)/$(PAPIEX_RELEASE): $(PAPIEX_SRC)
 	@echo
 	@echo "################### BEGIN MAKE PAPIEX TARBALL : papiex-dist ########################################"
 	if [ -n "${OUTSIDE_DOCKER}" ]; then \
-	echo "make and make check within PAPIEX_SRC/PAPIEX_RELEASE target"; \
-	make -C $(PAPIEX_SRC) OS_TARGET=$(OS_TARGET) distclean install dist; \
-	make -C $(PAPIEX_SRC) OS_TARGET=$(OS_TARGET) dist-test; \
-	make -C $(PAPIEX_SRC) OS_TARGET=$(OS_TARGET) check; \
+	echo "within docker. make and make check within PAPIEX_SRC/PAPIEX_RELEASE target" ; \
+	make -C $(PAPIEX_SRC) CONFIG_PAPIEX_PAPI=$(CONFIG_PAPIEX_PAPI) CONFIG_PAPIEX_DEBUG=$(CONFIG_PAPIEX_DEBUG) OS_TARGET=$(OS_TARGET) distclean install dist ; \
+	make -C $(PAPIEX_SRC) CONFIG_PAPIEX_PAPI=$(CONFIG_PAPIEX_PAPI) CONFIG_PAPIEX_DEBUG=$(CONFIG_PAPIEX_DEBUG) OS_TARGET=$(OS_TARGET) dist-test ; \
+	make -C $(PAPIEX_SRC) CONFIG_PAPIEX_PAPI=$(CONFIG_PAPIEX_PAPI) CONFIG_PAPIEX_DEBUG=$(CONFIG_PAPIEX_DEBUG) OS_TARGET=$(OS_TARGET) check ; \
 	else \
-	echo "making docker-dist within PAPIEX_SRC/PAPIEX_RELEASE target"; \
-	make -C $(PAPIEX_SRC) OS_TARGET=$(OS_TARGET) docker-dist; \
+	echo "outside docker. making docker-dist within PAPIEX_SRC/PAPIEX_RELEASE target" ; \
+	make -C $(PAPIEX_SRC) CONFIG_PAPIEX_PAPI=$(CONFIG_PAPIEX_PAPI) CONFIG_PAPIEX_DEBUG=$(CONFIG_PAPIEX_DEBUG) OS_TARGET=$(OS_TARGET) DOCKER_RUN_OPTS="$(DOCKER_RUN_OPTS)" docker-dist ; \
 	fi
 
 $(PAPIEX_SRC): $(PAPIEX_SRC_TARBALL)
 	@echo "(PAPIEX_SRC) whoami: $(shell whoami)"
-	ls $(PAPIEX_SRC_TARBALL); \
-	echo "tar zxf ${PAPIEX_SRC_TARBALL}"; \
-	tar zxf $(PAPIEX_SRC_TARBALL); \
-	mv `tar ztf ${PAPIEX_SRC_TARBALL} | head -1` $(PAPIEX_SRC); \
-	echo "top-level dir contents of PAPIEX_SRC=${PAPIEX_SRC}..."; \
-	ls $(PAPIEX_SRC); \
+	ls $(PAPIEX_SRC_TARBALL) ; \
+	echo "tar zxf ${PAPIEX_SRC_TARBALL}" ; \
+	tar zxf $(PAPIEX_SRC_TARBALL) ; \
+	mv `tar ztf ${PAPIEX_SRC_TARBALL} | head -1` $(PAPIEX_SRC) ; \
+	echo "top-level dir contents of PAPIEX_SRC=${PAPIEX_SRC}..." ; \
+	ls $(PAPIEX_SRC) ; \
 
 $(PAPIEX_SRC_TARBALL):
 	@echo "(PAPIEX_SRC_TARBALL) whoami: $(shell whoami)"
-	curl -L -O $(PAPIEX_SRC_URL); \
+	curl -L --fail --retry 3 --retry-delay 5 -O $(PAPIEX_SRC_URL) ; \
 	ls $(PAPIEX_SRC_TARBALL)
 # ----------- \end PAPIEX THINGS ---------- #
 
@@ -350,11 +338,11 @@ build-check-release: $(EPMT_FULL_RELEASE)
 check-release:
 	@echo "(check-release) whoami: $(shell whoami)"
 	@echo "looking for postgres-test container"
-	if docker ps | grep postgres-test > /dev/null; \
+	if docker ps | grep postgres-test > /dev/null ; \
 	then docker stop postgres-test; fi
 	@echo
 	@echo "looking for epmt-test-net docker networks"
-	if docker network ls | grep epmt-test-net > /dev/null; \
+	if docker network ls | grep epmt-test-net > /dev/null ; \
 	then docker network rm -f epmt-test-net; fi
 	@echo
 	@echo
@@ -369,7 +357,7 @@ check-release:
 	@echo
 	@echo
 	@echo "looking for prev ran epmt-test-release container to remove..."
-	if docker container ls -a | grep epmt-$(EPMT_VERSION)-test-release > /dev/null; \
+	if docker container ls -a | grep epmt-$(EPMT_VERSION)-test-release > /dev/null ; \
 	then docker container rm $(OS_TARGET)-epmt-$(EPMT_VERSION)-test-release; sleep 2; fi
 	@echo
 	@echo "running epmt-test-release container"
@@ -377,19 +365,19 @@ check-release:
 	--network epmt-test-net \
 	--privileged $(DOCKER_RUN_OPTS) \
 	-h slurmctl $(OS_TARGET)-epmt-test-release:$(EPMT_VERSION) \
-	bash -c 'echo 2 > /proc/sys/kernel/perf_event_paranoid; epmt -vv -V; \
-	echo ""; \
-	echo ""; \
+	bash -c 'echo 2 > /proc/sys/kernel/perf_event_paranoid; epmt -vv -V ; \
+	echo "" ; \
+	echo "" ; \
 	echo "" && echo "------ epmt -vv check ------" && epmt -vv check \
-	|| echo "epmt -vv check failure guard, keep going"; \
-	echo ""; \
-	echo ""; \
+	|| echo "epmt -vv check failure guard, keep going" ; \
+	echo "" ; \
+	echo "" ; \
 	echo "" && echo "------ epmt -vv unittest ------" && epmt -vv unittest \
-	|| echo "epmt -vv unittest failure guard, keep going"; \
-	echo ""; \
-	echo ""; \
-	echo "" && echo "------ epmt integration ------" && epmt integration \
-	|| echo "epmt integration failure guard, keep going"; \
+	|| echo "epmt -vv unittest failure guard, keep going" ; \
+	echo "" ; \
+	echo "" ; \
+	echo "" && echo "------ pytest integration ------" && TZ=UTC pytest -x -vv src/epmt/test/integration/test_integration_*.py \
+	|| echo "pytest integration failure guard, keep going" ; \
 	echo ""'
 	@echo
 	@echo
@@ -478,7 +466,7 @@ check-epmt-check:
 
 check-integration-tests:
 	@echo "(check-integration-tests) whoami: $(shell whoami)"
-	- @env -i TERM=ansi PATH=${PWD}:${PATH} epmt -v -v integration
+	- @env -i TERM=ansi PATH=${PWD}:${PATH} TZ=UTC pytest -x -vv src/epmt/test/integration/test_integration_*.py
 
 check-unittests:
 	@echo "(check-unittests) whoami: $(shell whoami)"

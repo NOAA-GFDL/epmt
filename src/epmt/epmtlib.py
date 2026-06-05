@@ -5,17 +5,17 @@ EPMT Misc. Library
 This module provides miscellaneous functions such as those needed
 for manipulating data structures.
 """
+from contextlib import contextmanager
 from functools import wraps
-from time import time
+from io import StringIO
+from json import dumps, loads
 from logging import getLogger, DEBUG, ERROR, INFO, WARNING, CRITICAL
 from os import environ, unlink, devnull, getuid
-from contextlib import contextmanager
-from subprocess import call
-from json import dumps, loads
 from pwd import getpwuid
+from subprocess import call
+from time import time
 
-from io import StringIO
-
+logger = getLogger(__name__)
 
 # semantic version
 # first element is the major version number
@@ -23,7 +23,8 @@ from io import StringIO
 # third element is the patch or bugfix number
 # Since we are saving as a tuple you can do a simple
 # compare of two version tuples and python will do the right thing
-_version = (4, 11, 0)
+_version = (5, 0, 0)
+__version__ = ".".join([str(i) for i in _version]) + ".post"
 
 
 def version():
@@ -31,17 +32,23 @@ def version():
 
 
 def version_str(terse=False):
-    v = ".".join([str(i) for i in _version])
-    return v if terse else "EPMT {0}".format(v)
+    return __version__ if terse else f"EPMT {__version__}"
 
 
 def get_username():
     return getpwuid(getuid())[0]
 
-# if check is set, then we will bail if logging has already been initialized
-
 
 def epmt_logging_init(intlvl=0, check=False, log_pid=False):
+    '''
+    Configure logging for the ``epmt`` package.
+
+    Handlers are attached to the ``epmt`` package logger (not the root
+    logger) so that third-party libraries are unaffected.
+
+    If *check* is set, then we will bail if logging has already been
+    initialized.
+    '''
     import logging
     import epmt.epmt_settings as settings
 
@@ -62,43 +69,38 @@ def epmt_logging_init(intlvl=0, check=False, log_pid=False):
     else:  # intlvl >= 2:
         level = DEBUG  # 10
 
-    # Set level and remove all existing handlers
-    # rootLogger = getLogger(__name__) # thank you! @ ericzhou13
-    rootLogger = getLogger()
-    rootLogger.debug("epmt_logging_init(%d,%s,%s): %d handlers", intlvl, check, log_pid, len(rootLogger.handlers))
-    for handler in rootLogger.handlers:
-        rootLogger.removeHandler(handler)
-    rootLogger.setLevel(level)
+    # Configure the 'epmt' package logger instead of the root logger.
+    # All epmt.* module loggers inherit from this logger, and third-party
+    # loggers (matplotlib, numba, parso, etc.) are no longer affected.
+    epmt_logger = getLogger('epmt')
+    epmt_logger.debug("epmt_logging_init(%d,%s,%s): %d handlers", intlvl, check, log_pid, len(epmt_logger.handlers))
+    for handler in epmt_logger.handlers[:]:
+        epmt_logger.removeHandler(handler)
+    epmt_logger.setLevel(level)
+    # Prevent log messages from propagating to the root logger, which
+    # would cause duplicate output if the root has its own handlers.
+    epmt_logger.propagate = False
 
     # only log to file if stdout is not a tty
     from sys import stdout
     if not stdout.isatty():
-        # basicConfig(filename='epmt.log', filemode='a', level=level)
         logFormatter = logging.Formatter("[%(asctime)-19.19s, %(process)6d] %(levelname)-7.7s %(name)s:%(message)s")
         fileHandler = logging.FileHandler(settings.logfile)
         fileHandler.setFormatter(logFormatter)
         fileHandler.setLevel(level)
-        rootLogger.debug("epmt_logging_init(): not_a_tty: adding handler for settings.logfile=%s", settings.logfile)
-        rootLogger.addHandler(fileHandler)
+        epmt_logger.debug("epmt_logging_init(): not_a_tty: adding handler for settings.logfile=%s", settings.logfile)
+        epmt_logger.addHandler(fileHandler)
 
     consoleHandler = logging.StreamHandler()
     consoleFormatter = logging.Formatter(
-        "[%(asctime)-19.19s, %(process)d] %(levelname)7.7s: %(name)s: %(message)s" if log_pid else "%(asctime)-19.19s %(levelname)7.7s: %(name)s: %(message)s")
+        ("[%(asctime)-19.19s, %(process)d] %(levelname)7.7s: %(name)s: %(message)s"
+         if log_pid else
+         "%(asctime)-19.19s %(levelname)7.7s: %(name)s: %(message)s"))
     consoleHandler.setFormatter(consoleFormatter)
-    rootLogger.addHandler(consoleHandler)
+    epmt_logger.addHandler(consoleHandler)
 
-    # matplotlib generates a ton of debug messages
-    mpl_logger = logging.getLogger('matplotlib')
-    mpl_logger.setLevel(logging.WARNING)
-
-    # numba.byteflow generates a ton of debug messages
-    numba_logger = logging.getLogger('numba')
-    numba_logger.setLevel(logging.WARNING)
-
-    # ipython's parso logger has too many debug messages
-    parso_logger = logging.getLogger('parso')
-    parso_logger.setLevel(logging.WARNING)
-
+    # Alembic's logger lives outside the epmt hierarchy, so we still
+    # need to set its level explicitly.
     alembic_logger = logging.getLogger('alembic')
     alembic_logger.setLevel(level)
 
@@ -109,8 +111,6 @@ def epmt_logging_init(intlvl=0, check=False, log_pid=False):
     # to show the sqlalchemy's INFO level messages (but instead
     # a level higher).
     sqlalchemy_logger = logging.getLogger('sqlalchemy')
-    # sqlalchemy_logger.setLevel(level+10)
-    # sqlalchemy_logger.setLevel(level+20)
     sqlalchemy_logger.setLevel(level + 30)
 
 
@@ -119,7 +119,6 @@ def init_settings(settings):
         return
     init_settings.initialized = True
 
-    logger = getLogger('init_settings')
     err_msg = ""
 
     if environ.get("PAPIEX_OUTPUT"):
@@ -207,12 +206,12 @@ def init_settings(settings):
     if not hasattr(settings, 'bulk_insert'):
         logger.warning("missing settings.bulk_insert")
         settings.bulk_insert = False
-    if (settings.orm != 'sqlalchemy' and settings.bulk_insert):
+    if settings.orm != 'sqlalchemy' and settings.bulk_insert:
         err_msg += '\n - bulk_insert is only supported by sqlalchemy'
     if not hasattr(settings, 'post_process_job_on_ingest'):
         logger.warning("missing settings.post_process_job_on_ingest")
         settings.post_process_job_on_ingest = False
-        if (settings.orm == 'sqlalchemy'):
+        if settings.orm == 'sqlalchemy':
             settings.post_process_job_on_ingest = True
     if settings.post_process_job_on_ingest and settings.orm != 'sqlalchemy':
         logger.warning("settings.post_process_job_on_ingest = True only supported for sqlalchemy, now False")
@@ -222,7 +221,7 @@ def init_settings(settings):
         settings.lazy_compute_process_tree = True
     if not hasattr(settings, 'epmt_settings_kind'):
         logger.warning('settings missing epmt_settings_kind field. filling in ourselves.')
-        settings.epmt_setttings_kind = 'filled_by_epmtlib_init_settings'
+        settings.epmt_settings_kind = 'filled_by_epmtlib_init_settings'
     if not hasattr(settings, 'db_params'):
         err_msg += "\n - missing settings.db_params"
     if err_msg:
@@ -246,7 +245,7 @@ def cmd_exists(cmd):
 
 
 def safe_rm(f):
-    if not (f):
+    if not f:
         return False
     try:
         unlink(f)
@@ -257,7 +256,6 @@ def safe_rm(f):
 
 
 def timing(f):
-    logger = getLogger(__name__)
 
     @wraps(f)
     def wrap(*args, **kw):
@@ -265,7 +263,7 @@ def timing(f):
         result = f(*args, **kw)
         te = time()
         if result:
-            logger.debug('%r took: %2.5f sec' % (f.__name__, te - ts))
+            logger.debug('%r took: %2.5f sec', f.__name__, te - ts)
         return result
     return wrap
 
@@ -289,16 +287,18 @@ def capture():
 def tag_from_string(s, delim=';', sep=':', tag_default_value='1'):
     '''
     we assume tag is of the format:
-     "key1:value1 ; key2:value2"
+        "key1:value1 ; key2:value2"
+
     where the whitespace is optional and discarded. The output would be:
-    { "key1": value1, "key2": value2 }
+        { "key1": value1, "key2": value2 }
 
     We can also handle the case where a value is not set for
     a key, by assigning a default value for the key
     For example, for the input:
-    "multitheaded;app=fft" and a tag_default_value="1"
+        "multithreaded;app=fft" and a tag_default_value="1"
+
     the output would be:
-    { "multithreaded": "1", "app": "fft" }
+        { "multithreaded": "1", "app": "fft" }
 
     Note, both key and values will be strings and no attempt will be made to
     guess the type for integer/floats
@@ -306,14 +306,13 @@ def tag_from_string(s, delim=';', sep=':', tag_default_value='1'):
     import warnings
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore", category=DeprecationWarning)
-        # from pony.orm.ormtypes import TrackedDict
-#    if type(s) in (dict, TrackedDict): return s
+
     if isinstance(s, dict):
         return s
+
     if not s:
         return (None if s is None else {})
 
-    logger = getLogger(__name__)
     tag = {}
     for t in s.split(delim):
         t = t.strip()
@@ -324,7 +323,7 @@ def tag_from_string(s, delim=';', sep=':', tag_default_value='1'):
                 v = v.strip()
                 tag[k] = v
             except Exception as e:
-                logger.warning('ignoring key/value pair as it has an invalid format: {0}'.format(t))
+                logger.warning('ignoring key/value pair as it has an invalid format: %s', t)
                 logger.warning("%s", e)
                 continue
         else:
@@ -340,7 +339,7 @@ def tag_dict_to_string(tag, delim=';', sep=':'):
     '''
     if isinstance(tag, str):
         return tag
-    return delim.join(["{}{}{}".format(k, sep, tag[k]) for k in sorted(tag.keys())])
+    return delim.join([f"{k}{sep}{tag[k]}" for k in sorted(tag.keys())])
 
 
 def tags_list(tags):
@@ -357,29 +356,30 @@ def tags_list(tags):
     tags = [tag_from_string(t) if isString(t) else t for t in tags]
     return tags
 
-# Returns True if at least one dictionary in L is contained by d
-# where containment is defined as all keys of the containee
-# are in the container with matching values. Container may have
-# additional key/values.
-# For example:
-# for input ({'abc':100, 'def':200}, [{'hello': 50}, {'abc':100}]
-# we get True
-
 
 def dict_in_list(d, L):
+    '''
+    Returns True if at least one dictionary in L is contained by d
+    where containment is defined as all keys of the container
+    are in the container with matching values. Container may have
+    additional key/values.
+
+    For example, we get True for the following input 
+        ({'abc':100, 'def':200}, [{'hello': 50}, {'abc':100}]
+    '''
     for item in L:
         flag = True
         for (k, v) in item.items():
-            if (k not in d) or not (d[k] == v):
+            if k not in d or d[k] != v:
                 flag = False
-        if (flag):
+        if flag:
             return True
     return False
 
 
 def sum_chk_overflow(x, y):
     z = x + y
-    if (abs(z) > (2 ** 31 - 1)):
+    if abs(z) > (2 ** 31 - 1):
         z = float(x) + float(y)
     return z
 
@@ -394,7 +394,9 @@ def sum_dicts(x, y):
     return {k: x.get(k, 0) + y.get(k, 0) for k in set(x) | set(y)}
 
 
-def sum_dicts_list(dicts, exclude=[]):
+def sum_dicts_list(dicts, exclude=None):
+    if exclude is None:
+        exclude = []
     all_keys = set()
     for d in dicts:
         all_keys |= set(d)
@@ -406,12 +408,14 @@ def sum_dicts_list(dicts, exclude=[]):
             sum_dict[k] += d.get(k, 0)
     return sum_dict
 
-# from list of dictionaries, get the unique ones
-# exclude keys is an optional list of keys that are removed
-# from
 
+def unique_dicts(dicts, exclude_keys=None):
+    '''
+    from list of dictionaries, get the unique ones exclude keys is an optional list of keys that are removed from
+    '''
+    if exclude_keys is None:
+        exclude_keys = []
 
-def unique_dicts(dicts, exclude_keys=[]):
     new_dicts = []
     if exclude_keys:
         for d in dicts:
@@ -427,7 +431,7 @@ def unique_dicts(dicts, exclude_keys=[]):
     # the returned list ordering different in python 2/3
     # return list(map(dict, frozenset(frozenset(d.items()) for d in new_dicts)))
 
-    # here the code below gives a deterministic dentical ordering for python 2/3
+    # here the code below gives a deterministic identical ordering for python 2/3
     all_dicts_set = set()
     ordered_dicts = []
     for d in new_dicts:
@@ -437,35 +441,43 @@ def unique_dicts(dicts, exclude_keys=[]):
             ordered_dicts.append(d)
     return ordered_dicts
 
-# fold a list of dictionaries such as:
-# INPUT: [{'abc': 100, 'def': 200}, {'abc': 150, 'ghi': 10}
-# OUTPUT: { 'abc': [100, 150], 'def': 200, 'ghi': 10 }
-
 
 def fold_dicts(dicts):
+    '''
+    fold a list of dictionaries such as:
+        INPUT: [{'abc': 100, 'def': 200}, {'abc': 150, 'ghi': 10}
+        OUTPUT: { 'abc': [100, 150], 'def': 200, 'ghi': 10 }    
+    '''
     folded_dict = {}
     for d in dicts:
         for (k, v) in d.items():
-            if not (k in folded_dict):
+            if k not in folded_dict:
                 folded_dict[k] = set()
             folded_dict[k].add(v)
     return {k: list(v) if len(v) > 1 else v.pop() for (k, v) in folded_dict.items()}
 
 
-# given a list of dictionaries, we aggregate like fields across the dictionaries
-# but only when they share the same value for 'key'
-# The 'exclude' fields will be skipped and not present in the output.
-# Example:
-#  d = [{'jobid': "3451", 'tags': {'op': 'hsmget'}, 'duration': 1000},
-#       {'jobid': "1251", 'tags': {'op': 'hsmget'}, 'duration': 2000},
-#       {'jobid': "3451", 'tags': {'op': 'gcp'}, 'duration': 100},
-#       {'jobid': "1251", 'tags': {'op': 'gcp'}, 'duration': 200}]
-#
-#  group_dicts_by_key(d, key='tags', exclude = ['job', 'jobid'])
-#  would return:
-#  [{'tags': {'op': 'hsmget'}, duration: 3000},
-#   {'tags': {'op': 'gcp'},  duration: 300}]
-def group_dicts_by_key(dicts, key='tags', exclude=[]):
+def group_dicts_by_key(dicts, key='tags', exclude=None):
+    '''
+    given a list of dictionaries, we aggregate like fields across the dictionaries
+    but only when they share the same value for 'key'
+    The 'exclude' fields will be skipped and not present in the output.
+    
+    Example:
+        d = [{'jobid': "3451", 'tags': {'op': 'hsmget'}, 'duration': 1000},
+             {'jobid': "1251", 'tags': {'op': 'hsmget'}, 'duration': 2000},
+             {'jobid': "3451", 'tags': {'op': 'gcp'}, 'duration': 100},
+             {'jobid': "1251", 'tags': {'op': 'gcp'}, 'duration': 200}]
+    
+    so:
+        group_dicts_by_key(d, key='tags', exclude = ['job', 'jobid'])
+    
+    would return:
+        [{'tags': {'op': 'hsmget'}, duration: 3000},
+         {'tags': {'op': 'gcp'},  duration: 300}]
+    '''
+    if exclude is None:
+        exclude = []
     groups = {}
     for d in dicts:
         k = dumps(d[key], sort_keys=True)
@@ -483,7 +495,7 @@ def group_dicts_by_key(dicts, key='tags', exclude=[]):
 
 
 def isString(s):
-    return isinstance(s, ("".__class__, u"".__class__))
+    return isinstance(s, ("".__class__, "".__class__))
 
 
 def check_int(s):
@@ -493,21 +505,18 @@ def check_int(s):
 
 
 def check_boolean(s):
-    if s.upper() in ('TRUE', 'FALSE'):
-        return True
-    return False
+    return s.upper() in ('TRUE', 'FALSE')
 
 
 def check_none(s):
-    if s.upper() in ('NONE'):
-        return True
-    return False
-
-# Checks on a few types
-# strict doesn't let anything in other than x=y
+    return s.upper() in ('NONE')
 
 
 def kwargify(list_of_str, strict=False):
+    '''
+    Checks on a few types
+    strict doesn't let anything in other than x=y
+    '''
     myDict = {}
     jobs = []
     for s in list_of_str:
@@ -529,12 +538,13 @@ def kwargify(list_of_str, strict=False):
         myDict['jobs'] = jobs
     return myDict
 
-# this function recursively converts a dict of byte k/v pairs to
-# strings. It's primarily of use when converting unpickled data in
-# python 3 from data pickled using python 2
-
 
 def conv_dict_byte2str(bytes_dict):
+    '''
+    this function recursively converts a dict of byte k/v pairs to
+    strings. It's primarily of use when converting unpickled data in
+    python 3 from data pickled using python 2
+    '''
     str_dict = {}
     for key, value in bytes_dict.items():
         if isinstance(key, bytes):
@@ -547,18 +557,20 @@ def conv_dict_byte2str(bytes_dict):
             str_dict[key] = value
     return str_dict
 
-# returns a hashable dict in the form of a frozenset of dict items
-# ordered by dict keys
-
 
 def frozen_dict(d):
+    '''
+    returns a hashable dict in the form of a frozenset of dict items
+    ordered by dict keys
+    '''
     l = [(str(k), str(d[k]) if isString(d[k]) else d[k]) for k in d.keys()]
     return frozenset(l)
 
-# return a stringified version of the dictionary
-
 
 def str_dict(d):
+    '''
+    return a stringified version of the dictionary
+    '''
     new_dict = {str(k): str(v) if isString(v) else v for k, v in d.items()}
     return dumps(new_dict, sort_keys=True)
 
@@ -573,16 +585,22 @@ class dotdict(dict):
     __setattr__ = dict.__setitem__
     __delattr__ = dict.__delitem__
 
-# given a list of overlapping intervals this will return a sorted
-# list of merged intervals. See,
-# https://stackoverflow.com/questions/43600878/merging-overlapping-intervals
-#
-# For e.g.,
-# input: [[-25, -14], [-21, -16], [-20, -15], [-10, -7], [-8, -5], [-6, -3], [2, 4], [2, 3], [3, 6], [12, 15], [13, 18], [14, 17], [22, 27], [25, 30], [26, 29]]
-# output: [[-25, -14], [-10, -3], [2, 6], [12, 18], [22, 30]]
-
 
 def merge_intervals(intervals):
+    '''
+    given a list of overlapping intervals this will return a sorted
+    list of merged intervals. See,
+    https://stackoverflow.com/questions/43600878/merging-overlapping-intervals
+    
+    For e.g., input: 
+        [[-25, -14], [-21, -16], [-20, -15], [-10, -7], [-8, -5], [-6, -3],
+         [2, 4], [2, 3], [3, 6], [12, 15], [13, 18], [14, 17], [22, 27],
+         [25, 30], [26, 29]]
+
+    output: 
+        [[-25, -14], [-10, -3], [2, 6], [12, 18], [22, 30]]
+    '''
+
     intervals.sort(key=lambda interval: interval[0])
     merged = [intervals[0]]
     for current in intervals:
@@ -593,21 +611,23 @@ def merge_intervals(intervals):
             merged.append(current)
     return merged
 
-# checks the dictionary (d) for keys in sequence
-# and returns the value for the first key found
-# Returns None if no key matched
-
 
 def get_first_key_match(d, *keys):
+    '''
+    checks the dictionary (d) for keys in sequence
+    and returns the value for the first key found
+    Returns None if no key matched
+    '''
     for k in keys:
         if k in d:
             return d[k]
     return None
 
-# Remove those with _ at beginning and blacklist
-
 
 def dict_filter(kvdict, blacklisted_keys, remove_underscores=True):
+    '''
+    Remove those with _ at beginning and blacklist
+    '''
     d = {k: kvdict[k] for k in kvdict.keys() if k not in blacklisted_keys}
     if remove_underscores:
         d = {k: d[k] for k in d.keys() if not k.startswith('_')}
@@ -632,7 +652,6 @@ def compare_dicts(d1, d2):
 
 
 def get_batch_envvar(var, where):
-    logger = getLogger(__name__)  # you can use other name
     key2slurm = {
         "JOB_NAME": "SLURM_JOB_NAME",
         "JOB_USER": "SLURM_JOB_USER"
@@ -650,7 +669,6 @@ def get_batch_envvar(var, where):
 
 
 def get_metadata_env_changes(metadata):
-    logger = getLogger(__name__)  # you can use other name
     start_env = metadata['job_pl_env']
     stop_env = metadata['job_el_env']
     (added, removed, modified, same) = compare_dicts(stop_env, start_env)
@@ -668,25 +686,26 @@ def get_metadata_env_changes(metadata):
         env_changes[e] = stop_env[e]
     return (env_changes, added, removed, modified, same)
 
-# This function will do a sanity check on the metadata.
-# It will mark the metadata as checked, so it's safe and
-# fast to call the function (idempotently)
-
 
 def check_fix_metadata(raw_metadata):
+    '''
+    This function will do a sanity check on the metadata.
+    It will mark the metadata as checked, so it's safe and
+    fast to call the function (idempotently)
+    '''
     # fast path: if we have already checked the metadata
     # we don't check it again
     if raw_metadata.get('checked'):
         return raw_metadata
 
     import epmt.epmt_settings as settings
-    logger = getLogger(__name__)  # you can use other name
-# First check what should be here
+
+    # First check what should be here
     try:
         for n in ['job_pl_id', 'job_pl_submit_ts', 'job_pl_start_ts', 'job_pl_env',
                   'job_el_stop_ts', 'job_el_exitcode', 'job_el_reason', 'job_el_env']:
             s = str(raw_metadata[n])
-            assert (len(s) > 0)
+            assert len(s) > 0
     except KeyError:
         logger.error("Could not find %s in job metadata, job incomplete?", n)
         return False
@@ -699,34 +718,34 @@ def check_fix_metadata(raw_metadata):
 
     # job_pl_username will ALWAYS be present in new data, but
     # we have older data, so we retain the clause below:
-    if not ('job_pl_username' in metadata):
+    if 'job_pl_username' not in metadata:
         username = get_batch_envvar(
             "JOB_USER", raw_metadata['job_pl_env']) or get_batch_envvar(
             "USER", raw_metadata['job_pl_env'])
-        if username is False or len(username) < 1:
+        if not username or len(username) < 1:
             logger.error("No job username found in environment")
             return False
         metadata['job_pl_username'] = username
 
-    if not ('job_jobname' in metadata):
+    if 'job_jobname' not in metadata:
         jobname = get_batch_envvar("JOB_NAME", raw_metadata['job_pl_env'])
         if jobname is False or len(jobname) < 1:
             jobname = "unknown"
             logger.warning("No job name found found in environment, defaulting to %s", jobname)
         metadata['job_jobname'] = jobname
 
-    if not ('job_tags' in metadata):
+    if 'job_tags' not in metadata:
         # Look up job tags from stop environment
         job_tags = tag_from_string(raw_metadata['job_el_env'].get(settings.job_tags_env))
         logger.debug("job_tags: %s", str(job_tags))
         metadata['job_tags'] = job_tags
 
-    if not ('job_env_changes' in metadata):
+    if 'job_env_changes' not in metadata:
         # Compute difference in start vs stop environment
         # we can ignore all the fields returned except the first
         env_changes = get_metadata_env_changes(raw_metadata)[0]
         if env_changes:
-            logger.debug('start/stop environment changed: {0}'.format(env_changes))
+            logger.debug('start/stop environment changed: %s', env_changes)
         metadata['job_env_changes'] = env_changes
 
     # mark the metadata as checked so we don't check it again unnecessarily
@@ -737,7 +756,7 @@ def check_fix_metadata(raw_metadata):
 def check_pid(pid):
     """Check whether pid exists"""
     if pid < 0:
-        return (False, 'Invalid PID: {0}'.format(pid))
+        return (False, f'Invalid PID: {pid}')
     from os import kill
     try:
         kill(pid, 0)
@@ -745,7 +764,7 @@ def check_pid(pid):
         from errno import ESRCH, EPERM
         if err.errno == ESRCH:
             # ESRCH == No such process
-            return (False, 'No such process (PID: {0})'.format(pid))
+            return (False, f'No such process (PID: {pid})')
         elif err.errno == EPERM:
             # EPERM clearly means there's a process but we cannot
             # send a signal to it
@@ -770,7 +789,7 @@ def suggested_cpu_count_for_submit():
 def conv_to_datetime(t):
     """
     This converts a time specified as a string or a Unix timestamp
-    or a negative integer (signifiying a relative offset in days
+    or a negative integer (signifying a relative offset in days
     from the current time) to a python datetime object. If passed a
     datetime object it will be returned without modification
     E.g., of valid values of t:
@@ -793,7 +812,7 @@ def conv_to_datetime(t):
             retval = datetime.strptime(t, '%m/%d/%Y %H:%M')
         except Exception as e:
             logger = getLogger(__name__)
-            logger.error('could not convert string to datetime: %s' % str(e))
+            logger.error('could not convert string to datetime: %s', str(e))
             return None
     elif type(t) in (int, float):
         if t > 0:
@@ -801,7 +820,7 @@ def conv_to_datetime(t):
         else:
             # interpret a negative integer as number of days before now()
             # if it's zero interpret it as now
-            retval = datetime.now() - timedelta(days=(-t))
+            retval = datetime.now() - timedelta(days=-t)
     return retval
 
 
@@ -814,7 +833,7 @@ def ranges(i):
     """
 
     from itertools import groupby
-    for a, b in groupby(enumerate(i), lambda pair: pair[1] - pair[0]):
+    for _a, b in groupby(enumerate(i), lambda pair: pair[1] - pair[0]):
         b = list(b)
         yield b[0][1], b[-1][1]
 
@@ -879,38 +898,39 @@ def decode2strings(v):
     return [decode_string_from_int(n) for n in v]
 
 
-def dframe_encode_features(df, features=[], reversible=False):
+def dframe_encode_features(df, features=None, reversible=False):
     '''
     Replaces feature columns containing string/object (non-numeric)
     values with columns containing encoded integers.
 
          df: Input dataframe possibly containing non-numeric feature columns
 
-   features: If supplied, only these columns will be assumed to have
-             non-numeric values, and hence only these columns will be
-             mapped.
+    features: If supplied, only these columns will be assumed to have
+              non-numeric values, and hence only these columns will be
+              mapped.
 
- reversible: If set, a reversible encoding is done so that the integer
-             columns can be converted to the original strings if needed.
-             It is not recommended that you enable this option as the
-             resultant integers can be inordinately long for long strings
+    reversible: If set, a reversible encoding is done so that the integer
+                columns can be converted to the original strings if needed.
+                It is not recommended that you enable this option as the
+                resultant integers can be inordinately long for long strings
 
     RETURNS: (encoded_df, mapped_features)
 
-         encoded_df: Output dataframe which contains non-numeric
-                     feature columns replaced with encoded integer features.
-   encoded_features: List of feature column names that were replaced with
-                     encoded integers.
+    encoded_df: Output dataframe which contains non-numeric
+                feature columns replaced with encoded integer features.
+    encoded_features: List of feature column names that were replaced with
+                      encoded integers.
 
     NOTE: If encoded_features is empty, no features were encoded.
     '''
-    logger = getLogger(__name__)
+    if features is None:
+        features = []
     if not features:
         import epmt.epmt_settings as settings
         logger.debug('Selecting non-numeric columns from dataframe and then pruning out blacklisted features')
         obj_features = list(df.select_dtypes(include='object').columns.values)
-        logger.debug('Non-numeric features in dataframe: {}'.format(obj_features))
-        logger.debug('Blacklisted features to prune: {}'.format(settings.outlier_features_blacklist))
+        logger.debug('Non-numeric features in dataframe: %s', obj_features)
+        logger.debug('Blacklisted features to prune: %s', settings.outlier_features_blacklist)
         features = list(set(df.select_dtypes(include='object').columns.values) -
                         set(settings.outlier_features_blacklist))
 
@@ -920,17 +940,18 @@ def dframe_encode_features(df, features=[], reversible=False):
 
     if reversible:
         logger.warning(
-            'You have enabled "reversible". Be warned that the encoded feature columns can contain some very large integers')
+            'You have enabled "reversible". Be warned that the encoded feature '
+            'columns can contain some very large integers')
     encoded_df = df.copy()
     encoded_features = []
-    logger.debug('encoding feature columns: {}'.format(features))
+    logger.debug('encoding feature columns: %s', features)
     for c in features:
         str_vec = df[c].to_numpy()
         int_vec = encode2ints(str_vec) if reversible else hash_strings(str_vec)
         encoded_df[c] = int_vec
-        logger.debug('mapped feature {}: {} -> {}'.format(c, str_vec, int_vec))
+        logger.debug('mapped feature %s: %s -> %s', c, str_vec, int_vec)
         encoded_features.append(c)
-    logger.info('Encoded features: {}'.format(encoded_features))
+    logger.info('Encoded features: %s', encoded_features)
     return (encoded_df, encoded_features)
 
 
@@ -954,21 +975,20 @@ def dframe_decode_features(df, features):
               calling dframe_encode_features, as otherwise the strings
               are hashed and not encoded (hashed strings cannot be decoded).
     '''
-    logger = getLogger(__name__)
     decoded_df = df.copy()
     decoded_features = []
     for c in features:
         int_vec = df[c].to_numpy()
         str_vec = decode2strings(int_vec)
         decoded_df[c] = str_vec
-        logger.debug('decoded {}: {} -> {}'.format(c, int_vec, str_vec))
+        logger.debug('decoded %s: %s -> %s', c, int_vec, str_vec)
         decoded_features.append(c)
     if decoded_features != features:
         logger.warning('decoded features list is not identical to requested features')
     if not decoded_features:
         logger.warning('No features were decoded')
     else:
-        logger.info('Decoded features: {}'.format(decoded_features))
+        logger.info('Decoded features: %s', decoded_features)
     return (decoded_df, decoded_features)
 
 
@@ -977,21 +997,19 @@ def find_files_in_dir(path, pattern='*.tgz', recursive=False):
     Find files matching a pattern under a directory.
 
        path: Top-level directory to scan
-    pattern: glob pattern to match. Defaults to '*.tgz'
-  recursive: Scan recursively down or not
+       pattern: glob pattern to match. Defaults to '*.tgz'
+       recursive: Scan recursively down or not
 
     RETURNS: List of files that match
     '''
     from glob import glob
-    pathname = '{}/{}{}'.format(path, '**/' if recursive else '', pattern)
+    pathname = f'{path}/{"**/" if recursive else ""}{pattern}'
     return glob(pathname, recursive=recursive)
-
-# https://www.python.org/dev/peps/pep-0257/
 
 
 def docs_trim(docstring):
     '''
-    Formats a docstring
+    Formats a docstring, see https://www.python.org/dev/peps/pep-0257/
     '''
     if not docstring:
         return ''
@@ -1023,7 +1041,7 @@ def docs_func_summary(func):
     '''
     Returns the docstring summary for a function
     '''
-    summary_string = ((func.__doc__ or '').lstrip().split('\n')[0].strip())
+    summary_string = (func.__doc__ or '').lstrip().split('\n')[0].strip()
     # the summary string may have a section name at the end of it
     # separated by ::
     # So, if we have a :: in the string, then we split and take the first portion
@@ -1035,7 +1053,7 @@ def docs_func_section(func):
     '''
     Returns the section name (if any) for a function from its docstrings
 
-    We assume a doctstring summary line has a double-colon followed by
+    We assume a docstring summary line has a double-colon followed by
     a section name at the end of the summary line.
     '''
     summary_string = ((func.__doc__ or '').lstrip().split('\n')[0].strip())
@@ -1098,7 +1116,7 @@ def docs_module_index(mod, fmt=None):
     out_str = ""
     for section in sorted(sections.keys()):
         section_calls = sections[section]
-        out_str += "\n\nSection::{}\n".format(section)
+        out_str += f"\n\nSection::{section}\n"
         out_str += "\n".join([fmt_string.format(o[0], o[1]) for o in section_calls])
     return out_str
 
@@ -1112,8 +1130,7 @@ def get_install_root():
     >>> '/abc/def/ghi.py'.rsplit('/',1)
     ['/abc/def', 'ghi.py']
     '''
-    # logger = getLogger(__name__)
-    install_root = (__file__.rsplit('/', 2)[0])
+    install_root = __file__.rsplit('/', 2)[0]
     # handle pip packaging here -- even when "manually" installed ala 4.9.6, our install_dir should always end in /epmt.
     # XXX THIS IS STILL HOKEY and i'm not sure how to make it work for all possible installations.
     if not install_root.endswith('/epmt'):
@@ -1140,10 +1157,10 @@ def logfn(func):
         # the module is prepended automatically by our logging format
         # as we use getLogger with the module name
         # logger.info('{}({}{}{})'.format(func.__name__,
-        logger.debug('{}({}{}{})'.format(func.__name__,
-                                         ", ".join([str(x) for x in func_args]),
-                                         "," if func_kwargs else "",
-                                         ",".join(["{}={}".format(k, v) for (k, v) in func_kwargs.items()])))
+        logger.debug('%s(%s%s%s)', func.__name__,
+                     ", ".join([str(x) for x in func_args]),
+                     "," if func_kwargs else "",
+                     ",".join([f"{k}={v}" for (k, v) in func_kwargs.items()]))
         # now call the actual function with its arguments (if any)
         return func(*func_args, **func_kwargs)
     return log_func
@@ -1193,17 +1210,19 @@ def csv_probe_format(f):
         # the second element is a list of CSV column names
         return ('1', s.split('\n')[0].split(','))
     # if we reached here, then we don't understand the CSV format
-    raise ValueError("CSV file -- {} -- has an unknown file format. Is it corrupted?".format(f.name))
-
-# Set up signal handlers. If no signals are specified, sensible
-# defaults are used. If no handler is specified, the default
-# handler is assumed (this means the signal handler will be restored
-# to the default)
+    raise ValueError(f"CSV file -- {f.name} -- has an unknown file format. Is it corrupted?")
 
 
-def set_signal_handlers(signals=[], handler=None):
+def set_signal_handlers(signals=None, handler=None):
+    '''
+    Set up signal handlers. If no signals are specified, sensible
+    defaults are used. If no handler is specified, the default
+    handler is assumed (this means the signal handler will be restored
+    to the default)
+    '''
+    if signals is None:
+        signals = []
     from signal import SIGHUP, SIGTERM, SIGINT, signal, SIG_DFL
-    logger = getLogger(__name__)
 
     # set defaults
     signals = signals or [SIGHUP, SIGTERM, SIGINT]
@@ -1215,7 +1234,3 @@ def set_signal_handlers(signals=[], handler=None):
         logger.debug('Finished restoring signal handlers to defaults')
     else:
         logger.debug('Finished setting up signal handlers')
-
-
-if __name__ == "__main__":
-    print(version_str(True))

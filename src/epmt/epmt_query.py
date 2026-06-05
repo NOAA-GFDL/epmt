@@ -12,24 +12,28 @@ list of database IDs, and a powerful ORM object collection.
 The format can be selected using the `fmt` argument.
 """
 
-from epmt.epmt_stat import get_classifier_name, is_classifier_mv, mvod_scores, uvod_classifiers
-from epmt.epmtlib import tag_from_string, tags_list, init_settings, sum_dicts, unique_dicts, fold_dicts, isString, group_dicts_by_key, conv_to_datetime
 from datetime import datetime
-import pandas as pd
-
-from epmt.orm import *
-from sqlalchemy import func
 from json import loads, dumps
 from logging import getLogger
+
+import pandas as pd
+from sqlalchemy import func
+
+from epmt.epmt_stat import get_classifier_name, is_classifier_mv, mvod_scores, uvod_classifiers
+from epmt.epmtlib import ( tag_from_string, tags_list, init_settings, sum_dicts, unique_dicts, fold_dicts,
+                           isString, group_dicts_by_key, conv_to_datetime )
+from epmt.epmtlib import epmt_logging_init, version
+from epmt.orm import (
+    setup_db, orm_to_dict, orm_get, orm_create, orm_commit,
+    orm_findall, orm_is_query, orm_get_jobs, orm_get_procs,
+    orm_get_refmodels, orm_jobs_col, orm_procs_col,
+    orm_delete_jobs, orm_delete_refmodels, db_session, desc,
+    Job, Process, Operation, Host, ReferenceModel, UnprocessedJob,
+)
 import epmt.epmt_settings as settings
 
-# do NOT do any epmt imports until logging is set up
-# using epmt_logging_init, other than import epmt_logging_init
-from epmt.epmtlib import epmt_logging_init, version
-logger = getLogger(__name__)  # you can use other name
+logger = getLogger(__name__)
 epmt_logging_init(settings.verbose if hasattr(settings, 'verbose') else 0, check=True)
-
-# Put EPMT imports below, after logging is set up
 
 init_settings(settings)  # type: ignore
 setup_db(settings)  # type: ignore
@@ -85,7 +89,10 @@ def conv_jobs(jobs, fmt='dict', merge_sums=True, trigger_post_process=True):
     #     post_process_jobs(jobids)
 
     # convert the ORM into a list of dictionaries, excluding blacklisted fields
-    out_list = [orm_to_dict(j, exclude='processes', trigger_post_process=trigger_post_process) for j in jobs]
+    out_list = [ orm_to_dict( j,
+                              exclude = 'processes',
+                              trigger_post_process = trigger_post_process ) for j in jobs ]
+
     # do we need to merge process' sum fields into the job?
     if merge_sums:
         for j in out_list:
@@ -97,7 +104,8 @@ def conv_jobs(jobs, fmt='dict', merge_sums=True, trigger_post_process=True):
             common_fields = list(set(j) & set(j[PROC_SUMS_FIELD_IN_JOB]))
             if common_fields:
                 logger.warning(
-                    'while hoisting proc_sums to job-level, found {0} common fields: {1}'.format(len(common_fields), common_fields))
+                    'while hoisting proc_sums to job-level, found %s common fields: %s',
+                    len(common_fields), common_fields)
             j.update(j[PROC_SUMS_FIELD_IN_JOB])
             del j[PROC_SUMS_FIELD_IN_JOB]
 
@@ -125,7 +133,8 @@ def __conv_procs_orm(procs, merge_sums=True, fmt='dict'):
             common_fields = list(set(p) & set(p[THREAD_SUMS_FIELD_IN_PROC]))
             if common_fields:
                 logger.warning(
-                    'while hoisting thread_sums to process-level, found {0} common fields: {1}'.format(len(common_fields), common_fields))
+                    'while hoisting thread_sums to process-level, found %s common fields: %s',
+                    len(common_fields), common_fields)
             p.update(p[THREAD_SUMS_FIELD_IN_PROC])
             # add an alias for a consistent user experience
             p['jobid'] = p['job']
@@ -167,12 +176,12 @@ def conv_procs(procs, fmt='pandas', order=None):
     _empty_collection_check(procs)
 
     procs = orm_procs_col(procs)
-    if not (order is None):
+    if order is not None:
         procs = procs.order_by(order)
     return __conv_procs_orm(procs, fmt=fmt)
 
 
-def timeline(jobs, limit=0, fltr='', when=None, hosts=[], fmt='pandas'):
+def timeline(jobs, limit=0, fltr='', when=None, hosts=None, fmt='pandas'):
     """
     Returns a timeline of processes ordered chronologically by start time::Processes
 
@@ -214,7 +223,8 @@ def timeline(jobs, limit=0, fltr='', when=None, hosts=[], fmt='pandas'):
     3  685000  modulecmd 2019-06-15 11:52:04.176020  3416
     4  685000       test 2019-06-15 11:52:04.192758  3417
 
-    >>> eq.timeline([u'685000', u'685016'], limit=5, hosts=[Host[u'pp313'], Host[u'pp208']])[['job', 'exename', 'start', 'host']]
+    >>> eq.timeline([u'685000', u'685016'], limit=5,
+    ...             hosts=[Host[u'pp313'], Host[u'pp208']])[['job', 'exename', 'start', 'host']]
           job    exename                      start   host
     0  685000       tcsh 2019-06-15 11:52:04.126892  pp208
     1  685000       tcsh 2019-06-15 11:52:04.133795  pp208
@@ -222,6 +232,8 @@ def timeline(jobs, limit=0, fltr='', when=None, hosts=[], fmt='pandas'):
     3  685000  modulecmd 2019-06-15 11:52:04.176020  pp208
     4  685000       test 2019-06-15 11:52:04.192758  pp208
     """
+    if hosts is None:
+        hosts = []
     return get_procs(jobs, fmt=fmt, order=(Process.start), limit=limit, fltr=fltr, when=when, hosts=hosts)
 
 
@@ -344,7 +356,7 @@ def op_roots(jobs, tag, fmt='dict'):
 
 @db_session
 def get_jobs(
-        jobs=[],
+        jobs=None,
         tags=None,
         fltr=None,
         order=None,
@@ -353,7 +365,7 @@ def get_jobs(
         when=None,
         before=None,
         after=None,
-        hosts=[],
+        hosts=None,
         fmt='dict',
         annotations=None,
         analyses=None,
@@ -386,7 +398,8 @@ def get_jobs(
              tags may also be specified as a list of strings or dicts. In that
              case the resulting match is a superset of the matches from the
              individual tags. For example:
-             eq.get_jobs(tags=['ocn_res:0.5l75;exp_component:ocean_cobalt_fdet_100', 'ocn_res:0.5l75;exp_component:ocean_annual_rho2_1x1deg'], fmt='terse')
+                 eq.get_jobs( tags = ['ocn_res:0.5l75;exp_component:ocean_cobalt_fdet_100', 
+                                      'ocn_res:0.5l75;exp_component:ocean_annual_rho2_1x1deg'], fmt='terse')
              This returns a union of jobs that match 'ocn_res:0.5l75;exp_component:ocean_cobalt_fdet_100'
              and those that match 'ocn_res:0.5l75;exp_component:ocean_annual_rho2_1x1deg'
 
@@ -396,7 +409,7 @@ def get_jobs(
              (Job.jobid == '685000')
              (Job.jobid.in_(['685000', '685016']))
 
-             For ORM's, you may be able to use a lamdba function or a string
+             For ORM's, you may be able to use a lambda function or a string
              e.g., lambda j: count(j.processes) > 100 will filter jobs more than 100 processes
              or, 'j.duration > 100000' will filter jobs whose duration is more than 100000
 
@@ -484,7 +497,7 @@ def get_jobs(
              This will make aggregates across processes appear as part of the job
              If False, the job will contain job.proc_sums, which will be a dict
              of key/value pairs, where each is an process attribute, such as numtids,
-             and the value is the sum acorss all processes of the job.
+             and the value is the sum across all processes of the job.
 
     exact_tag_only: boolean, optional
              If set, tag will be considered matched if saved tag
@@ -519,6 +532,10 @@ def get_jobs(
     # same as above except we use the orm format
     >>> jobs_orm = get_jobs(tags = 'exp_name:ESM4_historical_D151;exp_component=atmos_cmip', fmt='orm')
     """
+    if jobs is None:
+        jobs = []
+    if hosts is None:
+        hosts = []
 
     # Customer feedback strongly indicated that limits on the job table were
     # a strong no-no. So, commenting out the code below:
@@ -539,7 +556,7 @@ def get_jobs(
             try:
                 when = datetime.strptime(when, '%m/%d/%Y %H:%M')
             except Exception as e:
-                logger.error('could not convert "when" string to datetime: %s' % str(e))
+                logger.error('could not convert "when" string to datetime: %s', str(e))
                 return None
 
     if before is not None:
@@ -576,8 +593,8 @@ def get_jobs(
 
 #
 @db_session
-def get_procs(jobs=[], tags=None, fltr=None, order=None, offset=0, limit=None, when=None,
-              hosts=[], fmt='dict', merge_threads_sums=True, exact_tag_only=False):
+def get_procs(jobs=None, tags=None, fltr=None, order=None, offset=0, limit=None, when=None,
+              hosts=None, fmt='dict', merge_threads_sums=True, exact_tag_only=False):
     """
     Returns a collection of processes for a set of jobs based on filter criteria::Processes
 
@@ -669,7 +686,7 @@ def get_procs(jobs=[], tags=None, fltr=None, order=None, offset=0, limit=None, w
              thread aggregates such as 'usertime', 'systemtime' are available
              as first-class members of the process. This option is silently
              ignored if output format 'fmt' is set to 'orm', and ORM
-             objects will not be merge_threads_sumsed.
+             objects will not merge_threads_sums.
 
     exact_tag_only: boolean, optional
              If set, tag will be considered matched if saved tag
@@ -710,6 +727,10 @@ def get_procs(jobs=[], tags=None, fltr=None, order=None, offset=0, limit=None, w
     by using the default merge_threads_sums=True, it will be available as column in the output
     dataframe. The output will be pre-sorted on this field because we have set 'order'
     """
+    if jobs is None:
+        jobs = []
+    if hosts is None:
+        hosts = []
 
     # Jeff strongly wanted this removed as it can cause processes
     # to be left out in queries.
@@ -727,7 +748,7 @@ def get_procs(jobs=[], tags=None, fltr=None, order=None, offset=0, limit=None, w
             try:
                 when = datetime.strptime(when, '%m/%d/%Y %H:%M')
             except Exception as e:
-                logger.error('could not convert "when" string to datetime: %s' % str(e))
+                logger.error('could not convert "when" string to datetime: %s', str(e))
                 return None
 
     if hosts:
@@ -802,7 +823,7 @@ def get_thread_metrics(*processes):
 
 
 @db_session
-def job_proc_tags(jobs, exclude=[], tag_filter='', fold=False):
+def job_proc_tags(jobs, exclude=None, tag_filter='', fold=False):
     """
     Returns the unique process tags across all processes of a job or collection of jobs::Processes
 
@@ -825,8 +846,8 @@ def job_proc_tags(jobs, exclude=[], tag_filter='', fold=False):
 
     Returns
     -------
-    A collection of tags that comrise the the unique set of tags across
-    all the processes in the collecition of jobs.
+    A collection of tags that comprise the the unique set of tags across
+    all the processes in the collection of jobs.
 
     A list of dicts (if fold == False) or a dict (if fold == True)
 
@@ -835,6 +856,8 @@ def job_proc_tags(jobs, exclude=[], tag_filter='', fold=False):
     Process tags are very different from job tags. This function returns
     process tags.
     """
+    if exclude is None:
+        exclude = []
     _empty_collection_check(jobs)
     jobs = orm_jobs_col(jobs)
     tags = []
@@ -888,7 +911,8 @@ tag_filter : dict or string
      'ocn_res': '0.5l75',
      'exp_name': 'ESM4_historical_D151',
      'exp_component': 'ocean_annual_z_1x1deg',
-     'exp_time': {'18890101', '18640101', '18940101', '18690101', '18590101', '18790101', '18540101', '18740101', '18840101'},
+     'exp_time': {'18890101', '18640101', '18940101', '18690101', '18590101',
+                  '18790101', '18540101', '18740101', '18840101'},
      'script_name': {'ESM4_historical_D151_ocean_annual_z_1x1deg_18540101',
       'ESM4_historical_D151_ocean_annual_z_1x1deg_18840101',
       'ESM4_historical_D151_ocean_annual_z_1x1deg_18640101',
@@ -924,7 +948,7 @@ tag_filter : dict or string
 
     '''
     jobs = get_jobs(jobs, tags=[tag_filter], fmt='orm') if tag_filter else orm_jobs_col(jobs)
-    logger.debug('{} jobs matched'.format(jobs.count()))
+    logger.debug('%s jobs matched', jobs.count())
     tags = []
     for j in jobs:
         tags.extend([j.tags])
@@ -938,7 +962,7 @@ tag_filter : dict or string
     return folded_dict if fold else tags
 
 
-def rank_proc_tags_keys(jobs, order='cardinality', exclude=[]):
+def rank_proc_tags_keys(jobs, order='cardinality', exclude=None):
     '''
     Returns a sorted list of tag keys across processes of one or more jobs::Processes
 
@@ -969,10 +993,20 @@ def rank_proc_tags_keys(jobs, order='cardinality', exclude=[]):
     Examples
     --------
       >>> eq.rank_proc_tags_keys(['685000'])
-          [('op', {'ncatted', 'ncrcat', 'dmput', 'fregrid', 'rm', 'timavg', 'hsmget', 'mv', 'cp', 'splitvars', 'untar'}), ('op_instance', {'9', '19', '6', '4', '20', '12', '8', '16', '2', '15', '5', '13', '10', '3', '11', '7', '14', '1', '18'}), ('op_sequence', {'83', '9', '67', '82', '60', '89', '85', '79', '20', '72', '8', '12', '27', '2', '51', '55', '87', '17', '48', '61', '40', '14', '7', '53', '26', '56', '37', '35', '4', '18', '36', '54', '62', '84', '70', '24', '50', '63', '58', '5', '13', '64', '57', '76', '44', '34', '1', '39', '21', '29', '81', '78', '42', '46', '19', '66', '43', '16', '28', '49', '30', '15', '10', '22', '73', '86', '77', '33', '47', '68', '31', '75', '6', '45', '32', '71', '41', '65', '80', '25', '74', '3', '11', '69', '52', '23', '59', '88', '38'})]
+          [('op', {'ncatted', 'ncrcat', 'dmput', 'fregrid', 'rm', 'timavg',
+            'hsmget', 'mv', 'cp', 'splitvars', 'untar'}),
+           ('op_instance',
+            {'9', '19', '6', '4', '20', '12', '8', '16', '2', '15', '5', '13', '10', '3', '11', '7', '14', '1', '18'}),
+           ('op_sequence', {'83', '9', '67', '82', '60', '89', '85', '79', '20', '72', '8', '12', '27', '2', ...})]
       >>> eq.rank_proc_tags_keys(['685000'], order = 'frequency')
-      [('op', {'ncatted', 'ncrcat', 'dmput', 'fregrid', 'rm', 'timavg', 'hsmget', 'mv', 'cp', 'splitvars', 'untar'}), ('op_instance', {'9', '19', '6', '4', '20', '12', '8', '16', '2', '15', '5', '13', '10', '3', '11', '7', '14', '1', '18'}), ('op_sequence', {'83', '9', '67', '82', '60', '89', '85', '79', '20', '72', '8', '12', '27', '2', '51', '55', '87', '17', '48', '61', '40', '14', '7', '53', '26', '56', '37', '35', '4', '18', '36', '54', '62', '84', '70', '24', '50', '63', '58', '5', '13', '64', '57', '76', '44', '34', '1', '39', '21', '29', '81', '78', '42', '46', '19', '66', '43', '16', '28', '49', '30', '15', '10', '22', '73', '86', '77', '33', '47', '68', '31', '75', '6', '45', '32', '71', '41', '65', '80', '25', '74', '3', '11', '69', '52', '23', '59', '88', '38'})]
+      [('op', {'ncatted', 'ncrcat', 'dmput', 'fregrid', 'rm', 'timavg',
+        'hsmget', 'mv', 'cp', 'splitvars', 'untar'}),
+       ('op_instance',
+        {'9', '19', '6', '4', '20', '12', '8', '16', '2', '15', '5', '13', '10', '3', '11', '7', '14', '1', '18'}),
+       ('op_sequence', {'83', '9', '67', '82', '60', '89', '85', '79', '20', '72', '8', '12', '27', '2', ...})]
     '''
+    if exclude is None:
+        exclude = []
     _empty_collection_check(jobs)
     if order.lower() not in ('cardinality', 'frequency'):
         logger.warning('order needs to be one or "cardinality" or "frequency"')
@@ -994,7 +1028,7 @@ def rank_proc_tags_keys(jobs, order='cardinality', exclude=[]):
 
 
 @db_session
-def get_refmodels(name=None, tag={}, fltr=None, limit=0, order=None, before=None,
+def get_refmodels(name=None, tag=None, fltr=None, limit=0, order=None, before=None,
                   after=None, exact_tag_only=False, merge_nested_fields=True, fmt='dict'):
     """
     Returns collection of reference models filtered using specified criteria::Reference Models
@@ -1054,6 +1088,8 @@ def get_refmodels(name=None, tag={}, fltr=None, limit=0, order=None, before=None
       # the model creation phase).
       >>> get_refmodels(tag = 'exp_name:ESM4;exp_component:ice_1x1', fmt='pandas')
     """
+    if tag is None:
+        tag = {}
 
     # filter using tag if set
     if isinstance(tag, str):
@@ -1082,8 +1118,8 @@ def get_refmodels(name=None, tag={}, fltr=None, limit=0, order=None, before=None
             common_fields = list(set(r) & set(r['computed']))
             if common_fields:
                 logger.warning(
-                    'while hoisting nested fields in "computed" to reference model, found {0} common fields: {1}'.format(
-                        len(common_fields), common_fields))
+                    'while hoisting nested fields in "computed" to reference model, found %s common fields: %s',
+                    len(common_fields), common_fields)
             r.update(r['computed'])
             del r['computed']
 
@@ -1107,25 +1143,25 @@ def _refmodel_scores(col, methods, features):
     '''
     df = conv_jobs(col, fmt='pandas') if col.__class__.__name__ != 'DataFrame' else col
     ret = {}
-    logger.info('creating trained model using {0} for features {1}'.format(
-        [get_classifier_name(c) for c in methods], features))
-    logger.info('jobids: {}'.format(df['jobid'].values))
+    logger.info('creating trained model using %s for features %s',
+        [get_classifier_name(c) for c in methods], features)
+    logger.info('jobids: %s', df['jobid'].values)
     for m in methods:
         m_name = get_classifier_name(m)
         ret[m_name] = {}
         if is_classifier_mv(m):
-            logger.info('mvod {0}; features ({1})'.format(m_name, features))
+            logger.info('mvod %s; features (%s)', m_name, features)
             _f = sorted(features)
             nd_array = df[_f].to_numpy()
             # the second element return is a dict indexed by classifier
             # and containing the max anomaly score using the classifier
             retval = mvod_scores(nd_array, classifiers=[m])
             if not retval:
-                logger.warning('Skipped mvod classifier {} as could not score using it'.format(m_name))
+                logger.warning('Skipped mvod classifier %s as could not score using it', m_name)
                 del ret[m_name]
                 continue
             (full_scores, max_score) = retval
-            logger.debug('{0} scores:\n{1}'.format(m_name, full_scores[m_name]))
+            logger.debug('%s scores:\n%s', m_name, full_scores[m_name])
 
             # we save the max score and also we need the input nd_array for
             # future reference. We will need the nd_array for outlier detection
@@ -1133,12 +1169,12 @@ def _refmodel_scores(col, methods, features):
             ret[m_name][",".join(_f)] = [float(max_score[m_name]), nd_array.tolist()]
         else:
             # univariate classifiers can only handle
-            logger.debug('univariate classifier {0}; features {1}'.format(m_name, features))
+            logger.debug('univariate classifier %s; features %s', m_name, features)
             for c in features:
                 # we save everything returned by the function
                 # except the first element, which is a list of scores
                 # We really only need the max, median etc
-                logger.debug('scoring feature {}'.format(c))
+                logger.debug('scoring feature %s', c)
                 ret[m_name][c] = m(df[c])[1:]
     # print(ret)
     return ret
@@ -1146,9 +1182,9 @@ def _refmodel_scores(col, methods, features):
 
 
 @db_session
-def create_refmodel(jobs, name=None, tag={}, op_tags=[],
-                    methods=[],
-                    features=['duration', 'cpu_time', 'num_procs'], exact_tag_only=False,
+def create_refmodel(jobs, name=None, tag=None, op_tags=None,
+                    methods=None,
+                    features=None, exact_tag_only=False,
                     fmt='dict', sanity_check=True, enabled=True, pca=False):
     """
     Creates a reference model based on a set of reference jobs::Reference Models
@@ -1172,7 +1208,7 @@ op_tags: list of dicts or list of strings
          obtain the set of processes over which an aggregation
          is performed using get_op_metrics.
 
-methods: list of callables, optonal
+methods: list of callables, optional
          Is a list of methods that are used to obtain outlier
          scores. Each method is passed a vector consisting
          of the value of 'feature' for all the jobs. The
@@ -1203,7 +1239,7 @@ enabled: boolean, optional
          this option to True, you may also set this option to something
          like: pca = 2, in which case it will mean you want two components
          in the PCA. Or something like, pca = 0.95, which will be
-         intepreted as meaning do PCA and automatically select the number
+         interpreted as meaning do PCA and automatically select the number
          components to arrive at the number of components in the PCA.
          If set to True, a 0.85 variance ratio will be set to enable
          automatic selection of PCA components.
@@ -1223,16 +1259,19 @@ enabled: boolean, optional
     to a list of tags for the ops, or use the wildcard (*):
     >>> r = eq.create_refmodel(jobs, tag='exp_name:linux_kernel', op_tags='*', methods= [es.modified_z_score])
 
-    >>> r['id'], r['tags'], r['jobs']
-    (11, {'exp_name': 'linux_kernel'}, [u'kern-6656-20190614-190245', u'kern-6656-20190614-191138', u'kern-6656-20190614-192044-outlier', u'kern-6656-20190614-194024'])
+    >>> r['id'], r['tags'], r['jobs']  # doctest: +ELLIPSIS
+    (11, {'exp_name': 'linux_kernel'}, [...])
 
-    >>> r['op_tags']
-    [{u'op_instance': u'4', u'op_sequence': u'4', u'op': u'build'}, {u'op_instance': u'5', u'op_sequence': u'5', u'op': u'clean'}, {u'op_instance': u'3', u'op_sequence': u'3', u'op': u'configure'}, {u'op_instance': u'1', u'op_sequence': u'1', u'op': u'download'}, {u'op_instance': u'2', u'op_sequence': u'2', u'op': u'extract'}]
+    >>> r['op_tags']  # doctest: +ELLIPSIS
+    [{..., u'op': u'build'}, {..., u'op': u'clean'}, ..., {..., u'op': u'extract'}]
 
     Below is an example of creating a refmodel using MV classifiers
     >>> from pyod.models.knn import KNN
     >>> from pyod.models.abod import ABOD
-    >>> r = eq.create_refmodel(['625172', '627922', '629337', '633144', '676007', '680181', '685000', '685003', '685016', '692544', '693147', '696127'], methods = [ABOD(), KNN()], features = ['cpu_time', 'duration', 'num_procs'])
+    >>> r = eq.create_refmodel(
+    ...     ['625172', '627922', '629337', '633144', '676007', '680181',
+    ...      '685000', '685003', '685016', '692544', '693147', '696127'],
+    ...     methods = [ABOD(), KNN()], features = ['cpu_time', 'duration', 'num_procs'])
     WARNING: epmt_query: The jobs do not share identical tag values for "exp_name" and "exp_component"
     WARNING: The jobs do not share identical tag values for "exp_name" and "exp_component"
         685000 ESM4_historical_D151 ocean_annual_rho2_1x1deg
@@ -1247,10 +1286,18 @@ enabled: boolean, optional
         633144 ESM4_historical_D151 ocean_month_rho2_1x1deg
         676007 ESM4_historical_D151 ocean_month_rho2_1x1deg
         680181 ESM4_historical_D151 ocean_month_rho2_1x1deg
-    >>> r
-    {'jobs': ['685000', '685003', '685016', '625172', '693147', '692544', '696127', '627922', '629337', '633144', '676007', '680181'], 'name': None, 'tags': {}, 'op_tags': [], 'computed': {'pyod.models.abod': {'cpu_time,duration,num_procs': -3.478362573453902e-40}, 'pyod.models.knn': {'cpu_time,duration,num_procs': 6014539197.113887}}, 'enabled': True, 'id': 6, 'created_at': datetime.datetime(2020, 2, 3, 17, 6, 59, 501012)}
+    >>> r  # doctest: +ELLIPSIS
+    {'jobs': [...], 'name': None, 'tags': {}, 'op_tags': [], 'computed': {...}, ...}
 
     """
+    if tag is None:
+        tag = {}
+    if op_tags is None:
+        op_tags = []
+    if methods is None:
+        methods = []
+    if features is None:
+        features = ['duration', 'cpu_time', 'num_procs']
     if not jobs or (not (orm_is_query(jobs)) and len(jobs) == 0) or (orm_is_query(jobs) and (jobs.count == 0)):
         logger.error('You need to specify one or more jobs to create a reference model')
         return None
@@ -1271,22 +1318,23 @@ enabled: boolean, optional
     jobs_df = conv_jobs(jobs_orm, fmt='pandas')
     jobs = jobs_orm[:]
     from epmt.epmt_outliers import sanitize_features
-    if (len(jobs) < 3):
-        logger.error('You cannot create a model with less than 3 jobs. Your chosen jobs: {}'.format(jobs))
+    if len(jobs) < 3:
+        logger.error('You cannot create a model with less than 3 jobs. Your chosen jobs: %s', jobs)
         return False
 
     if sanity_check:
         _warn_incomparable_jobs(jobs)
 
-    if pca and features and (features != '*'):
+    if all( [ pca , features , features != '*' ] ):
         logger.warning('It is strongly recommended to set features=[] when doing PCA')
     features = sanitize_features(features, jobs_df)
     orig_features = features  # keep a copy as features might be reassigned below
     if pca:
-        logger.info("request to do PCA (pca={}). Input features: {}".format(pca, features))
+        logger.info("request to do PCA (pca=%s). Input features: %s", pca, features)
         if len(features) < 5:
             logger.warning(
-                'Too few input features for PCA. Are you sure you did not want to set features=[] to enable selecting all available features?')
+                'Too few input features for PCA. Are you sure you did not want to set '
+                'features=[] to enable selecting all available features?')
         from epmt.epmt_outliers import pca_feature_combine
         import numpy as np
 
@@ -1304,12 +1352,12 @@ enabled: boolean, optional
             op_tags = tags_list(op_tags)
         # let's get the dataframe of metrics aggregated by op_tags
         ops_df = get_op_metrics(jobs=jobs_orm, tags=op_tags, exact_tags_only=exact_tag_only, fmt='pandas')
-        logger.debug('jobid,tags:\n{}'.format(ops_df[['jobid', 'tags']]))
+        logger.debug('jobid,tags:\n%s', ops_df[['jobid', 'tags']])
         if pca:
             (ops_pca_df, pca_variances, pca_features, _) = pca_feature_combine(
                 ops_df, features, desired=0.85 if pca is True else pca)
-            logger.info('{} PCA components obtained: {}'.format(len(pca_features), pca_features))
-            logger.info('PCA variances: {} (sum={})'.format(pca_variances, np.sum(pca_variances)))
+            logger.info('%s PCA components obtained: %s', len(pca_features), pca_features)
+            logger.info('PCA variances: %s (sum=%s)', pca_variances, np.sum(pca_variances))
             ops_df = ops_pca_df
             features = pca_features
 
@@ -1318,21 +1366,21 @@ enabled: boolean, optional
             # serialize the tag so we can use it as a key
             stag = dumps(t, sort_keys=True)
             # pylint: disable=no-member
-            logger.debug('scoring op {}'.format(t))
+            logger.debug('scoring op %s', t)
             scores[stag] = _refmodel_scores(ops_df[ops_df.tags == t], methods, features)
     else:
         # full jobs, no ops
-        logger.debug('jobid,tags:\n{}'.format(jobs_df[['jobid', 'tags']]))
+        logger.debug('jobid,tags:\n%s', jobs_df[['jobid', 'tags']])
         if pca:
             (jobs_pca_df, pca_variances, pca_features, _) = pca_feature_combine(
                 jobs_df, features, desired=0.85 if pca is True else pca)
-            logger.info('{} PCA components obtained: {}'.format(len(pca_features), pca_features))
-            logger.info('PCA variances: {} (sum={})'.format(pca_variances, np.sum(pca_variances)))
+            logger.info('%s PCA components obtained: %s', len(pca_features), pca_features)
+            logger.info('PCA variances: %s (sum=%s)', pca_variances, np.sum(pca_variances))
             jobs_df = jobs_pca_df
             features = pca_features
         scores = _refmodel_scores(jobs_df, methods, features)
 
-    logger.debug('computed scores: {0}'.format(scores))
+    logger.debug('computed scores: %s', scores)
     computed = scores
 
     # if we use pca, then we need to save the input feature names
@@ -1343,11 +1391,12 @@ enabled: boolean, optional
         info_dict['pca'] = {'inp_features': orig_features, 'out_features': pca_features}
 
     # now save the ref model
-    r = orm_create(ReferenceModel, jobs=jobs, name=name, tags=tag, op_tags=op_tags, computed=computed, info_dict = info_dict, enabled=enabled)
+    r = orm_create(ReferenceModel, jobs=jobs, name=name, tags=tag, op_tags=op_tags,
+                   computed=computed, info_dict = info_dict, enabled=enabled)
     orm_commit()
     if fmt == 'orm':
         return r
-    elif fmt == 'terse':
+    if fmt == 'terse':
         return r.id
     r_dict = orm_to_dict(r, with_collections=True)
     return pd.Series(r_dict) if fmt == 'pandas' else r_dict
@@ -1406,10 +1455,10 @@ def retire_refmodels(ndays=settings.retire_models_ndays, dry_run=False):
         logger.info('Retiring following models (older than %d days): %s', ndays, str(models))
         if dry_run:
             return len(models)
-        else:
-            return delete_refmodels(models)
-    else:
-        logger.info('No models to retire (older than %d days)', ndays)
+
+        return delete_refmodels(models)
+
+    logger.info('No models to retire (older than %d days)', ndays)
     return 0
 
 
@@ -1485,7 +1534,7 @@ active_only: boolean, optional
     # see if we have any PCA features
     pca_features = (r.info_dict or {}).get('pca', {}).get('inp_features', [])
     if pca_features:
-        logger.debug('PCA features found in model: {}'.format(pca_features))
+        logger.debug('PCA features found in model: %s', pca_features)
         metrics |= set(pca_features)
 
     if active_only:
@@ -1530,10 +1579,11 @@ def refmodel_set_active_metrics(ref_id, metrics):
     r = ReferenceModel[ref_id]
     all_metrics = refmodel_get_metrics(ref_id, False)
     metrics_set = set(metrics)
-    if (metrics_set - all_metrics):
+    unavailable_metrics = metrics_set - all_metrics
+    if unavailable_metrics:
         logger.warning(
-            'Ignoring metrics that are not available in the trained model: {0}'.format(
-                metrics_set - all_metrics))
+            'Ignoring metrics that are not available in the trained model: %s',
+            unavailable_metrics)
     active_metrics = list(metrics_set & all_metrics)
     logger.info('Active metrics for model set to: %s', str(active_metrics))
     info_dict = dict.copy(r.info_dict or {})
@@ -1546,7 +1596,9 @@ def refmodel_set_active_metrics(ref_id, metrics):
 # tags for a job (job is either a job id or a Job object).
 # See also: job_proc_tags, which does the same
 # for a list of jobs
-def __unique_proc_tags_for_job(job, exclude=[], fold=True):
+def __unique_proc_tags_for_job(job, exclude=None, fold=True):
+    if exclude is None:
+        exclude = []
     global settings
     if isString(job):
         job = Job[job]
@@ -1567,7 +1619,7 @@ def __unique_proc_tags_for_job(job, exclude=[], fold=True):
 
 
 @db_session
-def get_ops(jobs, tags=[], exact_tag_only=False, combine=False, fmt='dict', op_duration_method="sum", full=False):
+def get_ops(jobs, tags=None, exact_tag_only=False, combine=False, fmt='dict', op_duration_method="sum", full=False):
     '''
     Returns a filtered collection of operations for the selected jobs::Operations
 
@@ -1657,31 +1709,36 @@ def get_ops(jobs, tags=[], exact_tag_only=False, combine=False, fmt='dict', op_d
 
           >>> ops = get_ops(['685000', '685003'],tags =['op:timavg', 'op:ncks'],combine=True, fmt='orm')
           >>> hl_op = ops[0]   # ops only has one element when combine is True
-          >>> hl_op.start, hl_op.end, hl_op.duration, hl_op.num_runs()
-          (datetime.datetime(2019, 6, 15, 13, 38, 25, 618279), datetime.datetime(2019, 6, 15, 13, 42, 18, 345456), 40827030.00000001, 159)
+          >>> hl_op.start, hl_op.end, hl_op.duration, hl_op.num_runs()  # doctest: +ELLIPSIS
+          (datetime.datetime(...), datetime.datetime(...), ..., 159)
 
 
           Rather than specifying the tags, we can just mention the key
           we care about. This will be auto-expanded:
 
           >>> op = get_ops(['685000', '685003'], tags = 'op', combine=True)[0]
-          DEBUG:epmt_query:expanding op for values ['splitvars', 'untar', 'dmput', 'ncatted', 'ncks', 'cp', 'timavg', 'hsmget', 'ncrcat', 'rm', 'fregrid', 'mv']
-          DEBUG:epmt_query:tags: [{'op': 'splitvars'}, {'op': 'untar'}, {'op': 'dmput'}, {'op': 'ncatted'}, {'op': 'ncks'}, {'op': 'cp'}, {'op': 'timavg'}, {'op': 'hsmget'}, {'op': 'ncrcat'}, {'op': 'rm'}, {'op': 'fregrid'}, {'op': 'mv'}]
-
-
-          If we are lazy and only want the top-level ops (based on the tag of most importance):
+          DEBUG:epmt_query:expanding op for values ['splitvars', 'untar', 'dmput',
+          'ncatted', 'ncks', 'cp', 'timavg', 'hsmget', 'ncrcat', 'rm', 'fregrid', 'mv']
+          DEBUG:epmt_query:tags: [{'op': 'splitvars'}, {'op': 'untar'}, {'op': 'dmput'},
+          {'op': 'ncatted'}, {'op': 'ncks'}, {'op': 'cp'}, {'op': 'timavg'},
+          {'op': 'hsmget'}, {'op': 'ncrcat'}, {'op': 'rm'}, {'op': 'fregrid'}, {'op': 'mv'}]
 
           >>> ops = eq.get_ops(['685000', '685003'], tags = '')
           DEBUG:epmt_query:no tag specified, using tags: op
-          DEBUG:epmt_query:expanding op for values ['splitvars', 'untar', 'dmput', 'ncatted', 'ncks', 'cp', 'timavg', 'hsmget', 'ncrcat', 'rm', 'fregrid', 'mv']
-          DEBUG:epmt_query:tags: [{'op': 'splitvars'}, {'op': 'untar'}, {'op': 'dmput'}, {'op': 'ncatted'}, {'op': 'ncks'}, {'op': 'cp'}, {'op': 'timavg'}, {'op': 'hsmget'}, {'op': 'ncrcat'}, {'op': 'rm'}, {'op': 'fregrid'}, {'op': 'mv'}]
+          DEBUG:epmt_query:expanding op for values ['splitvars', 'untar', 'dmput',
+          'ncatted', 'ncks', 'cp', 'timavg', 'hsmget', 'ncrcat', 'rm', 'fregrid', 'mv']
+          DEBUG:epmt_query:tags: [{'op': 'splitvars'}, {'op': 'untar'}, {'op': 'dmput'},
+          {'op': 'ncatted'}, {'op': 'ncks'}, {'op': 'cp'}, {'op': 'timavg'},
+          {'op': 'hsmget'}, {'op': 'ncrcat'}, {'op': 'rm'}, {'op': 'fregrid'}, {'op': 'mv'}]
           >>> len(ops)
           12
     '''
+    if tags is None:
+        tags = []
     _empty_collection_check(jobs)
     if not tags:
         tags = rank_proc_tags_keys(jobs)[0][0]
-        logger.debug('no tag specified, using tags: {0}'.format(tags))
+        logger.debug('no tag specified, using tags: %s', tags)
 
     if not isinstance(tags, list):
         tags = [tags]
@@ -1695,12 +1752,12 @@ def get_ops(jobs, tags=[], exact_tag_only=False, combine=False, fmt='dict', op_d
             # and we want to expand that into a list of tags such as
             # [{'op': 'timavg'}, {'op': 'dmget'},...]
             tag_values = job_proc_tags.get(t, [])
-            logger.debug('expanding {0} for values {1}'.format(t, tag_values))
+            logger.debug('expanding %s for values %s', t, tag_values)
             for v in tag_values:
                 _tags.append({t: v})
         else:
             _tags.append(t)
-    logger.debug('tags: {0}'.format(_tags))
+    logger.debug('tags: %s', _tags)
 
     if combine:
         # Operation will pass the list of tags to get_procs
@@ -1722,7 +1779,7 @@ def get_ops(jobs, tags=[], exact_tag_only=False, combine=False, fmt='dict', op_d
 
 
 @db_session
-def get_op_metrics(jobs, tags=[], exact_tags_only=False, group_by_tag=False, fmt='pandas', op_duration_method="sum"):
+def get_op_metrics(jobs, tags=None, exact_tags_only=False, group_by_tag=False, fmt='pandas', op_duration_method="sum"):
     """
     Aggregates metrics across the processes of one or more operations::Operations
 
@@ -1767,6 +1824,8 @@ op_duration_method: string, optional
     -------
     A collection of operation metrics in the selected format
     """
+    if tags is None:
+        tags = []
     if op_duration_method not in ("sum", "sum-minus-overlap", "finish-minus-start"):
         raise ValueError('op_duration_method must be one of ("sum", "sum-minus-overlap", "finish-minus-start")')
     _empty_collection_check(jobs)
@@ -1789,7 +1848,7 @@ op_duration_method: string, optional
     all_procs = []
     # we iterate over tags, where each tag is dictionary
     for t in tags:
-        logger.debug('  processing op: {}'.format(t))
+        logger.debug('  processing op: %s', t)
         # group the Query response we got by jobid
         # we use group_concat to join the thread_sums json into a giant string
         if settings.orm == 'sqlalchemy':
@@ -1816,10 +1875,12 @@ op_duration_method: string, optional
         #    # That does not work with the GROUP BY clause. By having order=0, we use the
         #    # implicit order and works with GROUP BY
         #    procs = get_procs(jobs, order=0, tags = t, exact_tag_only = exact_tags_only, fmt='orm')
-        #    procs_grp_by_job = select((p.job, count(p.id), min(p.start), max(p.end), sum(p.duration), sum(p.cpu_time), sum(p.numtids), group_concat(p.threads_sums, sep='@@@')) for p in procs)
+        #    procs_grp_by_job = select((p.job, count(p.id), min(p.start), max(p.end),
+        #        sum(p.duration), sum(p.cpu_time), sum(p.numtids),
+        #        group_concat(p.threads_sums, sep='@@@')) for p in procs)
 
         for row in procs_grp_by_job:
-            (j, nprocs, start, end, duration, excl_cpu, ntids, threads_sums_str) = row
+            (j, nprocs, start, end, duration, excl_cpu, n_tids, threads_sums_str) = row
             if op_duration_method == "finish-minus-start":
                 duration = (end - start).total_seconds() * 1e6
             elif op_duration_method == "sum-minus-overlap":
@@ -1828,14 +1889,14 @@ op_duration_method: string, optional
                 # background and wait).
                 # So we use Operation to correctly compute duration
                 # This is an expensive computation:
-                # O(NlogN) complexity, where N is the num. of processes
+                # O(N log N) complexity, where N is the num. of processes
                 op = Operation(j, t, exact_tags_only, op_duration_method="sum-minus-overlap")
                 duration = round(op.duration, 1)
             elif op_duration_method == "sum":
                 # nop since we already computed that in 'duration' using the ORM
                 pass
             else:
-                raise ValueError("Do not know how to handle op_duration_method: {}".format(op_duration_method))
+                raise ValueError(f"Do not know how to handle op_duration_method: {op_duration_method}")
             # convert from giant string to array of strings where each list
             # list element is a json of a threads_sums dict
             _l1 = threads_sums_str.split('@@@')
@@ -1851,7 +1912,7 @@ op_duration_method: string, optional
             # a more consistent user experience
             jobid = j.jobid if (isinstance(j, Job)) else j
             sum_dict.update({'job': jobid, 'jobid': jobid, 'tags': t, 'num_procs': nprocs,
-                            'numtids': ntids, 'cpu_time': excl_cpu, 'duration': duration})
+                            'numtids': n_tids, 'cpu_time': excl_cpu, 'duration': duration})
             all_procs.append(sum_dict)
 
     if group_by_tag:
@@ -1867,7 +1928,7 @@ op_duration_method: string, optional
 
 @db_session
 def delete_jobs(jobs, force=False, before=None, after=None, warn=True, remove_models=False,
-                limit=None, offset=0, skip_unprocessed=False, dry_run=False):
+                limit=None, offset=0, skip_unprocessed=False, dry_run=False, fltr=None):
     """
     Deletes one or more jobs and returns the number of jobs deleted::Jobs
 
@@ -1887,16 +1948,16 @@ def delete_jobs(jobs, force=False, before=None, after=None, warn=True, remove_mo
             these options.
 
     warn : boolean, optional
-            This option is only useful in daemon mode where we want to
-            disable unnecessary copious warnings in logs.
-            Default True. When disabled, no warnings will be given about attempting
-            to delete jobs that have models associated with them. Instead
-            those jobs will be skipped.
+            THIS ARGUMENT IS DEPRECATED AND IGNORED.
 
     remove_models : boolean, optional
             By default False. If set to True, dependent reference models will
             removed prior to removal of the job. If False, jobs with dependent
             models will not be deleted.
+
+    fltr : SQLAlchemy filter expression, optional
+            An optional SQLAlchemy filter to apply when querying jobs
+            for deletion. Passed through to get_jobs.
 
     Notes
     -----
@@ -1921,27 +1982,33 @@ def delete_jobs(jobs, force=False, before=None, after=None, warn=True, remove_mo
         >>> delete_jobs([], force=True, after=-7)
 
     """
-
-    logger.debug("Jobs sent in" + str(jobs))
+    logger.debug("Jobs sent in %s", str(jobs) )
     jobs = orm_jobs_col(jobs)
 
-    if any([before is not None, after is not None,
-            limit is not None, offset > 0]):
-        logger.info('(delete_jobs) offset = {}'.format(offset))
-        jobs = get_jobs(jobs, before=before, after=after, limit=limit,
-                        offset=offset, fmt='orm',
-                        trigger_post_process=(not skip_unprocessed))
+    if any( [ before is not None,
+              after is not None,
+              limit is not None,
+              offset > 0,
+              fltr is not None, ] ):
+        logger.info('(delete_jobs) offset = %s', offset)
+        jobs = get_jobs( jobs,
+                         before=before,
+                         after=after,
+                         limit=limit,
+                         offset=offset,
+                         fltr=fltr,
+                         fmt='orm',
+                         trigger_post_process=not skip_unprocessed )
 
     num_jobs = jobs.count()
     init_num_jobs = num_jobs
     if dry_run:
-        logger.info("(delete_jobs) # of jobs in collection: " + str(num_jobs))
+        logger.info("(delete_jobs) # of jobs in collection: %d", num_jobs)
     else:
-        logger.debug("(delete_jobs) # of jobs in collection: " + str(num_jobs))
+        logger.debug("(delete_jobs) # of jobs in collection: %d", num_jobs)
 
     if num_jobs == 0:
-        if warn:
-            logger.warning('No jobs matched; none deleted')
+        logger.warning('No jobs matched; none deleted')
         return 0
     if num_jobs > 1 and not force:
         logger.warning('set force=True when calling this function if deleting more than one job')
@@ -1953,12 +2020,17 @@ def delete_jobs(jobs, force=False, before=None, after=None, warn=True, remove_mo
     jobs_to_delete = []
     for j in jobs:
         logger.debug("Job to delete: %s", j.jobid)
-        if j.ref_models:  # if a job has a model, it's processed.
+        if j.ref_models:
+            # if a job has a model, it's processed.
+            #logger.debug('job has ref model, will not delete if sparing model jobs')
             jobs_with_models[j.jobid] = [r.id for r in j.ref_models]
-        # no model? then if skip_unprocessed, check if processed.
-        elif (skip_unprocessed and (not is_job_post_processed(j.jobid))):
+        elif skip_unprocessed and (not is_job_post_processed(j.jobid)):
+            # no model? then if skip_unprocessed, check if processed.
+            #logger.debug('skipping unprocessed job')
             jobs_unprocessed.append(j.jobid)
-        else:  # no model? processed and/or deleting unprocessed? We're gonna delete it.
+        else:
+            # no model? processed and/or deleting unprocessed? We're gonna delete it.
+            #logger.debug('this job should be deleted')
             jobs_to_delete.append(j.jobid)
 
     num_jobs_with_models_unremoved = len(jobs_with_models)
@@ -1969,13 +2041,13 @@ def delete_jobs(jobs, force=False, before=None, after=None, warn=True, remove_mo
                 jobs_to_delete.append(jobid)
                 num_jobs_with_models_unremoved -= num_jobs_with_models_unremoved
                 models_to_remove |= set(models)
-            logger.info("Deleting dependent reference models: {}".format(models_to_remove))
+            logger.info("Deleting dependent reference models: %s", models_to_remove)
             delete_refmodels(*models_to_remove)
         else:
-            if warn:
-                logger.warning(
-                    'The following jobs have models (their IDs have been mentioned in square brackets) associated with them and these jobs will not be deleted:\n\t%s\n',
-                    str(jobs_with_models))
+            logger.warning(
+                'The following jobs have models (their IDs have been mentioned in square brackets) ' + \
+                'associated with them and these jobs will not be deleted:\n\t%s\n',
+                str(jobs_with_models) )
 
     if not jobs_to_delete:
         logger.info('No jobs match criteria to delete. Bailing..')
@@ -2001,8 +2073,8 @@ def delete_jobs(jobs, force=False, before=None, after=None, warn=True, remove_mo
     # so no jobs will be deleted
     if orm_delete_jobs(jobs):
         return num_jobs
-    else:
-        return 0
+
+    return 0
     # return num_jobs if orm_delete_jobs(jobs) else 0
 
 
@@ -2028,62 +2100,70 @@ def retire_jobs(ndays=settings.retire_jobs_ndays, skip_unprocessed=False, dry_ru
     """
     if ndays <= 0:
         return 0
+
     JOBS_PER_DELETE_MAX = (settings.retire_jobs_per_delete_max if settings.retire_jobs_per_delete_max > 0 else 2000)
     db_num_jobs = get_jobs(fmt='orm', trigger_post_process=False).count()
-    logger.info('(retire_jobs) number of jobs in DB is {0}'.format(db_num_jobs))
-    num_jobs = get_jobs(before=-ndays, fmt='orm', trigger_post_process=False).count()
+    logger.info('(retire_jobs) number of jobs in DB is %s', db_num_jobs)
 
-    # uncomment me for training wheels/debug/tests
-    # JOBS_PER_DELETE_MAX=100
-    # num_jobs=get_jobs(before=-ndays, limit=400, fmt='orm', trigger_post_process = False).count()
-    if num_jobs > JOBS_PER_DELETE_MAX:
-        logger.warning('(retire_jobs) number of jobs older than {0} days is {1}'.format(ndays, num_jobs))
-        logger.warning('(retire_jobs) will be deleting jobs in chunks of %d', JOBS_PER_DELETE_MAX)
+    # Pre-filter: exclude model-associated jobs from the candidate count
+    # so we don't waste iterations on jobs that will never be deleted.
+    no_model_fltr = ~Job.ref_models.any()
+    num_jobs_total = get_jobs(before=-ndays, fmt='orm', trigger_post_process=False).count()
+    num_jobs = get_jobs(before=-ndays, fltr=no_model_fltr, fmt='orm', trigger_post_process=False).count()
+    logger.info('(retire_jobs) number of jobs older than %s days is %s (%s excluding model-associated)',
+                ndays, num_jobs_total, num_jobs)
 
-        tot_num_deleted = 0
-        num_delete_attempts = 0  # keep track of num we attempt to delete
-        offset = 0  # if jobs spared via ref-model-assoc, stop targeting those jobs.
-
-        while num_delete_attempts < num_jobs:
-            logger.info('%d jobs to go', (num_jobs - num_delete_attempts))
-
-            _attempt_to_delete_max = ((num_delete_attempts + JOBS_PER_DELETE_MAX) <= num_jobs)
-            limit = 0
-            if _attempt_to_delete_max:
-                limit = JOBS_PER_DELETE_MAX
-            else:
-                limit = num_jobs - num_delete_attempts
-
-            logger.info('attempting to delete %d jobs now...', limit)
-            num_deleted = delete_jobs(jobs=[], force=True, before=-ndays, warn=False,
-                                      limit=limit, offset=offset, skip_unprocessed=skip_unprocessed,
-                                      dry_run=dry_run)
-
-            tot_num_deleted += num_deleted
-            num_delete_attempts += limit
-            num_not_deleted = limit - num_deleted
-
-            if dry_run:
-                offset += limit  # dry-run delete_jobs just returns the target # of jobs
-            else:
-                if (num_not_deleted > 0):
-                    logger.debug(f'offset was: {offset}')
-                offset += (limit - num_deleted)
-                if (num_not_deleted > 0):
-                    logger.debug(f'offset is now: {offset}')
-
-            logger.info('%d jobs out of %d deleted so far', tot_num_deleted, num_delete_attempts)
-
-        logger.info('done deleting jobs in chunks!')
-
-        return tot_num_deleted
-
-    else:  # can delete in one swoop, when less than max.
-        return delete_jobs([], force=True, before=-ndays, warn=False,
+    if num_jobs <= JOBS_PER_DELETE_MAX:
+        # can delete in one swoop, when less than max.
+        return delete_jobs([], force=True, before=-ndays,
+                           fltr=no_model_fltr,
                            skip_unprocessed=skip_unprocessed, dry_run=dry_run)
 
+    logger.warning('(retire_jobs) will be deleting jobs in chunks of %d', JOBS_PER_DELETE_MAX)
+
+    tot_num_deleted = 0
+    num_delete_attempts = 0  # keep track of num we attempt to delete
+    offset = 0  # if jobs spared via skip_unprocessed, stop targeting those jobs.
+
+    while num_delete_attempts < num_jobs:
+        logger.info('%d jobs to go', num_jobs - num_delete_attempts)
+
+        _attempt_to_delete_max = (num_delete_attempts + JOBS_PER_DELETE_MAX) <= num_jobs
+        limit = 0
+        if _attempt_to_delete_max:
+            limit = JOBS_PER_DELETE_MAX
+        else:
+            limit = num_jobs - num_delete_attempts
+
+        logger.info('attempting to delete %d jobs now...', limit)
+        num_deleted = delete_jobs(jobs=[], force=True, before=-ndays,
+                                  limit=limit, offset=offset,
+                                  fltr=no_model_fltr,
+                                  skip_unprocessed=skip_unprocessed,
+                                  dry_run=dry_run)
+
+        tot_num_deleted += num_deleted
+        num_delete_attempts += limit
+        num_not_deleted = limit - num_deleted
+
+        if dry_run:
+            offset += limit  # dry-run delete_jobs just returns the target # of jobs
+        else:
+            if num_not_deleted > 0:
+                logger.debug('offset was: %s', offset)
+            offset += limit - num_deleted
+            if num_not_deleted > 0:
+                logger.debug('offset is now: %s', offset)
+
+        logger.info('%d jobs out of %d deleted so far', tot_num_deleted, num_delete_attempts)
+
+    logger.info('done deleting jobs in chunks!')
+
+    return tot_num_deleted
+
 # @db_session
-# def dm_calc(jobs = [], tags = ['op:hsmput', 'op:dmget', 'op:untar', 'op:mv', 'op:dmput', 'op:hsmget', 'op:rm', 'op:cp']):
+# def dm_calc(jobs = [],
+#             tags = ['op:hsmput', 'op:dmget', 'op:untar', 'op:mv', 'op:dmput', 'op:hsmget', 'op:rm', 'op:cp']):
 #     """
 #     Data-migration calculation helper for a collection of jobs (deprecated)
 #
@@ -2097,7 +2177,9 @@ def retire_jobs(ndays=settings.retire_jobs_ndays, skip_unprocessed=False, dry_ru
 #     num_jobs = jobs.count()
 #     logger.debug('number of jobs: {0}'.format(num_jobs))
 #     if (num_jobs > 100):
-#         logger.warning('job count ({0}) > 100: it is recommended to use dm_calc_iter instead for a lower memory footprint and faster time-to-solution'.format(num_jobs))
+#         logger.warning(
+#             'job count ({0}) > 100: it is recommended to use dm_calc_iter instead '
+#             'for a lower memory footprint and faster time-to-solution'.format(num_jobs))
 #     tags = tags_list(tags)
 #     dm_ops_df = get_op_metrics(jobs, tags = tags, group_by_tag = True)
 #     jobs_cpu_time = 0.0
@@ -2109,8 +2191,7 @@ def retire_jobs(ndays=settings.retire_jobs_ndays, skip_unprocessed=False, dry_ru
 
 
 @db_session
-def ops_costs(jobs=[], tags=['op:hsmput', 'op:dmget', 'op:untar', 'op:mv',
-              'op:dmput', 'op:hsmget', 'op:rm', 'op:cp'], metric='cpu_time'):
+def ops_costs(jobs=None, tags=None, metric='cpu_time'):
     """
     Calculates operation(s) costs as a fraction of total job times::Operations
 
@@ -2125,9 +2206,9 @@ def ops_costs(jobs=[], tags=['op:hsmput', 'op:dmget', 'op:untar', 'op:mv',
       jobs : list of strings or list of Job objects or ORM query
              Collection of jobs. If empty all jobs will be assumed
       tags : list of strings or list of dicts, optional
-             The `tags` specify the cumumlative set of operations
+             The `tags` specify the cumulative set of operations
              for which we want to determine the time taken.
-     metric: string
+      metric: string
              'cpu_time' or 'duration'
               Defaults to 'cpu_time'
 
@@ -2139,9 +2220,9 @@ def ops_costs(jobs=[], tags=['op:hsmput', 'op:dmget', 'op:untar', 'op:mv',
                   Operations cost as a percent of total metric for all the jobs
       dm_ops_df : dataframe
                   Dataframe of operations showing cost of each operation
-     jobs_metric: float
+      jobs_metric: float
                   Aggregated time for specified metric across the jobs in question
-dm_agg_df_by_job: dataframe
+      dm_agg_df_by_job: dataframe
                   Aggregate rows by job across operations
 
     Notes
@@ -2161,14 +2242,19 @@ dm_agg_df_by_job: dataframe
     This makes the computation slower (5x) than with 'cpu_time',
     where the aggregation is performed in the database layer.
     """
+    if jobs is None:
+        jobs = []
+    if tags is None:
+        tags = ['op:hsmput', 'op:dmget', 'op:untar', 'op:mv',
+              'op:dmput', 'op:hsmget', 'op:rm', 'op:cp']
 
-    logger.info('dm ops: {0}'.format(tags))
+    logger.info('dm ops: %s', tags)
     if metric not in {"duration", "cpu_time"}:
         raise ValueError('We only support "duration" or "cpu_time" for metric')
-    logger.info('metric: {}'.format(metric))
+    logger.info('metric: %s', metric)
     jobs = orm_jobs_col(jobs)
     njobs = jobs.count()
-    logger.info('number of jobs: {0}'.format(njobs))
+    logger.info('number of jobs: %s', njobs)
     tags = tags_list(tags)
     jobs_metric = 0.0  # cumulative across all jobs for metric
     df_list = []
@@ -2180,10 +2266,12 @@ dm_agg_df_by_job: dataframe
     # scenarios we use the faster "sum" aggregation available in the
     # database itself
     agg_method = 'sum-minus-overlap' if metric == 'duration' else "sum"
-    logger.debug('Using slower (but accurate) computation for "duration" that avoids double-counting overlapping processes in a job. Try using "cpu_time" for faster results')
+    logger.debug('Using slower (but accurate) computation for "duration" that avoids '
+                 'double-counting overlapping processes in a job. '
+                 'Try using "cpu_time" for faster results')
     for j in jobs:
         n += 1
-        logger.debug('processing {} ({}/{})'.format(j.jobid, n, njobs))
+        logger.debug('processing %s (%s/%s)', j.jobid, n, njobs)
         jobs_metric += j.duration if (metric == 'duration') else j.cpu_time
         job_dm_ops_df = get_op_metrics(j, tags=tags, group_by_tag=True, op_duration_method=agg_method)
         job_dm_ops_df.insert(0, 'jobid', j.jobid)
@@ -2195,7 +2283,7 @@ dm_agg_df_by_job: dataframe
         if job_total != 0:
             agg_dict['dm_' + metric + '%'] = round(100 * agg_dict['dm_' + metric] / job_total)
         agg_ops_by_job.append(agg_dict)
-        if (n % 10 == 0):
+        if n % 10 == 0:
             elapsed_time = datetime.now() - start_time
             logger.info('processed %d of %d jobs at %.2f jobs/sec', n, jobs.count(), n / elapsed_time.total_seconds())
     dm_ops_df = pd.concat(df_list).reset_index(drop=True)
@@ -2236,7 +2324,7 @@ def get_job_status(jobid):
       - exit_reason
       - exit_status
     '''
-    j = orm_get(Job, jobid) if (isinstance(jobid, str)) else jobid
+    j = orm_get(Job, jobid) if isinstance(jobid, str) else jobid
     return j.info_dict.get('status', {})
 
 
@@ -2291,7 +2379,7 @@ def annotate_job(jobid, annotation, replace=False):
                  annotations, depending on the value of `replace`
       replace  : boolean, optional
                  If replace is True, then *all* existing annotations
-                 will be overritten. Normally, this is set to False,
+                 will be overwritten. Normally, this is set to False,
                  in which case, the supplied annotations are merged into
                  the existing annotations.
 
@@ -2341,7 +2429,7 @@ def remove_job_annotations(jobid):
     return annotate_job(jobid, {}, True)
 
 
-def analyze_jobs(jobs=[], analyses_filter={}, max_comparable=50, check=True):
+def analyze_jobs(jobs=None, analyses_filter=None, max_comparable=50, check=True):
     """
     Run the analysis pipeline on jobs::Jobs
 
@@ -2368,29 +2456,33 @@ def analyze_jobs(jobs=[], analyses_filter={}, max_comparable=50, check=True):
     -------
     The total number of analyses algorithms executed
     """
+    if jobs is None:
+        jobs = []
+    if analyses_filter is None:
+        analyses_filter = {}
     if check:
         ua_jobs = get_unanalyzed_jobs(jobs=jobs, analyses_filter=analyses_filter)
-        if (len(ua_jobs) != len(jobs)):
+        if len(ua_jobs) != len(jobs):
             logger.warning("Analyzed jobs passed in, they will be ignored")
     else:
         ua_jobs = jobs
 
     ana_jobs = []
     num_analyses_run = 0
-    logger.info('{0} unanalyzed jobs'.format(len(ua_jobs)))
+    logger.info('%s unanalyzed jobs', len(ua_jobs))
     # partition the jobs into sets of comparable jobs based on their tags
     comp_job_parts = comparable_job_partitions(ua_jobs)
-    logger.debug('{0} sets of comparable jobs'.format(len(comp_job_parts)))
+    logger.debug('%s sets of comparable jobs', len(comp_job_parts))
     # iterate over the comparable jobs' sets
     for j_part in comp_job_parts:
         (_, jobids) = j_part
 
         # clip the comparable job partitions if max_comparable
         if max_comparable and (len(jobids) > max_comparable):
-            logger.info('Limiting jobs to a random selection of {} from {}'.format(max_comparable, len(jobids)))
+            logger.info('Limiting jobs to a random selection of %s from %s', max_comparable, len(jobids))
             from random import choices
             jobids = choices(jobids, k=max_comparable)
-            logger.debug('Randomly selected {} jobs for analysis pipeline: {}'.format(max_comparable, jobids))
+            logger.debug('Randomly selected %s jobs for analysis pipeline: %s', max_comparable, jobids)
             # we set check_comparable as False since we already know
             # that the jobs are comparable -- don't waste time!
         num_analyses_run += analyze_comparable_jobs(jobids, check_comparable=False)
@@ -2439,7 +2531,7 @@ def analyze_comparable_jobs(jobids, check_comparable=True, keys=('exp_name', 'ex
     from epmt.epmt_outliers import detect_outlier_jobs
     if check_comparable:
         _warn_incomparable_jobs(jobids)
-    logger.info('analyzing {0} jobs'.format(len(jobids)))
+    logger.info('analyzing %s jobs', len(jobids))
     model_tag = {}
     for k in keys:
         model_tag[k] = Job[jobids[0]].tags.get(k, '')
@@ -2448,14 +2540,14 @@ def analyze_comparable_jobs(jobids, check_comparable=True, keys=('exp_name', 'ex
             for j in jobids:
                 v = jobids[j].tags.get(k, '')
                 if k not in jobids[j].tags:
-                    logger.warning('job {0} tags has no key -- {1}'.format(j, k))
-                assert (jobids[j].tags.get(k, '') == model_tag[k])
-    logger.debug('Searching for trained models with tag: {0}'.format(model_tag))
+                    logger.warning('job %s tags has no key -- %s', j, k)
+                assert jobids[j].tags.get(k, '') == model_tag[k]
+    logger.debug('Searching for trained models with tag: %s', model_tag)
     trained_models = get_refmodels(tag=model_tag)
     outlier_results = []
-    # can we make the if/then more DNRY?
+    # can we make the if/then more DRY?
     if trained_models:
-        logger.debug('found {0} trained models for job set'.format(len(trained_models)))
+        logger.debug('found %s trained models for job set', len(trained_models))
         for r in trained_models:
             model_id = r['id']
             d = detect_outlier_jobs(jobids, trained_model=model_id)[1]
@@ -2464,10 +2556,10 @@ def analyze_comparable_jobs(jobids, check_comparable=True, keys=('exp_name', 'ex
             outlier_results.append({'model_id': model_id, 'results': outlier_detect_results})
     else:
         # no trained model found.
-        # Can we run a detect_outlier_jobs on the exisiting job set?
+        # Can we run a detect_outlier_jobs on the existing job set?
         if len(jobids) < 4:
             logger.warning(
-                '{0} -- No trained model found, and too few jobs for outlier detection (need at least 4)'.format(jobids))
+                '%s -- No trained model found, and too few jobs for outlier detection (need at least 4)', jobids)
         else:
             d = detect_outlier_jobs(jobids)[1]
             # make the results JSON serializable (sets aren't unfortunately)
@@ -2479,9 +2571,9 @@ def analyze_comparable_jobs(jobids, check_comparable=True, keys=('exp_name', 'ex
     # finally mark the jobs as analyzed
     for j in jobids:
         set_job_analyses(j, analyses, replace=True)
-    msg = 'analyzed {0} jobs'.format(len(jobids))
+    msg = f'analyzed {len(jobids)} jobs'
     for k in analyses:
-        msg += '{0} runs of {1}; '.format(len(analyses[k]), k)
+        msg += f'{len(analyses[k])} runs of {k}; '
     logger.info(msg)
     return num_analyses_runs
 
@@ -2499,7 +2591,7 @@ def set_job_analyses(jobid, analyses, replace=False, size_limit=64 * 1024):
               represents the job analyses metadata
     replace : boolean, optional
               If replace is True, then *all* existing analyses
-              will be overritten. Normally, this is set to False,
+              will be overwritten. Normally, this is set to False,
               in which case, the supplied analyses are merged into
               the existing analyses.
  size_limit : Limit analyses field. If analyses is larger than
@@ -2520,7 +2612,7 @@ def set_job_analyses(jobid, analyses, replace=False, size_limit=64 * 1024):
 
         size = len(dumps(full_analyses))
         if size > size_limit:
-            logger.error("Analyses length({}) > max. analyses limit({}). Aborting..".format(size, size_limit))
+            logger.error("Analyses length(%s) > max. analyses limit(%s). Aborting..", size, size_limit)
             return False
     j.analyses = full_analyses
     orm_commit()
@@ -2532,20 +2624,20 @@ def get_job_analyses(jobid):
     '''
     Gets the analyses metadata for the specified job::Jobs
 
-    Paramaters
+    Parameters
     ----------
       jobid : string
 
     Returns
     -------
-    A dict (possibly empty) representing the current anaylses
+    A dict (possibly empty) representing the current analyses
     performed on the job
     '''
     j = orm_get(Job, jobid) if (isinstance(jobid, str)) else jobid
     return j.analyses
 
 
-def get_unanalyzed_jobs(jobs=[], analyses_filter={}, fmt='terse'):
+def get_unanalyzed_jobs(jobs=None, analyses_filter=None, fmt='terse'):
     '''
     Gets the subset of jobs that have not had any analysis pipeline run on them::Jobs
 
@@ -2573,6 +2665,10 @@ analyses_filter : dict, optional
     -----
     This is one of the few functions that allows an empty `jobs` parameter
     '''
+    if jobs is None:
+        jobs = []
+    if analyses_filter is None:
+        analyses_filter = {}
     return get_jobs(jobs, analyses=analyses_filter, fmt=fmt)
 
 
@@ -2605,7 +2701,7 @@ def get_unprocessed_jobs():
 
 
 @db_session
-def comparable_job_partitions(jobs, matching_keys=['exp_name', 'exp_component']):
+def comparable_job_partitions(jobs, matching_keys=None):
     '''
     Partitions a jobs into disjoint partitions of comparable jobs::Jobs
 
@@ -2619,21 +2715,27 @@ matching_keys : list of strings, optional
     Returns
     -------
     A list of lists, where each sub-list is of the form:
-    [(val1, val2,..), { j1, j2,..}]
-    where val1, val2.. are the values of the matching keys that jobs
-    j1, j2, .. share.
+        [(val1, val2,..), { j1, j2,..}]
+
+    where val1, val2.. are the values of the matching keys that jobs j1, j2, .. share.
 
     Examples
     --------
     For example, suppose the following jobs have the following tags:
         685000 -> {'exp_name': 'ESM4_historical_D151', 'exp_component': 'ocean_annual_rho2_1x1deg',
-'exp_time': '18840101', 'atm_res': 'c96l49', 'ocn_res': '0.5l75', 'script_name': 'ESM4_historical_D151_oce
-an_annual_rho2_1x1deg_18840101'}
-        685003 -> {'exp_name': 'ESM4_historical_D151', 'exp_component': 'ocean_cobalt_fdet_100', 'exp_time': '18840101', 'atm_res': 'c96l49', 'ocn_res': '0.5l75', 'script_name': 'ESM4_historical_D151_ocean_cobalt_fdet_100_18840101'}
-        And 625151, 627907, 633114, 629322, 685001  share the tag:
-        {u'ocn_res': u'0.5l75', u'atm_res': u'c96l49', u'exp_component': u'ocean_annual_z_1x1deg', u'exp_name': u'ESM4_historical_D151'}`. The difference is only that they have different values for `('exp_time', 'script_name')
+                   'exp_time': '18840101', 'atm_res': 'c96l49', 'ocn_res': '0.5l75', 
+                   'script_name': 'ESM4_historical_D151_ocean_annual_rho2_1x1deg_18840101'}
+        685003 -> {'exp_name': 'ESM4_historical_D151', 'exp_component': 'ocean_cobalt_fdet_100', 'exp_time': '18840101',
+                   'atm_res': 'c96l49', 'ocn_res': '0.5l75', 
+                   'script_name': 'ESM4_historical_D151_ocean_cobalt_fdet_100_18840101'}
 
-    Then calling comparable_job_partitions(['625151', '627907', '633114', '629322', '685001', '685000', '685003'])
+    And 625151, 627907, 633114, 629322, 685001  share the tag:
+        {u'ocn_res': u'0.5l75', u'atm_res': u'c96l49', u'exp_component': u'ocean_annual_z_1x1deg', 
+         u'exp_name': u'ESM4_historical_D151'}`
+
+    The difference is only that they have different values for `('exp_time', 'script_name'). Then calling:
+        comparable_job_partitions(['625151', '627907', '633114', '629322', '685001', '685000', '685003'])
+
     returns:
         [
           (('ESM4_historical_D151', 'ocean_annual_z_1x1deg'), { '625151', '627907', '633114', '629322', '685001'} ),
@@ -2644,6 +2746,8 @@ an_annual_rho2_1x1deg_18840101'}
     The default keys that require a match are 'exp_name' and 'exp_component'.
     The top-level list is ordered in decreasing cardinality of number of jobs.
     '''
+    if matching_keys is None:
+        matching_keys = ['exp_name', 'exp_component']
     d = {}
     jobs = orm_jobs_col(jobs)
     # logger.info('doing a comparable_job_partitions on {0} jobs'.format(jobs.count()))
@@ -2665,7 +2769,7 @@ an_annual_rho2_1x1deg_18840101'}
     return sorted(l, key=lambda v: sum([Job[jobid].duration for jobid in v[1]]), reverse=True)
 
 
-def are_jobs_comparable(jobs, matching_keys=['exp_name', 'exp_component']):
+def are_jobs_comparable(jobs, matching_keys=None):
     '''
     Returns True iff *all* the specified jobs are comparable::Jobs
 
@@ -2689,12 +2793,12 @@ matching_keys : list of strings, optional
     INFO:epmt_query:doing a comparable_job_partitions on 5 jobs
     True
     '''
-    return (len(comparable_job_partitions(jobs, matching_keys)) == 1)
+    if matching_keys is None:
+        matching_keys = ['exp_name', 'exp_component']
+    return len(comparable_job_partitions(jobs, matching_keys)) == 1
 
 
 def _warn_incomparable_jobs(jobs):
-    # import logging
-    # logger.setLevel(logging.DEBUG)
     jobs = orm_jobs_col(jobs)
     logger.debug(jobs)
     if not are_jobs_comparable(jobs):
@@ -2716,7 +2820,10 @@ def _warn_incomparable_jobs(jobs):
 
 
 def _empty_collection_check(col):
-    if (not (orm_is_query(col))) and (not isinstance(col, pd.DataFrame)) and (col in [[], '', None]):
+    # if all( [ not orm_is_query(col) ,
+    #           not isinstance(col, pd.DataFrame) ,
+    #           col in [ [], '', None ] ] ):
+    if not (orm_is_query(col)) and (not isinstance(col, pd.DataFrame)) and (col in [[], '', None]):
         msg = 'You need to specify a non-empty collection as a parameter'
         logger.warning(msg)
         raise ValueError(msg)
@@ -2741,7 +2848,7 @@ def compute_process_trees(jobs):
     It is safe to call this function on jobs that already have process trees
     computed as they will just be skipped.  It's also usually not necessary to
     call this function, as any API call that needs the process tree will
-    call this autmatically.
+    call this automatically.
 
     Examples
     --------
@@ -2819,10 +2926,9 @@ def procs_histogram(jobs, attr='exename', metric=''):
      ...
     }
     '''
-    logger = getLogger(__name__)  # you can use other name
     procs_hist = {}
     procs = get_procs(jobs, fmt='orm')
-    logger.debug('{} processes found'.format(procs.count()))
+    logger.debug('%s processes found', procs.count())
     for p in procs:
         attr_val = getattr(p, attr)
         if metric:
@@ -2875,12 +2981,12 @@ def procs_set(jobs, attr='exename'):
     >>> hosts
     ['pp208', 'pp212']
     '''
-    phist = procs_histogram(jobs, attr)
-    return sorted(phist.keys())
+    procs_hist = procs_histogram(jobs, attr)
+    return sorted(procs_hist.keys())
 
 
 @db_session
-def add_features_df(jobs_df, features=[procs_histogram, procs_set], key='jobid'):
+def add_features_df(jobs_df, features=None, key='jobid'):
     '''
     Appends synthetic metrics such as process histogram to a jobs dataframe::Processes
 
@@ -2905,7 +3011,7 @@ def add_features_df(jobs_df, features=[procs_histogram, procs_set], key='jobid')
               The original columns of `jobs_df` will be included.
               Feature names for the new columns will be based on the
               name of the callables passed
-added_fetaures: list of strings
+added_features: list of strings
               List of feature columns that were concatenated
 
     Notes
@@ -2915,7 +3021,9 @@ added_fetaures: list of strings
     Examples
     --------
 
-    >>> jobs_df = eq.get_jobs(['625151', '627907', '629322', '633114', '675992', '680163', '685001', '691209', '693129'], fmt='pandas')
+    >>> jobs_df = eq.get_jobs(
+           jobs = ['625151', '627907', '629322', '633114', '675992', '680163', '685001', '691209', '693129'], 
+           fmt='pandas')
     >>> new_df, added_features = eq.add_features_df(jobs_df)
     >>> added_features
     ['procs_histogram', 'procs_set']
@@ -2945,14 +3053,15 @@ added_fetaures: list of strings
     8  {'mv': 118, 'perl': 101, 'globus-url-copy': 76...  [TAVG.exe, arch, basename, bash, cat, chmod, c...
 
     '''
-    logger = getLogger(__name__)  # you can use other name
+    if features is None:
+        features = [procs_histogram, procs_set]
     out_df = jobs_df.copy()
     keys = list(jobs_df[key].values)
     added_features = []
     for c in features:
         out_df[c.__name__] = [c(k) for k in keys]
         added_features.append(c.__name__)
-    logger.info('Added features: {}'.format(added_features))
+    logger.info('Added features: %s', added_features)
     return out_df, added_features
 
 
@@ -2977,12 +3086,16 @@ def get_features(jobs):
     --------
 
      >>> eq.get_features(jobs)
-     ['PERF_COUNT_SW_CPU_CLOCK', 'cancelled_write_bytes', 'cpu_time', 'delayacct_blkio_time', 'duration',  'exitcode', 'guest_time', 'inblock', 'invol_ctxsw', 'majflt', 'minflt', 'num_procs', 'num_threads', 'outblock', 'processor', 'rchar', 'rdtsc_duration', 'read_bytes', 'rssmax', 'submit', 'syscr', 'syscw', 'systemtime', 'time_oncpu', 'time_waiting', 'timeslices', 'updated_at', 'usertime', 'vol_ctxsw', 'wchar', 'write_bytes']
-
+     [ 'PERF_COUNT_SW_CPU_CLOCK', 'cancelled_write_bytes', 'cpu_time', 'delayacct_blkio_time', 'duration',  'exitcode',
+       'guest_time', 'inblock', 'invol_ctxsw', 'majflt', 'minflt', 'num_procs', 'num_threads', 'outblock', 'processor',
+       'rchar', 'rdtsc_duration', 'read_bytes', 'rssmax', 'submit', 'syscr', 'syscw', 'systemtime', 'time_oncpu', 
+       'time_waiting', 'timeslices', 'updated_at', 'usertime', 'vol_ctxsw', 'wchar', 'write_bytes' ]
     '''
     df = get_jobs(jobs, fmt='pandas')
     all_cols = set(df.columns.values)
     return sorted(all_cols - set(settings.outlier_features_blacklist))
+
+
 
 
 @db_session
@@ -3010,7 +3123,7 @@ def is_job_post_processed(job):
     # only processed jobs have this set
     info_dict = job.info_dict or {}
     retval = info_dict.get('post_processed', 0) > 0
-    # logger.debug("is_job_post_processed(%s): %s",job.jobid,retval)
+    logger.debug("is_job_post_processed(%s): %s",job.jobid, retval)
     return retval
 
 
@@ -3041,7 +3154,7 @@ def get_job_staging_ids(j):
     return j.info_dict.get('procs_staging_ids', ())
 
 
-@db_session
+#@db_session
 def post_process_jobs(jobs, check=True):
     '''
     Post-process a collection of jobs::Jobs
@@ -3051,7 +3164,7 @@ def post_process_jobs(jobs, check=True):
       jobs : list of strings, list of Job objects or an ORM job query
 
       check : boolean, optional, default = True
-              Check if the job has infact been processed before doing it again
+              Check if the job has in fact been processed before doing it again
 
     Returns
     -------
@@ -3098,7 +3211,7 @@ def is_job_in_staging(j):
     '''
     if isinstance(j, str):
         j = Job[j]
-    return (j.info_dict.get('procs_in_process_table', 1) == 0)
+    return j.info_dict.get('procs_in_process_table', 1) == 0
 
 
 @db_session
@@ -3141,15 +3254,14 @@ def verify_jobs(jobs):
     >>>  'Process[191898] >> threads_sums >> rdtsc_duration is negative']
     '''
     from math import isnan, isinf
-    # from pony.orm.ormtypes import TrackedList, TrackedDict
     # import datetime
 
     def verify_num(n):
         if isnan(n):
             return 'is Nan'
-        elif isinf(n):
+        if isinf(n):
             return 'is inf.'
-        elif (n < 0):
+        if n < 0:
             return 'is negative'
         return ''
 
@@ -3167,7 +3279,7 @@ def verify_jobs(jobs):
         # Are we dealing with a Process dict?
         # If so we can have a more meaningful label
         if 'id' in keys:
-            prefix += 'Process[{}] >> '.format(c['id'])
+            prefix += f'Process[{c["id"]}] >> '
 
         for k in keys:
             val = c[k]
@@ -3178,21 +3290,21 @@ def verify_jobs(jobs):
                 continue
 
             if not (ignore_empty) and (val is None):
-                err.append('{}{} is empty'.format(prefix, k))
+                err.append(f'{prefix}{k} is empty')
 
             elif type(val) in (int, float):
                 ret = verify_num(val)
                 if ret:
-                    err.append('{}{} {}'.format(prefix, k, ret))
+                    err.append(f'{prefix}{k} {ret}')
             elif isinstance(val, datetime):
-                if (val < datetime(2019, 1, 1)):
-                    err.append('{}{} {}'.format(prefix, k, 'contains an invalid timestamp (too old)'))
-                elif (val > now):
-                    err.append('{}{} {}'.format(prefix, k, 'contains an invalid timestamp (in the future)'))
+                if val < datetime(2019, 1, 1):
+                    err.append(f'{prefix}{k} contains an invalid timestamp (too old)')
+                elif val > now:
+                    err.append(f'{prefix}{k} contains an invalid timestamp (in the future)')
 #            elif type(val) in (dict, list, TrackedList, TrackedDict):
             elif type(val) in (dict, list):
                 # recurse underneath
-                err += verify_collection(val, prefix="{}{} >> ".format(prefix, k))
+                err += verify_collection(val, prefix=f"{prefix}{k} >> ")
         return err
 
     jobs = get_jobs(jobs, fmt='dict')
@@ -3200,7 +3312,7 @@ def verify_jobs(jobs):
     errors = {}
     for j in jobs:
         jobid = j['jobid']
-        logger.debug('Verifying job {}..'.format(jobid))
+        logger.debug('Verifying job %s..', jobid)
         # first get the errors in the job dict
         job_errors = verify_collection(j, ignore_empty=False)
         # now get the errors in the processes of this job

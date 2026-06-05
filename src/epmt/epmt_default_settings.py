@@ -9,17 +9,21 @@ from present_settings/*.py and and edit that file.
 cp preset_settings/<choose_file_to_match_your_storage>.py settings.py
 and then edit the copied over file
 """
-#
-#
+
+from getpass import getuser
+from os import path
 
 from epmt.epmtlib import get_install_root
-from os import path
-from getpass import getuser
 
-jobid_env_list = ["SLURM_JOB_ID", "SLURM_JOBID", "PBS_JOB_ID"]
+jobid_env_list = [
+    "SLURM_JOB_ID",
+    "SLURM_JOBID",
+    "PBS_JOB_ID",
+]
 papiex_options_bycpu = {}
 papiex_options_byhost = {}
-papiex_options = "PERF_COUNT_SW_CPU_CLOCK,COLLATED_TSV"
+#papiex_options = "PERF_COUNT_SW_CPU_CLOCK,COLLATED_TSV"
+papiex_options = "COLLATED_TSV"
 epmt_output_prefix = "/tmp/epmt/"
 stage_command = "mv"
 stage_command_dest = "./"
@@ -44,7 +48,7 @@ install_prefix = path.abspath(get_install_root() + "/../papiex-epmt-install/")
 # place for error'd CSV files
 error_dest = "/tmp"
 # when we are not attached to a terminal we log to the file below
-logfile = path.expandvars("/tmp/epmt_{}.log".format(getuser() or "unknown"))
+logfile = path.expandvars(f"/tmp/epmt_{getuser() or 'unknown'}.log")
 
 # blacklist for environment filter (in addition to all keys with
 # leading underscores)
@@ -67,31 +71,65 @@ per_process_fields = [
     "numtids",
     "mpinumranks",
     "mpirank",
-    "exitsignal"]
-skip_for_thread_sums = ["tid", "start", "end", "num_threads", "starttime"]
+    "exitsignal",
+]
+skip_for_thread_sums = [
+    "tid",
+    "start",
+    "end",
+    "num_threads",
+    "starttime",
+]
 
 # outlier detection
-univariate_classifiers = ['iqr', 'modified_z_score', 'z_score']
-outlier_thresholds = {'modified_z_score': 3.5,
-                      'z_score': 3.0}
+univariate_classifiers = [
+    'iqr',
+    'modified_z_score',
+    'z_score',
+]
+outlier_thresholds = {
+    'modified_z_score': 3.5,
+    'z_score': 3.0
+}
 # default features to use if no features specified
-outlier_features = ['duration', 'cpu_time', 'num_procs']
+outlier_features = [
+    'duration',
+    'cpu_time',
+    'num_procs',
+]
 # # blacklist features for outlier detection. These will be skipped.
-outlier_features_blacklist = ['env_dict', 'tags', 'info_dict', 'env_changes_dict', 'annotations', 'analyses', 'jobid',
-                              'jobname', 'user', 'all_proc_tags', 'created_at', 'modified_at', 'start', 'end']
+outlier_features_blacklist = [
+    'env_dict',
+    'tags',
+    'info_dict',
+    'env_changes_dict',
+    'annotations',
+    'analyses',
+    'jobid',
+    'jobname',
+    'user',
+    'all_proc_tags',
+    'created_at',
+    'modified_at',
+    'start',
+    'end',
+]
 
 # data retention
 # You will need to run `epmt retire` in a cron job for this to happen
 # Remember, jobs that have dependent trained models will not be retired
 # retire_jobs_ndays = 40   # specify in number of days; set to 0 to not retire jobs
-retire_jobs_ndays = 17   # specify in number of days; set to 0 to not retire jobs
+retire_jobs_ndays = 14   # specify in number of days; set to 0 to not retire jobs
 retire_models_ndays = 0  # specify in number of days; set to 0 to not retire models
 retire_jobs_per_delete_max = 20  # specify the chunk-size to delete jobs in
 
-# we expect the settings below to be overriden in settings.py
+# we expect the settings below to be overridden in settings.py
 # depending on the template of your choice
 orm = 'sqlalchemy'
-db_params = {'url': 'sqlite:///:memory:', 'echo': False}
+db_params = {
+    'url': 'sqlite:///:memory:',
+    'echo': False,
+}
 
 bulk_insert = True
 

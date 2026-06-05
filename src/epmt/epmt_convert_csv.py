@@ -1,25 +1,25 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+'''
+This script defines functions to convert collated CSV files from
+from the earlier comma-separated format to the new tab-separated
+collated TSV format.
+'''
 
-# This script defines functions to converti collated CSV files from
-# from the earlier comma-separated format to the new tab-separated
-# collated TSV format.
-
+import atexit
 import csv
 import json
-
-from epmt.epmtlib import tag_from_string, logfn, epmt_logging_init, timing
-import epmt.epmt_settings as settings
-
-from os.path import abspath, isdir, isfile, basename
 import os
 import shutil
-from logging import getLogger
-import time
-import tempfile
 import tarfile
+import tempfile
+import time
 from glob import glob
-import atexit
+from logging import getLogger
+from os.path import isdir, isfile, basename
+
+import epmt.epmt_settings as settings
+
+logger = getLogger(__name__)
 
 # While it may seem like a good idea to put these constants in a
 # settings file, it probably isn't because these are not user-tweakable
@@ -67,11 +67,17 @@ OUTPUT_CSV_FIELDS = [
 OUTPUT_CSV_SEP = '\t'
 
 # Expected input format
-# tags,hostname,exename,path,args,exitcode,pid,generation,ppid,pgid,sid,numtids,tid,start,end,usertime,systemtime,rssmax,minflt,majflt,inblock,outblock,vol_ctxsw,invol_ctxsw,num_threads,starttime,processor,delayacct_blkio_time,guest_time,rchar,wchar,syscr,syscw,read_bytes,write_bytes,cancelled_write_bytes,time_oncpu,time_waiting,timeslices,rdtsc_duration,PERF_COUNT_SW_CPU_CLOCK
-# ,pp208,tcsh,/bin/tcsh,-f /home/Jeffrey.Durachta/ESM4/DECK/ESM4_historical_D151/gfdl.ncrc4-intel16-prod-openmp/scripts/postProcess/ESM4_historical_D151_ocean_annual_rho2_1x1deg_18840101.tags,0,6099,0,6098,6089,6084,1,6099,1560599524133795,1560599524134048,2999,0,2852,387,0,0,0,0,0,0,1296261120000,0,0,0,17618,0,40,0,0,0,0,3604195,47138,1,846248,246094
+# tags,hostname,exename,path,args,exitcode,pid,generation,ppid,pgid,sid,numtids,tid,start,end,usertime,systemtime,
+# rssmax,minflt,majflt,inblock,outblock,vol_ctxsw,invol_ctxsw,num_threads,starttime,processor,delayacct_blkio_time,
+# guest_time,rchar,wchar,syscr,syscw,read_bytes,write_bytes,cancelled_write_bytes,time_oncpu,time_waiting,timeslices,
+# rdtsc_duration,PERF_COUNT_SW_CPU_CLOCK
+# ,pp208,tcsh,/bin/tcsh,-f /home/Jeffrey.Durachta/ESM4/DECK/ESM4_historical_D151/gfdl.ncrc4-intel16-prod-openmp/
+# scripts/postProcess/ESM4_historical_D151_ocean_annual_rho2_1x1deg_18840101.tags,0,6099,0,6098,6089,6084,1,6099,
+# 1560599524133795,1560599524134048,2999,0,2852,387,0,0,0,0,0,0,1296261120000,0,0,0,17618,0,40,0,0,0,0,
+# 3604195,47138,1,846248,246094
 
 
-def conv_csv_for_dbcopy(infile, outfile='', jobid='', input_fields=INPUT_CSV_FIELDS):
+def conv_csv_for_dbcopy(infile, outfile='', jobid='', input_fields=None):
     '''
     Convert a CSV into a format suitable for ingestion using PostgreSQL COPY
 
@@ -108,12 +114,14 @@ def conv_csv_for_dbcopy(infile, outfile='', jobid='', input_fields=INPUT_CSV_FIE
     This is a low-level function. You should ordinarily be using
     `convert_csv_in_tar` on a staged .tgz file.
     '''
+    if input_fields is None:
+        input_fields = INPUT_CSV_FIELDS
 
-    logger = getLogger(__name__)  # you can use other name
     outfile = outfile or infile   # empty outfile => overwrite infile
 
     if infile == outfile:
-        outfd, outfile = tempfile.mkstemp(prefix='epmt_conv_outcsv_', suffix='.csv')
+        _outfd, outfile = tempfile.mkstemp(prefix='epmt_conv_outcsv_', suffix='.csv')
+        os.close(_outfd)
         # logger.debug('in-place CSV conversion, so creating a tempfile {}'.format(outfile))
         in_place = True
     else:
@@ -125,14 +133,14 @@ def conv_csv_for_dbcopy(infile, outfile='', jobid='', input_fields=INPUT_CSV_FIE
     if not jobid:
         jobid = extract_jobid_from_collated_csv(infile)
         if not jobid:
-            logger.error('Could not determine jobid from input path: ' + infile)
+            logger.error('Could not determine jobid from input path: %s', infile)
             return False
-        logger.debug('determined jobid ' + jobid + ' from input csv')
+        logger.debug('determined jobid %s from input csv', jobid)
     _start_time = time.time()
 
     # if infile is a string, then it's a path
     # else it's a file-handle
-    infile_flo = open(infile, newline='') if (isinstance(infile, str)) else infile
+    infile_flo = open(infile, newline='') if isinstance(infile, str) else infile
 
     reader = csv.DictReader(infile_flo, escapechar='\\')
     with open(outfile, 'w', newline='') as csvfile:
@@ -141,9 +149,10 @@ def conv_csv_for_dbcopy(infile, outfile='', jobid='', input_fields=INPUT_CSV_FIE
         for r in reader:
             row_num += 1
             if row_num == 1:
-                if input_fields and not (set(r.keys()) >= input_fields):
+                if input_fields and set(r.keys()) < input_fields:
                     # sanity check to make sure our input file has the correct format
-                    logger.error('Input CSV format is not correct. Likely missing  header row. Is it already in v2 format?')
+                    logger.error('Input CSV format is not correct. '
+                                 'Likely missing  header row. Is it already in v2 format?')
                     return False
                 thr_fields = sorted(set(r.keys()) -
                                     set(settings.skip_for_thread_sums) -
@@ -151,7 +160,7 @@ def conv_csv_for_dbcopy(infile, outfile='', jobid='', input_fields=INPUT_CSV_FIE
                 metric_names = ",".join(thr_fields)
                 header = OUTPUT_CSV_SEP.join(OUTPUT_CSV_FIELDS).replace('threads_df', '{' + metric_names + '}')
                 # we create a copy as we don't want to modify the constant
-                # -- it's used elesewhere
+                # -- it's used elsewhere
                 output_fields = OUTPUT_CSV_FIELDS.copy()
                 output_fields[output_fields.index('threads_df')] = metric_names
                 # initialize the output file
@@ -172,7 +181,7 @@ def conv_csv_for_dbcopy(infile, outfile='', jobid='', input_fields=INPUT_CSV_FIE
             numtids = int(r['numtids'])
             # now read in remaining thread rows (if the process is multithreaded)
             # and combine into a flattened array
-            for i in range(1, numtids):
+            for _i in range(1, numtids):
                 thr = next(reader)
                 row_num += 1
                 thr_data = []
@@ -212,16 +221,16 @@ def conv_csv_for_dbcopy(infile, outfile='', jobid='', input_fields=INPUT_CSV_FIE
             outrows += 1
             for f in output_fields:
                 outrow[f] = r[f]
-                # postgrsql requires arrays to use curly braces instead
+                # postgresql requires arrays to use curly braces instead
                 # of the square brackets we get with list objects in Python
                 if f == metric_names:
                     outrow[f] = json.dumps(r[f]).replace('[', '{').replace(']', '}')
             writer.writerow(outrow)
     _finish_time = time.time()
-    logger.info('Wrote {} rows at {:.2f} procs/sec'.format(outrows, (outrows / (_finish_time - _start_time))))
+    logger.info('Wrote %s rows at %.2f procs/sec', outrows, (outrows / (_finish_time - _start_time)))
     infile_flo.close()  # close input file
     if in_place:
-        logger.debug('overwriting input file {} with {}'.format(infile, outfile))
+        logger.debug('overwriting input file %s with %s', infile, outfile)
         shutil.move(outfile, infile)
 
     # we return the header
@@ -268,23 +277,22 @@ def convert_csv_in_tar(in_tar, out_tar=''):
     format conversion. This method will also add a header file
     in the newly-created tar.
     '''
-    logger = getLogger(__name__)  # you can use other name
-    if not in_tar.endswith('.tgz') or in_tar.endswith('.tar.gz') or in_tar.endswith('.tar'):
+    if not any( [ in_tar.endswith('.tgz'), in_tar.endswith('.tar.gz'), in_tar.endswith('.tar') ] ):
         raise ValueError('input file must have a .tar, .tgz or .tar.gz suffix')
 
     # if out_tar is empty, the input will be *safely* overwritten
-    out_tar = out_tar or in_tar
-    if not out_tar.endswith('.tgz') or out_tar.endswith('.tar.gz') or out_tar.endswith('.tar'):
+    out_tar = in_tar if out_tar == '' else out_tar
+    if not any( [ out_tar.endswith('.tgz'), out_tar.endswith('.tar.gz'), out_tar.endswith('.tar') ] ):
         raise ValueError('output file must have a .tar, .tgz or .tar.gz suffix')
 
-    if (in_tar == out_tar):
+    if in_tar == out_tar:
         # in-place editing, so create a temporary output file,
         # and then replace the input file
         in_place = True
         _, out_tar = tempfile.mkstemp(prefix='epmt_conv_outtar_', suffix='.tgz')
         atexit.register(_cleanup, out_tar)
-        logger.info('Doing in-place CSV format conversion in {}'.format(in_tar))
-        logger.debug('Will create a temporary output tar ({}) as we are doing in-place conversion'.format(out_tar))
+        logger.info('Doing in-place CSV format conversion in %s', in_tar)
+        logger.debug('Will create a temporary output tar (%s) as we are doing in-place conversion', out_tar)
     else:
         in_place = False
 
@@ -292,7 +300,7 @@ def convert_csv_in_tar(in_tar, out_tar=''):
     try:
         tar = tarfile.open(in_tar, 'r|*')
     except Exception as e:
-        logger.error('error in processing compressed tar: ' + str(e))
+        logger.error('error in processing compressed tar: %s', e)
         return False
 
     # extract the files into a temp. directory
@@ -303,47 +311,51 @@ def convert_csv_in_tar(in_tar, out_tar=''):
         tar.extractall(tempdir)
         tar_contents = tar.getnames()
     except Exception as e:
-        logger.error('Error extracting {} to {}: {}'.format(in_tar, tempdir, e))
+        logger.error('Error extracting %s to %s: %s', in_tar, tempdir, e)
         return False
-    tar.close()  # close the input tar
-    in_csv_files = glob('{}/*.csv'.format(tempdir))
+
+    # close the input tar
+    tar.close()
+    in_csv_files = glob(f'{tempdir}/*.csv')
     if not in_csv_files:
-        logger.error('No CSV files found in {}'.format(in_tar))
+        logger.error('No CSV files found in %s', in_tar)
         return False
+
     # we should be having exactly 1 CSV file
-    assert (len(in_csv_files) == 1)
+    assert len(in_csv_files) == 1
+
     hostname = basename(in_csv_files[0]).split('-')[0]
-    header_filename = "{}-papiex-header.tsv".format(hostname)
+    header_filename = f"{hostname}-papiex-header.tsv"
     if "./" + header_filename in tar_contents:
         # a header file presence indicates v2 CSV
-        logger.error('{} already contains CSV files in v2 format'.format(in_tar))
+        logger.error('%s already contains CSV files in v2 format', in_tar)
         return False
     in_csv = in_csv_files[0]  # only one csv file will be present
-    out_csv = tempdir + "/" + "{}-papiex.tsv".format(hostname)
+    out_csv = f"{tempdir}/{hostname}-papiex.tsv"
     logger.info('Starting CSV conversion..')
     # save the header returned for subsequent use
     hdr = conv_csv_for_dbcopy(in_csv, out_csv)
     if not hdr:
-        logger.error('Error converting {}'.format(in_csv))
+        logger.error('Error converting %s', in_csv)
         return False
 
     # write the header into a separate file
-    with open('{}/{}'.format(tempdir, header_filename), 'w') as csv_hdr_flo:
+    with open(f'{tempdir}/{header_filename}', 'w') as csv_hdr_flo:
         csv_hdr_flo.write(hdr)
-    logger.debug("Created CSV header file: {}".format(header_filename))
+    logger.debug("Created CSV header file: %s", header_filename)
     tar_contents.append("./" + header_filename)
 
-    logger.debug('Creating {} and adding contents to it'.format(out_tar))
+    logger.debug('Creating %s and adding contents to it', out_tar)
     try:
         tar = tarfile.open(out_tar, 'w|gz')
     except Exception as e:
-        logger.error('error in creating compressed tar {}: {}'.format(out_tar, e))
+        logger.error('error in creating compressed tar %s: %s', out_tar, e)
         return False
     owd = os.getcwd()
     try:
         os.chdir(tempdir)
     except OSError as e:
-        logger.error('Error changing directory to {} while creating tarfile: {}'.format(tempdir, e))
+        logger.error('Error changing directory to %s while creating tarfile: %s', tempdir, e)
         return False
     # copy files other than *.csv
     for f in tar_contents + ["./" + basename(out_csv)]:
@@ -353,14 +365,14 @@ def convert_csv_in_tar(in_tar, out_tar=''):
             if os.path.isfile(f):
                 tar.add(f)
         except Exception as e:
-            logger.error('Error adding {}/{} to {}: {}'.format(tempdir, f, out_tar, e))
+            logger.error('Error adding %s/%s to %s: %s', tempdir, f, out_tar, e)
             return False
     # return to the original working dir
     os.chdir(owd)
     tar.close()
-    logger.debug('Finished creating archive: {}'.format(out_tar))
+    logger.debug('Finished creating archive: %s', out_tar)
     if in_place:
-        logger.debug('Replacing {} with newly-created archive'.format(in_tar))
+        logger.debug('Replacing %s with newly-created archive', in_tar)
         shutil.move(out_tar, in_tar)
     logger.info('CSV format conversion successful!')
     shutil.rmtree(tempdir)
@@ -372,10 +384,3 @@ def extract_jobid_from_collated_csv(collated_csv):
     Returns a jobid from a collated CSV file
     '''
     return collated_csv.split('papiex')[-1].split('-')[1]
-
-
-if __name__ == "__main__":
-    import sys
-    logger = getLogger("epmt_convert_csv")
-    epmt_logging_init(intlvl=2)
-    convert_csv_in_tar(sys.argv[1], sys.argv[2] if len(sys.argv) > 2 else '')

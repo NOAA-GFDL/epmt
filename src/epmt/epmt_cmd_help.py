@@ -1,16 +1,15 @@
 """
 EPMT help command module - provides help functionality.
 """
-# from __future__ import print_function
 from inspect import signature
 from sys import stderr
 
-# ian - what is this???
-
-
-def epmt_help_api(funcs=[]):
-    """Provide help documentation for EPMT API functions."""
-    import epmt.epmt_settings as settings
+def epmt_help_api(funcs=None):
+    """
+    Provide help documentation for EPMT API functions.
+    """
+    if funcs is None:
+        funcs = []
     import epmt.epmt_query as eq
     import epmt.epmt_outliers as eod
     import epmt.epmtlib as el
@@ -26,18 +25,18 @@ def epmt_help_api(funcs=[]):
                     func = getattr(m, fname)
                     break
             if func:
-                print("from {} import {}\n".format(m.__name__, fname))
+                print(f"from {m.__name__} import {fname}\n")
                 section = el.docs_func_section(func)
-                print("{}{}".format(func.__name__, signature(func)))
+                print(f"{func.__name__}{signature(func)}")
                 doc = func.__doc__
                 if section:
                    # add the section name with suitable indent
-                    print('\n    Section::{}'.format(section))
+                    print(f'\n    Section::{section}')
                     # remove the ugly section suffix from the summary string
-                    doc = doc.replace('::{}'.format(section), '')
+                    doc = doc.replace(f'::{section}', '')
                 print(doc, '\n\n')
             else:
-                print('Could not find function {} in any module'.format(fname), file=stderr)
+                print(f'Could not find function {fname} in any module', file=stderr)
     else:
         for m in (eq, eod, exp, es):
             print(m.__doc__)
