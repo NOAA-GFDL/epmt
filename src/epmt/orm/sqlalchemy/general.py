@@ -3,19 +3,17 @@ a set of functions for managing/working with an ORM defined for SQLAlchemy
 """
 
 from functools import wraps
-from os import chdir, getcwd
 from logging import getLogger
+from os import chdir, getcwd
 import threading
-
-import epmt.epmt_settings as settings
 
 from sqlalchemy import engine_from_config, text, inspect, MetaData, desc
 from sqlalchemy import sql as sqla_sql
 from sqlalchemy.orm import sessionmaker, scoped_session, mapperlib
 from sqlalchemy.orm.query import Query
 from sqlalchemy.ext.declarative import declarative_base
-# from sqlalchemy.event import listens_for
-# from sqlalchemy.pool import Pool
+
+import epmt.epmt_settings as settings
 
 logger = getLogger(__name__)
 
@@ -236,7 +234,7 @@ def orm_delete_jobs(jobs, use_orm=False):
             logger.warning(
                 'process job is in staging- removing process rows corresponding to the job in the staging table')
             (first_proc_id, last_proc_id) = j.info_dict['procs_staging_ids']
-            logger.warning(f'first and last proc_ids pulled are: {first_proc_id} and {last_proc_id}')
+            logger.warning('first and last proc_ids pulled are: %s and %s', first_proc_id, last_proc_id)
             stmts.append( f"DELETE FROM processes_staging WHERE id BETWEEN {first_proc_id} AND {last_proc_id};\n" )
         else:
             logger.debug('process job is NOT in staging table- no processes_staging targets will be added to query')
@@ -352,7 +350,7 @@ def orm_procs_col(procs):
 def orm_jobs_col(jobs):
     """
     This is an internal function that returns a Job Query object.
-    The input can be collection of jobs spcified as a string, a list
+    The input can be collection of jobs specified as a string, a list
     of strings, list of dicts, a dataframe or a list of Job objects.
     """
     from pandas import DataFrame
@@ -482,7 +480,7 @@ def orm_get_procs(jobs, tags, fltr, order, limit, offset, when, hosts, exact_tag
         idx = 0
         org_qs = qs
         for t in tags:
-            # _tag_filter reqturs a query object corresponding to
+            # _tag_filter requires a query object corresponding to
             # the jobs that match a particular tag. We, then, do
             # do a UNION (OR operation) across these query sets.
             qst = _tag_filter(org_qs, t, exact_tag_only, Process)
@@ -531,7 +529,7 @@ def orm_get_jobs(qs, tags, fltr, order, limit, offset, when, before, after,
         idx = 0
         org_qs = qs
         for t in tags:
-            # _tag_filter reqturs a query object corresponding to
+            # _tag_filter requires a query object corresponding to
             # the jobs that match a particular tag. We, then, do
             # do a UNION (OR operation) across these query sets.
             qst = _tag_filter(org_qs, t, exact_tag_only)
@@ -630,7 +628,10 @@ def _analyses_filter(qs, analyses):
     return _attribute_filter(qs, 'analyses', analyses, model=Job, conv_to_str=True)
 
 
-def orm_get_refmodels(name=None, tag={}, fltr=None, limit=0, order=None, before=None, after=None, exact_tag_only=False):
+def orm_get_refmodels(name=None, tag=None, fltr=None, limit=0,
+                      order=None, before=None, after=None, exact_tag_only=False):
+    if tag is None:
+        tag = {}
     from .models import ReferenceModel
 
     qs = Session.query(ReferenceModel).filter_by(name=name) if (name is not None) else Session.query(ReferenceModel)
@@ -809,10 +810,8 @@ def check_and_apply_migrations():
 
 @chdir_for_alembic_and_restore_cwd
 def get_db_schema_version():
-    from alembic import config
     from alembic.runtime import migration
     engine = _connect_engine()
-    alembic_cfg = config.Config('alembic.ini')
     with engine.begin() as conn:
         context = migration.MigrationContext.configure(conn)
         database_schema_version = context.get_current_revision()

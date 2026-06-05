@@ -3,17 +3,15 @@ EPMT commands module - main command interface for EPMT functionality.
 """
 
 from datetime import datetime
-from os import environ, makedirs, mkdir, path, getpid, remove, uname, kill
-from os.path import basename
+from os import environ, makedirs, mkdir, path, getpid, remove, uname
 from socket import gethostname
 from subprocess import run
 from glob import glob
-from sys import stderr, stdin
+from sys import stderr
 from json import dumps, loads
 from shutil import copyfile, rmtree, move
 from re import match
 from re import error as reerror
-from cpuinfo import get_cpu_info
 
 import errno
 import fnmatch
@@ -21,6 +19,8 @@ import pickle
 import time
 
 from logging import getLogger
+
+from cpuinfo import get_cpu_info
 
 from epmt.epmtlib import ( get_username, epmt_logging_init, init_settings, conv_dict_byte2str, cmd_exists,
                            run_shell_cmd, safe_rm, dict_filter, check_fix_metadata, logfn )
@@ -31,6 +31,9 @@ logger = getLogger(__name__)
 # db.bind(**settings.db_params)
 
 class bcolors:
+    '''
+    bold coloring for epmt check output
+    '''
     HEADER = '\033[95m'
     OKBLUE = '\033[94m'
     OKGREEN = '\033[92m'
@@ -43,6 +46,13 @@ class bcolors:
 
 
 def dump_config(outf, sep=":"):
+    '''
+    Print the current EPMT configuration to a file-like object.
+
+    Outputs settings from settings.py followed by any relevant environment
+    variable overrides. Only scalar and collection-type settings are shown.
+    sep is used as the delimiter between key and value in each output line.
+    '''
     print("\nsettings.py:", file=outf)
     for key, value in sorted(settings.__dict__.items()):
         if not (key.startswith('__') or key.startswith('_') or key == 'ERROR'):
@@ -63,6 +73,12 @@ def dump_config(outf, sep=":"):
 
 @logfn
 def read_job_metadata_direct(file):
+    '''
+    Unpickle job metadata from an open binary file object.
+
+    Handles both Python 2 and Python 3 pickle formats. Raises on
+    unexpected unpickling errors after logging them.
+    '''
     try:
         data = pickle.load(file)
     except UnicodeDecodeError:
@@ -78,6 +94,12 @@ def read_job_metadata_direct(file):
 
 @logfn
 def read_job_metadata(jobdatafile):
+    '''
+    Unpickle job metadata from a file path.
+
+    Opens jobdatafile in binary mode and delegates to
+    read_job_metadata_direct. Returns False on IOError.
+    '''
     logger.info("Unpickling from %s", jobdatafile)
     try:
         with open(jobdatafile, 'rb') as file:
@@ -92,7 +114,6 @@ def write_job_epilog(jobdatafile, metadata):
         pickle.dump(metadata, file)
         logger.debug("Pickled to %s", jobdatafile)
         return True
-    return False
 
 def PrintFail():
     print("\t" + bcolors.FAIL + "Fail" + bcolors.ENDC, flush=True)
@@ -222,7 +243,7 @@ def verify_papiex_options():
         # guessing... NOT TRIED YET TODO: TRY THIS INSTEAD OF ABOVE LINE
         cmd = settings.install_prefix + "/bin/papi_command_line 2>&1 " + e + \
             "| sed -e '/PERF_COUNT_SW_CPU_CLOCK\\ :/,$p' | grep PERF_COUNT_SW_CPU_CLOCK > /dev/null 2>&1"
-        logger.info("\t" + cmd)
+        logger.info("\t%s", cmd)
         return_code = run(cmd, shell=True).returncode
         if return_code != 0:
             logger.error("%s failed", cmd)
@@ -317,7 +338,7 @@ def verify_papiex():
     print("epmt run functionality", end='')
     logger.info("\tepmt run -a /bin/sleep 1")
     retval = epmt_run(["/bin/sleep", "1"], wrapit=True)
-    global_jobid, global_datadir, global_metadatafile = setup_vars()
+    _global_jobid, global_datadir, _global_metadatafile = setup_vars()
     if retval != 0:
         retval = False
     else:
@@ -352,15 +373,19 @@ def verify_papiex():
 
 
 def epmt_check():
-    '''Run all verification checks and return False if any required check fails.
+    '''
+    epmt check CLI command
+
+    Run all verification checks and return False if any required check fails.
     verify_papiex_options is guarded — its failure is logged but does not
     affect the return value (it requires hardware counter access unavailable
-    in most VM/container environments).'''
+    in most VM/container environments).
+    '''
 
     retval = True
 
     logger.warning('CHECKING verify_db_params()...')
-    reval = verify_db_params() and retval
+    retval = verify_db_params() and retval
 
     logger.warning('CHECKING verify_install_prefix()...')
     retval = verify_install_prefix() and retval
@@ -393,8 +418,17 @@ def epmt_check():
 # inl: not sure what the function desc here should be, but the old comment above it,
 # "this should match _check_and_create_metadata" did not make much sense, as this
 # function does not exist. from_batch is/was unused? but is passed things from epmt_start_job
-def create_start_job_metadata(jobid, submit_ts, from_batch=[]):
+def create_start_job_metadata(jobid, submit_ts, from_batch=None):
+    '''
+    Build the initial job metadata dictionary at job start time.
+
+    Captures job ID, submit timestamp, start timestamp, environment
+    variables (filtered by env_blacklist), username, and hostname.
+    Returns the populated metadata dict.
+    '''
     # use timezone info if available, otherwise use naive datetime objects
+    if from_batch is None:
+        from_batch = []
     try:
         ts = datetime.now().astimezone()
     except BaseException:
@@ -421,8 +455,16 @@ def create_start_job_metadata(jobid, submit_ts, from_batch=[]):
     return metadata
 
 
-def merge_stop_job_metadata(metadata, exitcode=0, reason="none", from_batch=[]):
+def merge_stop_job_metadata(metadata, exitcode=0, reason="none", from_batch=None):
+    '''
+    Merge job-stop fields into an existing metadata dictionary.
+
+    Adds stop timestamp, exit code, reason string, and stop-time
+    environment snapshot to metadata in place and returns it.
+    '''
     # use timezone info if available, otherwise use naive datetime objects
+    if from_batch is None:
+        from_batch = []
     try:
         ts = datetime.now().astimezone()
     except BaseException:
@@ -436,6 +478,12 @@ def merge_stop_job_metadata(metadata, exitcode=0, reason="none", from_batch=[]):
 
 
 def create_job_dir(dir):
+    '''
+    Create the output directory for a job, tolerating pre-existing dirs.
+
+    Returns the directory path on success or if it already exists,
+    False on any other OS error.
+    '''
     try:
         makedirs(dir)
         logger.info("created dir %s", dir)
@@ -448,12 +496,16 @@ def create_job_dir(dir):
 
 
 def write_job_metadata(jobdatafile, data):
+    '''
+    Pickle job metadata dict to a file.
+
+    Writes data to jobdatafile in binary mode and returns True on success.
+    '''
     with open(jobdatafile, 'w+b') as file:
         pickle.dump(data, file)
         logger.info("pickled to %s", jobdatafile)
         logger.debug("Data %s", data)
         return True
-    return False
     # collect env
 
 
@@ -489,7 +541,19 @@ def stopped_metadata_file(filename):
 
 
 @logfn
-def epmt_start_job(keep_going=True, other=[]):
+def epmt_start_job(keep_going=True, other=None):
+    '''
+    epmt start CLI command
+
+    Record the start of a batch job.
+
+    Reads the job ID and output paths from the environment via setup_vars,
+    creates the job output directory, and writes a start-metadata pickle.
+    If keep_going is True, a duplicate start call is treated as a warning
+    rather than an error. Returns True on success, False on failure.
+    '''
+    if other is None:
+        other = []
     global_jobid, global_datadir, global_metadatafile = setup_vars()
     if not all( [ global_jobid, global_datadir, global_metadatafile] ):
         return False
@@ -523,7 +587,17 @@ def epmt_start_job(keep_going=True, other=[]):
 
 
 @logfn
-def epmt_stop_job(keep_going=True, other=[]):
+def epmt_stop_job(keep_going=True, other=None):
+    '''
+    epmt stop CLI command
+
+    Record the completion of a batch job.
+
+    Reads the job ID and output paths from the environment, merges stop
+    metadata into the previously written start metadata, validates it, and
+    writes the final metadata pickle. Removes the temporary start-metadata
+    file on success. Returns True on success, False on failure.
+    '''
     global_jobid, global_datadir, global_metadatafile = setup_vars()
     if not all( [ global_jobid , global_datadir , global_metadatafile ] ):
         return False
@@ -556,6 +630,17 @@ def epmt_stop_job(keep_going=True, other=[]):
 
 @logfn
 def epmt_dump_metadata(filelist, key=None):
+    '''
+    epmt dump CLI command
+
+    Print job metadata from files or the database.
+
+    If filelist is empty, resolves the current job's metadata file from
+    the environment. For each entry in filelist, attempts to open a tar
+    archive or look up the job in the database. If key is provided, only
+    that key's value is printed. Returns True if all entries succeed,
+    False if any fail.
+    '''
     rc_final = True
     if not filelist:
         global_jobid, global_datadir, global_metadatafile = setup_vars()
@@ -591,7 +676,7 @@ def epmt_dump_metadata(filelist, key=None):
                 rc_final = False
             continue
 
-        err, tar = open_compressed_tar(f)
+        _err, tar = open_compressed_tar(f)
         if tar:
             try:
                 info = tar.getmember("./job_metadata")
@@ -660,6 +745,8 @@ def annotate_metadata(metadatafile, annotations, replace=False):
 
 def epmt_annotate(argslist, replace=False):
     '''
+    epmt annotate CLI command
+
     args list is one of the following forms:
       ['key1=value1', 'key2=value2', ...]  - annotate stopped job within a batch env
       or
@@ -676,7 +763,7 @@ def epmt_annotate(argslist, replace=False):
 
     # initialize
     from epmt.epmtlib import kwargify
-    staged_file = job_dir = jobid = running_job = False
+    staged_file = job_dir = jobid = False
 
     def get_annotations_from_kwargs(args):
         '''
@@ -851,7 +938,9 @@ def get_papiex_options(s):
 @logfn
 def epmt_source(slurm_prolog=False, papiex_debug=False, monitor_debug=False, run_cmd=False):
     """
-    epmt_source - produces shell variables that enable transparent instrumentation
+    epmt source CLI command
+
+    produces shell variables that enable transparent instrumentation
     run_cmd: - used when instrumentation is done on the command line by the epmt run command
     """
 
@@ -973,6 +1062,16 @@ def epmt_source(slurm_prolog=False, papiex_debug=False, monitor_debug=False, run
 
 @logfn
 def epmt_run(cmdline, wrapit=False, dry_run=False, debug=False):
+    '''
+    epmt run CLI command
+
+    Execute a command under papiex instrumentation.
+
+    Builds the papiex environment setup script via epmt_source, then runs
+    cmdline in a shell. If wrapit is True, wraps execution with epmt_start_job
+    and epmt_stop_job calls. If dry_run is True, prints the command instead of
+    running it. Returns the shell exit code.
+    '''
 
     if not cmdline:
         logger.error("No command given")
@@ -1008,6 +1107,13 @@ def epmt_run(cmdline, wrapit=False, dry_run=False, debug=False):
 
 
 def get_filedict(dirname, pattern, tar=False):
+    '''
+    Build a mapping of hostname to papiex data files matching pattern.
+
+    Searches dirname (or a tar archive if tar is provided) for files
+    matching pattern, parses hostnames from filenames, and returns a dict
+    keyed by hostname. Returns an empty dict if no files are found.
+    '''
     logger.debug("get_filedict(%s,%s,tar=%s)", dirname, pattern, str(tar))
 
     # Now get all the files in the dir
@@ -1061,6 +1167,8 @@ def get_filedict(dirname, pattern, tar=False):
 def epmt_submit(dirs, ncpus=1, dry_run=True, drop=False, keep_going=False,
                 remove_on_success=False, move_on_failure=False):
     '''
+    epmt submit CLI command
+
     if remove_on_success is set, on successful ingest the .tgz or job dir will be deleted
     if move_on_failure is set, on failed ingested, the .tgz or dir is moved away
     if keep_going is set, exceptions will not be raised
@@ -1091,7 +1199,7 @@ def epmt_submit(dirs, ncpus=1, dry_run=True, drop=False, keep_going=False,
     if not dirs:
         global_jobid, global_datadir, global_metadatafile = setup_vars()
         if not all( [ global_jobid , global_datadir , global_metadatafile ] ):
-            logger.error("none should be null: global_job_id %s, global_data_dir %s, global_metdadatafile %s",
+            logger.error("none should be null: global_job_id %s, global_data_dir %s, global_metadatafile %s",
                          global_jobid, global_datadir, global_metadatafile)
             return False
         dirs = [global_datadir]
@@ -1150,7 +1258,6 @@ def epmt_submit(dirs, ncpus=1, dry_run=True, drop=False, keep_going=False,
         # stringify the return values
         ret_dict[tid] = dumps(retval)
         logger.debug('submit_fn(): about to return')
-        return
 
     # we shouldn't use more processors than the number of discrete
     # work items. We don't currently split the work within a directory.
@@ -1226,7 +1333,7 @@ def epmt_submit(dirs, ncpus=1, dry_run=True, drop=False, keep_going=False,
 
 
 @logfn
-def copy_files(src_dir, dest_dir='', patterns=['*'], prefix=''):
+def copy_files(src_dir, dest_dir='', patterns=None, prefix=''):
     '''
     Copy some or all files from one directory to another
 
@@ -1239,7 +1346,7 @@ def copy_files(src_dir, dest_dir='', patterns=['*'], prefix=''):
                  one will be created using mkdtemp. If specified,
                  a directory will be created if it does not exist.
         prefix : This option is only meaningful if `dest_dir` is
-                 not spcified, and mkdtemp is used to create a
+                 not specified, and mkdtemp is used to create a
                  temporary directory. In that case, the prefix if
                  set will be honored while creating `dest_dir` name.
       patterns : list, optional
@@ -1256,6 +1363,8 @@ def copy_files(src_dir, dest_dir='', patterns=['*'], prefix=''):
     then the temporary directory created by this function will be
     removed before it returns.
     '''
+    if patterns is None:
+        patterns = ['*']
     if not path.isdir(src_dir):
         logger.error('%s does not exist', src_dir)
         return False
@@ -1307,8 +1416,8 @@ def create_tar(tarfile, indir, remove_dir=False):
     '''
     Create a tar file
 
-        Parmeters
-        ---------
+        Parameters
+        ----------
           tarfile : string
                     Path to output tar file. If it exists it will
                     be silently overwritten
@@ -1363,7 +1472,7 @@ def extract_tar(tarfile, outdir='', check_metadata=False):
     if not path.isfile(tarfile):
         logger.error("%s does not exist!", tarfile)
         return False
-    err, tar = open_compressed_tar(tarfile)
+    _err, tar = open_compressed_tar(tarfile)
 
     # only check for metadata file if required to do so
     if check_metadata:
@@ -1388,6 +1497,12 @@ def extract_tar(tarfile, outdir='', check_metadata=False):
 
 
 def open_compressed_tar(inputf):
+    '''
+    Open a compressed or uncompressed tar archive.
+
+    Returns (False, tarfile_object) on success, (True, None) on error,
+    and (False, None) if inputf does not end with a recognized extension.
+    '''
     tar = None
     flags = None
     if inputf.endswith("tar.gz") or inputf.endswith("tgz"):
@@ -1422,6 +1537,14 @@ def submit_dir_or_tgz_to_db(inputf,
                             keep_going=False,
                             remove_on_success=settings.ingest_remove_on_success,
                             destdir_on_failure=settings.ingest_failed_dir):
+    '''
+    Ingest a job directory or tar archive into the database.
+
+    Calls submit_to_db for the actual ingest. On success, removes inputf
+    if remove_on_success is True. On failure, moves inputf to
+    destdir_on_failure if set. Raises on exception unless keep_going is
+    True. Returns the (status, msg, details) tuple from submit_to_db.
+    '''
     def move_away(from_file, to_dir):
         if to_dir:
             logger.info("move(%s,%s)", from_file, to_dir)
@@ -1461,11 +1584,11 @@ def submit_dir_or_tgz_to_db(inputf,
         if not keep_going:
             exc.args = (msg, *exc.args)
             move_away(inputf, destdir_on_failure)
-            raise exc
+            raise exc from e
 
     if not r:
         r = (False, msg, ())
-    (status, msg, submit_details) = r
+    (status, msg, _submit_details) = r
 
     if not status:
         logger.debug("Status is False")
@@ -1477,6 +1600,13 @@ def submit_dir_or_tgz_to_db(inputf,
 
 
 def submit_to_db(inputf, pattern, dry_run=True):
+    '''
+    Parse and ingest papiex output from a directory or tar archive.
+
+    Opens inputf as a directory or compressed tar, discovers papiex data
+    files matching pattern via get_filedict, and submits them to the
+    database. Returns a (status, message, details) tuple.
+    '''
     logger.info("submit_to_db(%s,%s,dry_run=%s)", inputf, pattern, str(dry_run))
 
     err, tar = open_compressed_tar(inputf)
@@ -1539,8 +1669,11 @@ def submit_to_db(inputf, pattern, dry_run=True):
 
 @logfn
 def stage_job(indir, collate=True, compress_and_tar=True, keep_going=True):
+    '''
+    workhorse function for epmt stage
+    '''
     if not indir or len(indir) == 0:
-        logger.error("stage_job: indir is epmty")
+        logger.error("stage_job: indir is empty")
         return False
 
     if not settings.stage_command or not settings.stage_command_dest or len(
@@ -1628,6 +1761,11 @@ def stage_job(indir, collate=True, compress_and_tar=True, keep_going=True):
 
 @logfn
 def epmt_stage(dirs, keep_going=True, collate=True, compress_and_tar=True):
+    '''
+    epmt stage CLI command
+
+    uses stage_job for the workload
+    '''
     if not dirs:
         global_jobid, global_datadir, global_metadatafile = setup_vars()
         if not all( [ global_jobid , global_datadir , global_metadatafile ] ):
@@ -1649,43 +1787,25 @@ def epmt_stage(dirs, keep_going=True, collate=True, compress_and_tar=True):
     return r
 
 
-def epmt_dbsize(findwhat=['database', 'table', 'index', 'tablespace'],
+def epmt_dbsize(findwhat=None,
                 usejson=True,
                 usebytes=True):
+    '''
+    epmt dbsize CLI command
+    '''
+    if findwhat is None:
+        findwhat = ['database', 'table', 'index', 'tablespace']
     from epmt.orm import orm_db_size
     # Absolutely all argument checking should go here, specifically the findwhat stuff
     if findwhat == "all":
         findwhat = ['database', 'table', 'index', 'tablespace']
     return orm_db_size(findwhat, usejson, usebytes)
 
-def epmt_shell():
-    '''
-    Start an interactive IPython shell.
-    '''
-
-    # we import builtins so pyinstaller will use the full builtins module
-    # instead of a sketchy replacement. Also we need help from pydoc
-    # since the builtins module included by pydoc doesn't have help
-    import builtins
-    from pydoc import help
-    kwargs = {}
-    try:
-        # locals() gives an exception if run in the epmt
-        # directory created by pyinstaller. It works elsewhere
-        # So it will run in the user directories fine. However,
-        # out integration tests run from the 'epmt' directory
-        # and may fail. So, just handle the exception and pass
-        # an empty local namespace if necessary
-        args = {'local': locals()}
-    except BaseException:
-        pass
-
-    from IPython import embed
-    embed(**kwargs)
-
 
 def epmt_entrypoint(args):
-
+    '''
+    entrypoint to individual epmt command functions for cli.py
+    '''
     # I hate this sequence.
     if args.verbose is None:
         args.verbose = 0
@@ -1699,9 +1819,6 @@ def epmt_entrypoint(args):
 
     # Here it's up to each command to validate what it is looking for
     # and error out appropriately
-    if args.command == 'shell':
-        epmt_shell()
-        return 0
 
     if args.command == 'convert':
         from epmt.epmt_convert_csv import convert_csv_in_tar
@@ -1719,14 +1836,14 @@ def epmt_entrypoint(args):
         logger.info('//CALL// \\begin epmt gui //CALL//')
         from threading import Thread
 
-        # for Dash interface
+        # for Dash interface, optional soft-dependency of epmt.ui
         # this triggers postprocessing, why?  callbacks?
         logger.info('//IMPORT// import epmt.ui.init_app //IMPORT//')
-        from epmt.ui import init_app
+        from epmt.ui import init_app # pylint: disable=import-error,import-outside-toplevel,no-name-in-module
 
         # Here app == dash.Dash
         logger.info('//IMPORT// import epmt.ui.app //IMPORT//')
-        from epmt.ui import app
+        from epmt.ui import app # pylint: disable=import-error,import-outside-toplevel,no-name-in-module
 
         # Bug in pyinstaller does not import the idna encoding #TODO double check this
         import encodings.idna

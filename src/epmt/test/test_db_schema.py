@@ -1,3 +1,8 @@
+'''
+tests for epmt database schema
+'''
+
+
 import unittest
 
 from epmt import epmt_settings as settings
@@ -14,8 +19,8 @@ def setUpModule():
 class EPMTDBSchema(unittest.TestCase):
 
     def test_schema(self):
-        with capture() as (out, err):
-            retval = orm_dump_schema()
+        with capture() as (out, _err):
+            orm_dump_schema()
         # print('schema: ', out.getvalue())
         s = out.getvalue()
         # self.assertNotIn('alembic', s)

@@ -26,7 +26,7 @@ def setUpModule():
     settings.verbose = 2
     setup_db(settings)
     do_cleanup()
-    with capture() as (out, err):
+    with capture() as (_out, _err):
         epmt_submit(glob(datafiles), dry_run=False, remove_on_success=False, move_on_failure=False)
 
 
@@ -504,7 +504,7 @@ class EPMTSubmit(unittest.TestCase):
 
         self.assertEqual(set(job_dict.keys()) - set(ign_key_presence), set(ref_dict.keys()) - set(ign_key_presence))
         ign_key_values = set(ign_key_presence + ['created_at'])
-        for (k, v) in ref_dict.items():
+        for (k, _v) in ref_dict.items():
             if k in ign_key_values:
                 continue
             self.assertEqual(
@@ -523,7 +523,7 @@ class EPMTSubmit(unittest.TestCase):
     def test_dry_run(self):
         with self.assertRaises(Exception):
             Job['685003']
-        with capture() as (out, err):
+        with capture() as (_out, _err):
             epmt_submit([f'{get_install_root()}/test/data/query/685003.tgz'],
                         dry_run=True, remove_on_success=False, move_on_failure=False)
         # the job should still not be in the database
@@ -534,7 +534,7 @@ class EPMTSubmit(unittest.TestCase):
     def test_submit_dir(self):
         with self.assertRaises(Exception):
             Job['3455']
-        with capture() as (out, err):
+        with capture() as (_out, _err):
             epmt_submit([f'{get_install_root()}/test/data/submit/3455/'],
                         dry_run=False, remove_on_success=False, move_on_failure=False)
         j = Job['3455']
@@ -547,7 +547,7 @@ class EPMTSubmit(unittest.TestCase):
         Job['685000']
         # quell the error message
         epmt_logging_init(-2)
-        with capture() as (out, err):
+        with capture() as (_out, _err):
             epmt_submit([f'{install_root}/test/data/query/685000.tgz',
                          f'{install_root}/test/data/query/685003.tgz'],
                         keep_going=False,
@@ -565,12 +565,13 @@ class EPMTSubmit(unittest.TestCase):
     def test_unprocessed_jobs(self):
         from epmt.orm import UnprocessedJob
         from epmt.epmt_job import post_process_pending_jobs, post_process_job
-        with self.assertRaises(Exception):
-            u = UnprocessedJob['685003']
+        #with self.assertRaises(Exception):
+        #    UnprocessedJob['685003']
+        self.assertRaises(Exception, lambda: UnprocessedJob['685003'])
         if settings.orm == 'sqlalchemy':
             # only sqlalchemy allows this option
             settings.post_process_job_on_ingest = False
-        with capture() as (out, err):
+        with capture() as (_out, _err):
             epmt_submit(glob(f'{install_root}/test/data/query/685003.tgz'),
                         dry_run=False, remove_on_success=False, move_on_failure=False)
         settings.post_process_job_on_ingest = True
@@ -592,8 +593,9 @@ class EPMTSubmit(unittest.TestCase):
         self.assertFalse('685003' in eq.get_unprocessed_jobs())
         self.assertFalse(post_process_job(j.jobid))
         self.assertFalse(orm_get(UnprocessedJob, '685003'))
-        with self.assertRaises(Exception):
-            u = UnprocessedJob['685003']
+        #with self.assertRaises(Exception):
+        #    UnprocessedJob['685003']
+        self.assertRaises(Exception, lambda: UnprocessedJob['685003'])
         self.assertTrue(eq.is_job_post_processed(j))
 
     @db_session
@@ -602,7 +604,7 @@ class EPMTSubmit(unittest.TestCase):
         if settings.orm == 'sqlalchemy':
             # only sqla supports this setting
             settings.post_process_job_on_ingest = False
-        with capture() as (out, err):
+        with capture() as (_out, _err):
             epmt_submit([f'{install_root}/test/data/query/685016.tgz'],
                         dry_run=False, remove_on_success=False, move_on_failure=False)
         # restore the old setting
@@ -642,7 +644,7 @@ class EPMTSubmit(unittest.TestCase):
         (_, new_tar) = tempfile.mkstemp(prefix='epmt_', suffix='_collated_tsv.tgz')
 #        self.assertTrue(convert_csv_in_tar('{}/test/data/query/685000.tgz'.format(install_root), new_tar))
         self.assertTrue(convert_csv_in_tar(f'{install_root}/test/data/misc/685000.tgz', new_tar))
-        with capture() as (out, err):
+        with capture() as (_out, _err):
             epmt_submit(glob(new_tar), dry_run=False, remove_on_success=True, move_on_failure=False)
 
         job_dict_tsv = eq.get_jobs('685000', fmt='dict', limit=1)[0]
@@ -661,7 +663,7 @@ class EPMTSubmit(unittest.TestCase):
     @db_session
     def test_collated_tsv(self):
         datafile = f'{install_root}/test/data/tsv/collated-tsv-2220.tgz'
-        with capture() as (out, err):
+        with capture() as (_out, _err):
             epmt_submit([datafile], dry_run=False, remove_on_success=False, move_on_failure=False)
         j = Job['2220']
         if orm_db_provider() == 'postgres' and settings.orm == 'sqlalchemy':
@@ -672,7 +674,7 @@ class EPMTSubmit(unittest.TestCase):
             # the orm_to_dict will trigger moving the job from staging
             # to processes table and post-processing it in case it's
             # not post_processes
-            j_dict = orm_to_dict(j)
+            orm_to_dict(j)
         # at this point the processes will be in the process table
         # and would have been post-processed
         self.assertFalse(eq.is_job_in_staging(j))
@@ -720,7 +722,7 @@ class EPMTSubmit(unittest.TestCase):
         self.check_lazy_compute(Job['685000'], orig_lazy_eval)
         datafiles = f'{install_root}/test/data/submit/804268.tgz'
         settings.lazy_compute_process_tree = not orig_lazy_eval  # toggle setting
-        with capture() as (out, err):
+        with capture() as (_out, _err):
             epmt_submit(glob(datafiles), dry_run=False, remove_on_success=False, move_on_failure=False)
         self.check_lazy_compute(Job['804268'], settings.lazy_compute_process_tree)
         settings.lazy_compute_process_tree = orig_lazy_eval  # restore old setting
@@ -732,7 +734,7 @@ class EPMTSubmit(unittest.TestCase):
         copyfile(f'{install_root}/test/data/submit/692500.tgz', target)
         self.assertTrue(path.isfile(target))
         self.assertFalse('692500' in eq.get_jobs(fmt='terse'))
-        with capture() as (out, err):
+        with capture() as (_out, _err):
             epmt_submit([target], dry_run=False, remove_on_success=True, move_on_failure=False)
         self.assertTrue('692500' in eq.get_jobs(fmt='terse'))
         self.assertFalse(path.isfile(target))

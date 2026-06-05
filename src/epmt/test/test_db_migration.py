@@ -1,3 +1,7 @@
+'''
+tests of epmt's database migration functionality
+'''
+
 import unittest
 from os import path, getcwd, chdir, remove
 
@@ -33,16 +37,16 @@ class EPMTDBMigration(unittest.TestCase):
             migration_file = path.join(
                 'epmt_migrations', 'versions',
                 f'{rev_id}_add_active_column_to_users_table.py')
-            with capture() as (out, err):
+            with capture() as (out, _err):
                 alembic.config.main(argv=["revision", "--rev-id", rev_id, "-m", "add active column to users table"])
             s = out.getvalue()
             self.assertRegex(s, f'.*{rev_id}_add_active_column_to_users_table.py .* done')
             self.assertTrue(path.isfile(migration_file))
             from epmt.orm import migrate_db, get_db_schema_version
-            with capture() as (out, err):
+            with capture() as (out, _err):
                 migrate_db()
             self.assertEqual(get_db_schema_version(), 'deadbeef')
-            with capture() as (out, err):
+            with capture() as (out, _err):
                 alembic.config.main(argv=['downgrade', MIGRATION_HEAD])
             self.assertEqual(get_db_schema_version(), MIGRATION_HEAD)
             remove(migration_file)

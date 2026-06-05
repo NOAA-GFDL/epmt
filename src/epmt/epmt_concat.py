@@ -17,20 +17,21 @@ Hostname is determined from csv file name
   Jobid: `goodSample_123`
 '''
 
-from epmt.epmtlib import epmt_logging_init, logfn
-
-from sys import exit as sysexit
-from re import findall, search
-from os import path, remove, makedirs
-from shutil import copyfile
 from glob import glob
-
 from logging import getLogger
+from os import path, remove, makedirs
+from re import findall, search
+from shutil import copyfile
+
+from epmt.epmtlib import epmt_logging_init, logfn
 
 logger = getLogger(__name__)
 
 
 class InvalidFileFormat(RuntimeError):
+    '''
+    wrapped RuntimeError representing an error regarding file format
+    '''
     pass
 
 
@@ -49,7 +50,7 @@ def rename_bad_files(outfile, errdir, badfiles):
         try:
             makedirs(ed)
         except OSError as e:
-            logger.error("makedirs(%s): %s, skipping renamng of bad CSV files!", ed, str(e))
+            logger.error("makedirs(%s): %s, skipping renaming of bad CSV files!", ed, str(e))
             return badfiles
     renamed_badfiles = []
     for f in badfiles:
@@ -68,7 +69,7 @@ def rename_bad_files(outfile, errdir, badfiles):
 
 def parseFile(inputfile, masterHeader, masterHeaderFile, delim, commentDelim):
     """
-    Take file and paramaters for parsing return tuple of csv data
+    Take file and parameters for parsing return tuple of csv data
     to be passed to writeCSV then verifyOut
 
         file - Single CSV File to parse for comment,header and data
@@ -82,7 +83,6 @@ def parseFile(inputfile, masterHeader, masterHeaderFile, delim, commentDelim):
     """
     fileLines = []
     comments = []
-    header = ""
     datas = []
     line = ""
     data = ""
@@ -107,7 +107,7 @@ def parseFile(inputfile, masterHeader, masterHeaderFile, delim, commentDelim):
             comments.append(line)
             continue
         try:
-            header, data, headerDelimCount, headerFound, masterHeader, masterHeaderFile = parseLine(
+            _header, data, headerDelimCount, headerFound, masterHeader, masterHeaderFile = parseLine(
                 inputfile, line, masterHeader, masterHeaderFile, headerDelimCount, headerFound, delim)
             if data:
                 datas.append(data)
@@ -119,7 +119,7 @@ def parseFile(inputfile, masterHeader, masterHeaderFile, delim, commentDelim):
 
 def parseLine(infile, line, masterHeader, masterHeaderFile, headerDelimCount, headerFound, delim):
     """
-    Parse single line of file with paramaters of current status, returning post status and line info
+    Parse single line of file with parameters of current status, returning post status and line info
 
     Check for 3 possible conditions:
       - line is comment
@@ -179,13 +179,13 @@ def parseLine(infile, line, masterHeader, masterHeaderFile, headerDelimCount, he
 def writeCSV(outfile, comments, masterHeader, dataList):
     """
     Write our output file
-    Here All Aggrigated data is written to an output file in the pwd
+    Here All Aggregated data is written to an output file in the pwd
 
     outfile - csv name to write to pwd
     ex:
         asus-collated-papiex-2-0.csv
 
-    comments - Aggrigated list of comments
+    comments - Aggregated list of comments
     ex:
         ['comment1','comment2','...']
 
@@ -193,7 +193,7 @@ def writeCSV(outfile, comments, masterHeader, dataList):
     ex:
         "tags,hostname,exename,path,args,exitcode,pid,..."
 
-    dataList - Aggrigated list of csv data
+    dataList - Aggregated list of csv data
     ex:
         [",asus,sleep,/bin/sleep,1,0,26577,0,26576,26497"]
 
@@ -250,12 +250,19 @@ def file_len(fname):
     """
     ind = None
     with open(fname) as f:
-        for i, ln in enumerate(f):
+        for i, _ln in enumerate(f):
             ind = i
     return ind + 1
 
 
 def determine_output_filename(instr):
+    '''
+    Derive the collated output filename from a papiex input CSV path.
+
+    Extracts the job ID from the parent directory name and the hostname
+    from the filename, then constructs a collated output filename.
+    Returns an empty string if parsing fails.
+    '''
     try:
         jobid = path.basename(path.dirname(path.abspath(instr)))
         logger.debug("jobid %s", jobid)
@@ -275,7 +282,7 @@ def csvjoiner(indir,
               delim=',', comment='#', debug=0, keep_going=True, errdir="/tmp/"):
     """
     CSVJoiner will collate the csv files within the indir
-    The resulting collated file can be designated with outfile paramater.
+    The resulting collated file can be designated with outfile parameter.
         indir - String location of CSV Files to collate
         outfile - string file name for output
         delim - CSV Delimiter character defaults to comma
@@ -371,5 +378,3 @@ def csvjoiner(indir,
 
     logger.error("Missing dataList, masterHeader or masterHeaderFile: %s", str(fileList))
     return False, None, badfiles_renamed
-
-

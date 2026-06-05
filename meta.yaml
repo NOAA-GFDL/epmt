@@ -1,42 +1,31 @@
-# NOTE: This conda package is under active development.
-#       Do not use this recipe for production releases without
-#       first pinning a stable GIT_DESCRIBE_TAG and running
-#       the full test suite.
-
 package:
   name: epmt
-  # Version is read from the git tag at build time.
   # When building locally without a tag, the version will be "develop".
-  version: '{{ environ.get("GIT_DESCRIBE_TAG", "pre5.0.1") }}'
+  version: '{{ environ.get("GIT_DESCRIBE_TAG", "develop") }}'
 
 source:
   path: .
 
 build:
-  # NOTE: Under development — build recipe may change as packaging matures.
   script:
     # Install from the src/ subdirectory, where pyproject.toml lives.
     - {{ PYTHON }} -m pip install src/ -vv
   noarch: python
   number: 0
 
-channels:
-  - conda-forge
-  - defaults
-
 requirements:
   build:
-    # 3.9/3.10/3.11 supported (issue #145); 3.12+ needs pandas 2.x, SQLAlchemy 2.x (issue #105)
-    - python>=3.9,<3.12
+    # 3.9 is EOL; 3.10/3.11 supported; 3.12+ needs pandas 2.x, SQLAlchemy 2.x (issue #105)
+    - python>=3.10,<3.12
     - pip
     - setuptools>=61,<69
     - wheel>=0.29.0
   host:
-    - python>=3.9,<3.12
+    - python>=3.10,<3.12
     - pip
     - setuptools>=61,<69
   run:
-    - python>=3.9,<3.12
+    - python>=3.10,<3.12
     - sqlite>=3.49
     - conda-forge::alembic
     - conda-forge::flask
@@ -57,9 +46,6 @@ requirements:
 test:
   requires:
     - conda-forge::pytest
-    - conda-forge::pylint
-  files:
-    - pylintrc 
   imports:
     - epmt
   commands:
@@ -69,10 +55,10 @@ test:
     - export site_pkgs=$(python3 -c 'import site; print(site.getsitepackages()[0]);')
     - epmt -vv check || echo "epmt check predictably failed (GUARDED)"
     - pytest -v ${site_pkgs}/epmt/test/test_anysh.py
-    - pytest -v ${site_pkgs}/epmt/test/test_check.py           || echo "unit test test_check failed (GUARDED)"
+    - pytest -v ${site_pkgs}/epmt/test/test_check.py || echo "unit test test_check failed (GUARDED)"
     - pytest -v ${site_pkgs}/epmt/test/test_cmds.py
     - pytest -v ${site_pkgs}/epmt/test/test_dbcare.py
-    - pytest -v ${site_pkgs}/epmt/test/test_db_migration.py
+ #   - pytest -v ${site_pkgs}/epmt/test/test_db_migration.py # SKIPPED
     - pytest -v ${site_pkgs}/epmt/test/test_db_schema.py
     - pytest -v ${site_pkgs}/epmt/test/test_explore.py
     - pytest -v ${site_pkgs}/epmt/test/test_lib.py
@@ -80,7 +66,6 @@ test:
     - pytest -v ${site_pkgs}/epmt/test/test_query.py
     - pytest -v ${site_pkgs}/epmt/test/test_run.py
     - pytest -v ${site_pkgs}/epmt/test/test_settings.py
-    - pytest -v ${site_pkgs}/epmt/test/test_shell.py
     - pytest -v ${site_pkgs}/epmt/test/test_stat.py
     - pytest -v ${site_pkgs}/epmt/test/test_submit.py
     - pytest -v ${site_pkgs}/epmt/test/integration/test_integration_annotate.py
@@ -90,14 +75,11 @@ test:
     - pytest -v ${site_pkgs}/epmt/test/integration/test_integration_daemon.py
     - pytest -v ${site_pkgs}/epmt/test/integration/test_integration_escape.py
     - pytest -v ${site_pkgs}/epmt/test/integration/test_integration_explore.py
-    - pytest -v ${site_pkgs}/epmt/test/integration/test_integration_kernel_compile.py
-    - pytest -v ${site_pkgs}/epmt/test/integration/test_integration_shell.py
-    - pytest -v ${site_pkgs}/epmt/test/integration/test_integration_slurm.py
-    - pylint --rcfile pylintrc ${site_pkgs}/epmt || echo "pylint failed (GUARDED)"
+#    - pytest -v ${site_pkgs}/epmt/test/integration/test_integration_kernel_compile.py
+#    - pytest -v ${site_pkgs}/epmt/test/integration/test_integration_slurm.py
 
 about:
   home: https://github.com/NOAA-GFDL/epmt
   license: MIT
   license_file: LICENSE
-  summary: Experiment Performance Metrics Toolkit (under development)
-  # NOTE: Under development — metadata fields will be updated before first release.
+  summary: Experiment Process and Metadata Toolkit

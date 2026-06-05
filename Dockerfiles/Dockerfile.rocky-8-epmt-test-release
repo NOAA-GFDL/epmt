@@ -82,7 +82,6 @@ COPY src/dist/${epmt_python_full_release} .
 
 RUN python3 -m pip install ${epmt_python_full_release}
 
-#    && rm -rf *.tgz
 COPY utils/epmt-installer .
 
 WORKDIR ${install_path}

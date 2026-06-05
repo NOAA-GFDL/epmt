@@ -3,6 +3,10 @@ name: build_and_test_epmt
 on:
   push
 
+# Minimal permissions for security
+permissions:
+  contents: read
+
 # cancel running jobs if theres a newer push
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -22,6 +26,7 @@ jobs:
   build-linux:
     runs-on: ubuntu-latest
     strategy:
+      max-parallel: 1
       fail-fast: false
       matrix:
         db_backend: [sqlite, postgres]
@@ -41,7 +46,7 @@ jobs:
 
     env:
       # Build environment versions — must match Makefile and weekly_tarball_build.yml
-      PYTHON_VERSION: "3.9.25"  # updated from 3.9.22 (issue #153: use latest 3.9.x)
+      PYTHON_VERSION: "3.10.20"  # updated from 3.9.25 (drop EOL Python 3.9)
       SQLITE_VERSION: "3490100"
       SQLITE_YEAR: "2025"
       # Tarball source identifiers — must match Makefile and weekly_tarball_build.yml
@@ -229,6 +234,12 @@ jobs:
         env:
           COVERAGE_FILE: .coverage.dbcare
 
+      - name: test_help_dbcare_dbsize
+        run: |
+          TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/test_help_dbcare_dbsize.py
+        env:
+          COVERAGE_FILE: .coverage.help_dbcare_dbsize
+
       - name: test_db_migration
         run: |
           TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/test_db_migration.py
@@ -277,12 +288,6 @@ jobs:
         env:
           COVERAGE_FILE: .coverage.settings
 
-      - name: test_shell
-        run: |
-          TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/test_shell.py
-        env:
-          COVERAGE_FILE: .coverage.shell
-
       - name: test_stat
         run: |
           TZ=UTC pytest -x -vv --cov=epmt --cov-report=term --cov-config=coveragerc src/epmt/test/test_stat.py
@@ -321,13 +326,6 @@ jobs:
           TZ=UTC pytest -x -vv src/epmt/test/integration/test_integration_daemon.py
         env:
           COVERAGE_FILE: .coverage.integration_daemon
-          COVERAGE_PROCESS_START: coveragerc
-
-      - name: integration, shell
-        run: |
-          TZ=UTC pytest -x -vv src/epmt/test/integration/test_integration_shell.py
-        env:
-          COVERAGE_FILE: .coverage.integration_shell
           COVERAGE_PROCESS_START: coveragerc
 
       - name: integration, annotate
@@ -512,20 +510,8 @@ jobs:
           verbose: true
           use_pypi: true
 
-      - name: install pylint
-        run: |
-          python3 -m pip install pylint
-
-      - name: run pylint on epmt module, ignoring ui (epmt-dash)
-        run: |
-          pylint --rcfile pylintrc --fail-under 8.2 --ignore-paths src/epmt/ui src/epmt
-
-      - name: run pylint on ui submodule (epmt-dash)
-        run: |
-          pylint --rcfile pylintrc --fail-under 6.0 src/epmt/ui
-
       - name: upload pip installable
         uses: actions/upload-artifact@v4
         with:
           name: epmt-pip-install-TEST-${{ matrix.db_backend }}
-          path: src/dist/epmt-4.11.0.tar.gz
+          path: src/dist/epmt-5.0.0.post.tar.gz

@@ -21,6 +21,7 @@ jobs:
   docker-build-rocky8:
     runs-on: ubuntu-latest
     strategy:
+      max-parallel: 1
       fail-fast: false
       matrix:
         db_backend: [sqlite, postgres]
@@ -37,7 +38,7 @@ jobs:
       IMAGE_TAG: "25.05.3"
       SLURM_CLUSTER_TAG: "0.9.0"
       # Build environment versions (must match Makefile)
-      PYTHON_VERSION: "3.9.25"  # updated from 3.9.22 (issue #153: use latest 3.9.x)
+      PYTHON_VERSION: "3.10.20"  # updated from 3.9.25 (drop EOL Python 3.9)
       SQLITE_VERSION: "3490100"
       SQLITE_YEAR: "2025"
       # Tarball source identifiers — must match Makefile and weekly_tarball_build.yml
@@ -49,7 +50,7 @@ jobs:
 
       - name: Extract build variables
         run: |
-          EPMT_VERSION=$(sed -n '/_version = /p' src/epmt/epmtlib.py | sed 's/ //g; s/,/./g; s/.*(\(.*\))/\1/')
+          EPMT_VERSION=$(python3 -c "exec(open('src/epmt/epmtlib.py').read().split('def ')[0]); from packaging.version import Version; print(Version(__version__))")
           echo "EPMT_VERSION=${EPMT_VERSION}" >> $GITHUB_ENV
           echo "EPMT_FULL_RELEASE=EPMT-release-${EPMT_VERSION}-${OS_TARGET}.tgz" >> $GITHUB_ENV
           echo "EPMT_PYTHON_FULL_RELEASE=epmt-${EPMT_VERSION}.tar.gz" >> $GITHUB_ENV
@@ -325,7 +326,7 @@ jobs:
       - name: Configure epmt to use PostgreSQL
         if: matrix.db_backend == 'postgres'
         run: |
-          docker exec -i ${{ env.CONTAINER_NAME }} tee /usr/lib/python3.9/site-packages/epmt/settings.py > /dev/null << 'EOFSETTINGS'
+          docker exec -i ${{ env.CONTAINER_NAME }} tee /usr/lib/python3.10/site-packages/epmt/settings.py > /dev/null << 'EOFSETTINGS'
           def test_settings_import():
               pass
 
@@ -335,7 +336,7 @@ jobs:
           epmt_settings_kind = "test_pg_container"
           EOFSETTINGS
           echo "PostgreSQL settings installed:"
-          docker exec ${{ env.CONTAINER_NAME }} cat /usr/lib/python3.9/site-packages/epmt/settings.py
+          docker exec ${{ env.CONTAINER_NAME }} cat /usr/lib/python3.10/site-packages/epmt/settings.py
 
       - name: epmt version
         run: docker exec ${{ env.CONTAINER_NAME }} epmt -vv -V
@@ -490,9 +491,6 @@ jobs:
       - name: test_settings
         run: docker exec ${{ env.CONTAINER_NAME }} bash -c 'cd $(python3 -c "import site; print(site.getsitepackages()[0])") && TZ=UTC pytest -x -vv epmt/test/test_settings.py'
 
-      - name: test_shell
-        run: docker exec ${{ env.CONTAINER_NAME }} bash -c 'cd $(python3 -c "import site; print(site.getsitepackages()[0])") && TZ=UTC pytest -x -vv epmt/test/test_shell.py'
-
       - name: test_stat
         run: docker exec ${{ env.CONTAINER_NAME }} bash -c 'cd $(python3 -c "import site; print(site.getsitepackages()[0])") && TZ=UTC pytest -x -vv epmt/test/test_stat.py'
 
@@ -510,9 +508,6 @@ jobs:
 
       - name: integration, daemon
         run: docker exec ${{ env.CONTAINER_NAME }} bash -c 'cd $(python3 -c "import site; print(site.getsitepackages()[0])") && TZ=UTC pytest -x -vv epmt/test/integration/test_integration_daemon.py'
-
-      - name: integration, shell
-        run: docker exec ${{ env.CONTAINER_NAME }} bash -c 'cd $(python3 -c "import site; print(site.getsitepackages()[0])") && TZ=UTC pytest -x -vv epmt/test/integration/test_integration_shell.py'
 
       - name: integration, annotate
         run: docker exec ${{ env.CONTAINER_NAME }} bash -c 'cd $(python3 -c "import site; print(site.getsitepackages()[0])") && TZ=UTC pytest -x -vv epmt/test/integration/test_integration_annotate.py'

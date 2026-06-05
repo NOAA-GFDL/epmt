@@ -1,25 +1,23 @@
 #!/usr/bin/env python3
 '''
-This script defines functions to converti collated CSV files from
+This script defines functions to convert collated CSV files from
 from the earlier comma-separated format to the new tab-separated
 collated TSV format.
 '''
 
+import atexit
 import csv
 import json
-
-from epmt.epmtlib import tag_from_string, logfn, epmt_logging_init, timing
-import epmt.epmt_settings as settings
-
-from os.path import abspath, isdir, isfile, basename
 import os
 import shutil
-from logging import getLogger
-import time
-import tempfile
 import tarfile
+import tempfile
+import time
 from glob import glob
-import atexit
+from logging import getLogger
+from os.path import isdir, isfile, basename
+
+import epmt.epmt_settings as settings
 
 logger = getLogger(__name__)
 
@@ -79,7 +77,7 @@ OUTPUT_CSV_SEP = '\t'
 # 3604195,47138,1,846248,246094
 
 
-def conv_csv_for_dbcopy(infile, outfile='', jobid='', input_fields=INPUT_CSV_FIELDS):
+def conv_csv_for_dbcopy(infile, outfile='', jobid='', input_fields=None):
     '''
     Convert a CSV into a format suitable for ingestion using PostgreSQL COPY
 
@@ -116,11 +114,14 @@ def conv_csv_for_dbcopy(infile, outfile='', jobid='', input_fields=INPUT_CSV_FIE
     This is a low-level function. You should ordinarily be using
     `convert_csv_in_tar` on a staged .tgz file.
     '''
+    if input_fields is None:
+        input_fields = INPUT_CSV_FIELDS
 
     outfile = outfile or infile   # empty outfile => overwrite infile
 
     if infile == outfile:
-        outfd, outfile = tempfile.mkstemp(prefix='epmt_conv_outcsv_', suffix='.csv')
+        _outfd, outfile = tempfile.mkstemp(prefix='epmt_conv_outcsv_', suffix='.csv')
+        os.close(_outfd)
         # logger.debug('in-place CSV conversion, so creating a tempfile {}'.format(outfile))
         in_place = True
     else:
@@ -159,7 +160,7 @@ def conv_csv_for_dbcopy(infile, outfile='', jobid='', input_fields=INPUT_CSV_FIE
                 metric_names = ",".join(thr_fields)
                 header = OUTPUT_CSV_SEP.join(OUTPUT_CSV_FIELDS).replace('threads_df', '{' + metric_names + '}')
                 # we create a copy as we don't want to modify the constant
-                # -- it's used elesewhere
+                # -- it's used elsewhere
                 output_fields = OUTPUT_CSV_FIELDS.copy()
                 output_fields[output_fields.index('threads_df')] = metric_names
                 # initialize the output file
@@ -180,7 +181,7 @@ def conv_csv_for_dbcopy(infile, outfile='', jobid='', input_fields=INPUT_CSV_FIE
             numtids = int(r['numtids'])
             # now read in remaining thread rows (if the process is multithreaded)
             # and combine into a flattened array
-            for i in range(1, numtids):
+            for _i in range(1, numtids):
                 thr = next(reader)
                 row_num += 1
                 thr_data = []
@@ -220,7 +221,7 @@ def conv_csv_for_dbcopy(infile, outfile='', jobid='', input_fields=INPUT_CSV_FIE
             outrows += 1
             for f in output_fields:
                 outrow[f] = r[f]
-                # postgrsql requires arrays to use curly braces instead
+                # postgresql requires arrays to use curly braces instead
                 # of the square brackets we get with list objects in Python
                 if f == metric_names:
                     outrow[f] = json.dumps(r[f]).replace('[', '{').replace(']', '}')
@@ -383,4 +384,3 @@ def extract_jobid_from_collated_csv(collated_csv):
     Returns a jobid from a collated CSV file
     '''
     return collated_csv.split('papiex')[-1].split('-')[1]
-

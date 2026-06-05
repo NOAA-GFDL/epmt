@@ -11,13 +11,12 @@ dynamic         = ["version"]
 authors         = [ { name = "Minimal Metrics, LLC", email = "some.where@over.there" } ]
 description     = "Experiment Performance Metrics Toolkit"
 readme          = "README.md"
-# Widened from ==3.9.* — supports 3.9/3.10/3.11.
+# 3.10/3.11 supported; 3.9 is EOL.
 # 3.12 requires upgrading pandas (1.5→2.x) and SQLAlchemy (1.4→2.x)
 # which dropped distutils; tracked in issue #105.
-requires-python = ">=3.9,<3.12"
+requires-python = ">=3.10,<3.12"
 classifiers     = [
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
 ]
@@ -126,9 +125,16 @@ epmt = [
     "test/data/daemon/ingest/*",
     "test/data/misc/*",
     "test/data/outliers/*",
-    "test/data/outliers_nb/*",
+    "test/data/outliers_nb/625151.tgz",
+    "test/data/outliers_nb/627907.tgz",
+    "test/data/outliers_nb/629322.tgz",
+    "test/data/outliers_nb/633114.tgz",
+    "test/data/outliers_nb/675992.tgz",
+    "test/data/outliers_nb/680163.tgz",
+    "test/data/outliers_nb/685001.tgz",
+    "test/data/outliers_nb/691209.tgz",
+    "test/data/outliers_nb/693129.tgz",
     "test/data/query/*",
-    "test/data/query_notebook/*",
     "test/data/submit/692500.tgz",
     "test/data/submit/804268.tgz",
     "test/data/submit/804280.tgz",

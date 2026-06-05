@@ -10,6 +10,10 @@ on:
     tags:
       - '*'
 
+# Minimal permissions for security
+permissions:
+  contents: read
+
 # cancel running jobs if theres a newer push
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -20,9 +24,10 @@ jobs:
     runs-on: ubuntu-latest
 
     strategy:
+      max-parallel: 1
+      fail-fast: false
       matrix:
-        python-version: ["3.9", "3.10", "3.11"]
-      fail-fast: false  # let all versions run even if one fails
+        python-version: ["3.11"]
 
     defaults:
       run:
@@ -106,9 +111,6 @@ jobs:
       - name: Unit test — test_settings
         run: TZ=UTC pytest -x -vv src/epmt/test/test_settings.py
 
-      - name: Unit test — test_shell
-        run: TZ=UTC pytest -x -vv src/epmt/test/test_shell.py
-
       - name: Unit test — test_stat
         run: TZ=UTC pytest -x -vv src/epmt/test/test_stat.py
 
@@ -150,10 +152,6 @@ jobs:
       # All tests skipped in CI (requires papiex/kernel build); exit 0
       - name: Integration test — test_integration_kernel_compile
         run: TZ=UTC pytest -x -vv src/epmt/test/integration/test_integration_kernel_compile.py
-
-      # Skips when IPython is not installed (exit 0)
-      - name: Integration test — test_integration_shell
-        run: TZ=UTC pytest -x -vv src/epmt/test/integration/test_integration_shell.py
 
       # Skips when SLURM is not available (exit 0)
       - name: Integration test — test_integration_slurm

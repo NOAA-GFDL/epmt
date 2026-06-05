@@ -1,3 +1,7 @@
+'''
+tests for epmt.epmt_exp_explore
+'''
+
 from glob import glob
 import unittest
 
@@ -20,7 +24,7 @@ def setUpModule():
     setup_db(settings)
     do_cleanup()
     datafiles = f'{install_root}/test/data/query/68500[03].tgz'
-    print(f'setUpModdule: importing {datafiles}')
+    print(f'setUpModule: importing {datafiles}')
     epmt_submit(sorted(glob(datafiles)), dry_run=False)
 
 
@@ -69,7 +73,7 @@ class ExploreAPI(unittest.TestCase):
         self.assertEqual(jobs, ['685000'])
 
     def test_missing_segments(self):
-        with capture() as (out, err):
+        with capture() as (_out, _err):
             d = exp.find_missing_time_segments(
                 'ESM4_historical_D151', jobs=[
                     '685000', '685003'], time_segments=range(

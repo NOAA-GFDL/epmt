@@ -20,7 +20,6 @@ import pytz
 from epmt.orm import *
 import epmt.epmt_settings as settings
 from epmt.epmtlib import tag_from_string, sum_dicts, timing, dotdict, get_first_key_match, check_fix_metadata, logfn
-from epmt.epmt_query import is_job_post_processed
 
 logger = getLogger(__name__)
 
@@ -150,10 +149,12 @@ def lookup_or_create_user(username):
 #         row += thr_count
 
 
-def get_proc_rows(csvfile, skiprows=0, fmt='1', metric_names=[]):
+def get_proc_rows(csvfile, skiprows=0, fmt='1', metric_names=None):
     '''
     Generator function that returns a list of rows corresponding to metric names from csv, with optional skipping
     '''
+    if metric_names is None:
+        metric_names = []
 
     from epmt.epmt_convert_csv import OUTPUT_CSV_FIELDS, OUTPUT_CSV_SEP
     # we only support two formats at present
@@ -429,8 +430,10 @@ def extract_tags_from_comment_line(jobdatafile, comment="#", tarfile=None):
 # relations and descendant maps are used if we do bulk inserts
 
 
-def _proc_ancestors(pid_map, proc, ancestor_pid, relations=None, descendant_map={}):
+def _proc_ancestors(pid_map, proc, ancestor_pid, relations=None, descendant_map=None):
 
+    if descendant_map is None:
+        descendant_map = {}
     if ancestor_pid in pid_map:
         proc.depth += 1
         entries = pid_map[ancestor_pid]
@@ -466,7 +469,7 @@ def _mk_pid_map(all_procs):
     pid_map = {}
     for p in all_procs:
         if p.pid in pid_map:
-            logger.debug('handled hash collision for PID (%d) -- process execed', p.pid)
+            logger.debug('handled hash collision for PID (%d) -- process executed', p.pid)
             pid_map[p.pid].append(p)
         else:
             pid_map[p.pid] = [p]
@@ -508,7 +511,7 @@ def _create_process_tree(pid_map):
                 # common case no hash collision
                 parent = entries[0]
             else:
-                # the process must have execed so we have
+                # the process must have executed so we have
                 # multiple records for the PID.
                 for e in entries:
                     assert e.pid == ppid
@@ -581,7 +584,7 @@ def mk_process_tree(j, all_procs=None, pid_map=None):
     # computing process inclusive times
     for proc in all_procs:
         if settings.bulk_insert:
-            # in bulk inserts, we cannnot rely on process.descendants to be
+            # in bulk inserts, we cannot rely on process.descendants to be
             # available, so we use a descendants map created during the
             # process tree creation step
             proc_descendants = desc_map.get(proc.id, set())
@@ -879,7 +882,7 @@ def populate_process_table_from_staging(j):
     we cannot use a native database row copy, because the
     field formats change and we need to do some field manipulations.
     In particular, thread metric sums are computed, and a flattened
-    1-D threads_df is convered to a JSON.
+    1-D threads_df is converted to a JSON.
 
     It is implicitly assumed that we are connecting to a Postgresql
     database (since SQLite doesn't support direct CSV copy in the
@@ -924,7 +927,7 @@ def populate_process_table_from_staging(j):
         start = dt.datetime.fromtimestamp(start / 1e6)
         end = dt.datetime.fromtimestamp(finish / 1e6)
 
-        # take care to escape characters using psycopg2's adapat
+        # take care to escape characters using psycopg2's adapt
         tags = psycopg2.extensions.adapt(dumps(tag_from_string(tags) if tags else {}))
         if args is None:
             args = ''
@@ -995,7 +998,7 @@ def populate_process_table_from_staging(j):
     # The cleanup runs in the same transaction as the INSERT so both are
     # rolled back together on failure.
     if nprocs > 0:
-        cleanup_sql = "DELETE FROM processes WHERE jobid = '{}';\n".format(jobid)
+        cleanup_sql = f"DELETE FROM processes WHERE jobid = '{jobid}';\n"
         insert_sql = cleanup_sql + insert_sql
         logger.debug('prepended cleanup DELETE for job %s processes', jobid)
 
@@ -1013,19 +1016,18 @@ def populate_process_table_from_staging(j):
             logger.error('You do not have sufficient privileges for this operation')
         else:
             logger.error(
-                f'INSERT aka insert_sql[:{settings.max_log_statement_length}] = \n'
-                f' {insert_sql[:settings.max_log_statement_length]}')
+                'INSERT aka insert_sql[:%s] = \n %s',
+                settings.max_log_statement_length, insert_sql[:settings.max_log_statement_length])
             ## Only log the first 100 entries in the error string- it will largely be SQL statements
             if len(err_str) > settings.max_log_statement_length:
                 logger.error('error (type is %s) too long to show (%s)...', type(err_str), len(err_str))
                 logger.error('first %s errors in err_str list are...', settings.max_log_statement_length)
                 logger.error(''.join(err_str[:settings.max_log_statement_length]))
             else:
-                # some bugs require this line get uncommented
                 logger.error(err_str)
         return False
 
-    # DELETE SQL transactionm
+    # DELETE SQL transaction
     try:
         logger.debug('executing: orm_raw_sql(delete_sql,commit=True)')
         orm_raw_sql(delete_sql, commit=True)
@@ -1319,9 +1321,9 @@ def ETL_job_dict(raw_metadata, filedict, settings, tarfile=None):
             #            stdout.write(spinner.next())  # write the next character
             #            stdout.flush()                # flush stdout buffer (actual character display)
             # We need rows to skip
-            # oldproctag (after comment char) is outdated as a process tag but kept for posterities sake
-            skiprows, oldproctag = extract_tags_from_comment_line(f, tarfile=tarfile)
-            logger.debug("%s had %d comment rows, oldproctags %s", f, skiprows, oldproctag)
+            # old_proc_tag (after comment char) is outdated as a process tag but kept for posterities sake
+            skiprows, old_proc_tag = extract_tags_from_comment_line(f, tarfile=tarfile)
+            logger.debug("%s had %d comment rows, old_proc_tags %s", f, skiprows, old_proc_tag)
 
             if tarfile:
                 logger.debug('extracting %s from tar', f)
@@ -1387,13 +1389,13 @@ def ETL_job_dict(raw_metadata, filedict, settings, tarfile=None):
                     logger.debug('job process_staging ID range: %s',
                         lastid if num_procs_copied == 1 else info_dict['procs_staging_ids'])
                     continue
+
+                # Re-open the file for standard processing since
+                # copy_expert consumed the file stream
+                if tarfile:
+                    flo = tarfile.extractfile(tarfile.getmember(f))
                 else:
-                    # Re-open the file for standard processing since
-                    # copy_expert consumed the file stream
-                    if tarfile:
-                        flo = tarfile.extractfile(tarfile.getmember(f))
-                    else:
-                        flo.seek(0)
+                    flo.seek(0)
 
             csv_file = StringIO(flo.read().decode('utf8'))
 
@@ -1435,7 +1437,7 @@ def ETL_job_dict(raw_metadata, filedict, settings, tarfile=None):
                 # If using old version of papiex, process tags are in the comment field
                 _proc_tag_start_ts = time.time()
                 if not p.tags:
-                    p.tags = tag_from_string(oldproctag) if oldproctag else {}
+                    p.tags = tag_from_string(old_proc_tag) if old_proc_tag else {}
                 # pickle and add tag dictionaries to a set
                 # remember to sort_keys during the pickle!
                 if p.tags:
@@ -1444,7 +1446,7 @@ def ETL_job_dict(raw_metadata, filedict, settings, tarfile=None):
                 _t = time.time()
 
                 # We shouldn't be seeing a pid repeat in a job.
-                # Theoretically it's posssible but it would complicate the pid map a bit
+                # Theoretically it's possible but it would complicate the pid map a bit
                 # assert(p.pid not in pid_map)
                 pid_map[p.pid] = p
                 all_procs.append(p)
@@ -1555,7 +1557,7 @@ def ETL_job_dict(raw_metadata, filedict, settings, tarfile=None):
         if settings.bulk_insert:
             # when doing bulk inserts we don't pass in all_procs
             # and pid_map as they have to be recreated using
-            # ORM objects and not the dotdicts we used for bulk
+            # ORM objects and not the dotdicts we used for bulk # inl: ... what are dotdicts?
             # inserts. Otherwise the calls to create_process_tree
             # will fail as they rely on relationships between the
             # orm objects, and in particular the primary IDs of the

@@ -23,8 +23,8 @@ logger = getLogger(__name__)
 # third element is the patch or bugfix number
 # Since we are saving as a tuple you can do a simple
 # compare of two version tuples and python will do the right thing
-_version = (5, 0, 1)
-__version__ = ".".join([str(i) for i in _version])
+_version = (5, 0, 0)
+__version__ = ".".join([str(i) for i in _version]) + ".post"
 
 
 def version():
@@ -221,7 +221,7 @@ def init_settings(settings):
         settings.lazy_compute_process_tree = True
     if not hasattr(settings, 'epmt_settings_kind'):
         logger.warning('settings missing epmt_settings_kind field. filling in ourselves.')
-        settings.epmt_setttings_kind = 'filled_by_epmtlib_init_settings'
+        settings.epmt_settings_kind = 'filled_by_epmtlib_init_settings'
     if not hasattr(settings, 'db_params'):
         err_msg += "\n - missing settings.db_params"
     if err_msg:
@@ -295,7 +295,7 @@ def tag_from_string(s, delim=';', sep=':', tag_default_value='1'):
     We can also handle the case where a value is not set for
     a key, by assigning a default value for the key
     For example, for the input:
-        "multitheaded;app=fft" and a tag_default_value="1"
+        "multithreaded;app=fft" and a tag_default_value="1"
 
     the output would be:
         { "multithreaded": "1", "app": "fft" }
@@ -360,7 +360,7 @@ def tags_list(tags):
 def dict_in_list(d, L):
     '''
     Returns True if at least one dictionary in L is contained by d
-    where containment is defined as all keys of the containee
+    where containment is defined as all keys of the container
     are in the container with matching values. Container may have
     additional key/values.
 
@@ -394,7 +394,9 @@ def sum_dicts(x, y):
     return {k: x.get(k, 0) + y.get(k, 0) for k in set(x) | set(y)}
 
 
-def sum_dicts_list(dicts, exclude=[]):
+def sum_dicts_list(dicts, exclude=None):
+    if exclude is None:
+        exclude = []
     all_keys = set()
     for d in dicts:
         all_keys |= set(d)
@@ -407,10 +409,12 @@ def sum_dicts_list(dicts, exclude=[]):
     return sum_dict
 
 
-def unique_dicts(dicts, exclude_keys=[]):
+def unique_dicts(dicts, exclude_keys=None):
     '''
     from list of dictionaries, get the unique ones exclude keys is an optional list of keys that are removed from
     '''
+    if exclude_keys is None:
+        exclude_keys = []
 
     new_dicts = []
     if exclude_keys:
@@ -427,7 +431,7 @@ def unique_dicts(dicts, exclude_keys=[]):
     # the returned list ordering different in python 2/3
     # return list(map(dict, frozenset(frozenset(d.items()) for d in new_dicts)))
 
-    # here the code below gives a deterministic dentical ordering for python 2/3
+    # here the code below gives a deterministic identical ordering for python 2/3
     all_dicts_set = set()
     ordered_dicts = []
     for d in new_dicts:
@@ -453,7 +457,7 @@ def fold_dicts(dicts):
     return {k: list(v) if len(v) > 1 else v.pop() for (k, v) in folded_dict.items()}
 
 
-def group_dicts_by_key(dicts, key='tags', exclude=[]):
+def group_dicts_by_key(dicts, key='tags', exclude=None):
     '''
     given a list of dictionaries, we aggregate like fields across the dictionaries
     but only when they share the same value for 'key'
@@ -472,6 +476,8 @@ def group_dicts_by_key(dicts, key='tags', exclude=[]):
         [{'tags': {'op': 'hsmget'}, duration: 3000},
          {'tags': {'op': 'gcp'},  duration: 300}]
     '''
+    if exclude is None:
+        exclude = []
     groups = {}
     for d in dicts:
         k = dumps(d[key], sort_keys=True)
@@ -489,7 +495,7 @@ def group_dicts_by_key(dicts, key='tags', exclude=[]):
 
 
 def isString(s):
-    return isinstance(s, ("".__class__, u"".__class__))
+    return isinstance(s, ("".__class__, "".__class__))
 
 
 def check_int(s):
@@ -783,7 +789,7 @@ def suggested_cpu_count_for_submit():
 def conv_to_datetime(t):
     """
     This converts a time specified as a string or a Unix timestamp
-    or a negative integer (signifiying a relative offset in days
+    or a negative integer (signifying a relative offset in days
     from the current time) to a python datetime object. If passed a
     datetime object it will be returned without modification
     E.g., of valid values of t:
@@ -827,7 +833,7 @@ def ranges(i):
     """
 
     from itertools import groupby
-    for a, b in groupby(enumerate(i), lambda pair: pair[1] - pair[0]):
+    for _a, b in groupby(enumerate(i), lambda pair: pair[1] - pair[0]):
         b = list(b)
         yield b[0][1], b[-1][1]
 
@@ -892,7 +898,7 @@ def decode2strings(v):
     return [decode_string_from_int(n) for n in v]
 
 
-def dframe_encode_features(df, features=[], reversible=False):
+def dframe_encode_features(df, features=None, reversible=False):
     '''
     Replaces feature columns containing string/object (non-numeric)
     values with columns containing encoded integers.
@@ -917,6 +923,8 @@ def dframe_encode_features(df, features=[], reversible=False):
 
     NOTE: If encoded_features is empty, no features were encoded.
     '''
+    if features is None:
+        features = []
     if not features:
         import epmt.epmt_settings as settings
         logger.debug('Selecting non-numeric columns from dataframe and then pruning out blacklisted features')
@@ -1045,7 +1053,7 @@ def docs_func_section(func):
     '''
     Returns the section name (if any) for a function from its docstrings
 
-    We assume a doctstring summary line has a double-colon followed by
+    We assume a docstring summary line has a double-colon followed by
     a section name at the end of the summary line.
     '''
     summary_string = ((func.__doc__ or '').lstrip().split('\n')[0].strip())
@@ -1205,13 +1213,15 @@ def csv_probe_format(f):
     raise ValueError(f"CSV file -- {f.name} -- has an unknown file format. Is it corrupted?")
 
 
-def set_signal_handlers(signals=[], handler=None):
+def set_signal_handlers(signals=None, handler=None):
     '''
     Set up signal handlers. If no signals are specified, sensible
     defaults are used. If no handler is specified, the default
     handler is assumed (this means the signal handler will be restored
     to the default)
     '''
+    if signals is None:
+        signals = []
     from signal import SIGHUP, SIGTERM, SIGINT, signal, SIG_DFL
 
     # set defaults

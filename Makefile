@@ -2,7 +2,7 @@
 
 # OS / python / SQLITE_VERSION
 OS_TARGET=rocky-8
-PYTHON_VERSION=3.9.25   # updated from 3.9.22 (issue #153: use latest 3.9.x)
+PYTHON_VERSION=3.10.20  # updated from 3.9.25 (drop EOL Python 3.9)
 SQLITE_YEAR=2025
 SQLITE_VERSION=3490100
 
@@ -41,7 +41,7 @@ CONFIG_PAPIEX_PAPI?=y
 CONFIG_PAPIEX_DEBUG?=y
 
 # epmt details
-EPMT_VERSION=$(shell sed -n '/_version = /p' src/epmt/epmtlib.py | sed 's/ //g; s/,/./g; s/.*(\(.*\))/\1/')
+EPMT_VERSION=$(shell python3 -c "exec(open('src/epmt/epmtlib.py').read().split('def ')[0]); from packaging.version import Version; print(Version(__version__))")
 EPMT_RELEASE=epmt-$(EPMT_VERSION)-$(OS_TARGET).tgz
 EPMT_FULL_RELEASE=EPMT-release-$(EPMT_VERSION)-$(OS_TARGET).tgz
 EPMT_PYTHON_FULL_RELEASE=epmt-$(EPMT_VERSION).tar.gz
@@ -197,7 +197,7 @@ test-$(EPMT_RELEASE) dist-test:
 	@echo "WARNING removing directory to clean up: rm -rf epmt-install-tests"
 	rm -rf epmt-install-tests
 
-# this target 1) builds an image with an environment inwhich we'd like to build our applicaiton
+# this target 1) builds an image with an environment in which we'd like to build our application
 # 2) builds that application within a running container of that image
 # NOTE: bind mounts to current working directory, usually the repository directory
 docker-dist:
@@ -209,7 +209,7 @@ docker-dist:
 	@echo
 	@echo
 	@echo " - docker build <STUFF> Dockerfiles/Dockerfile.$(OS_TARGET)-epmt-build"
-	@echo "       we are creating a container environment inwhich to build the python distribution"
+	@echo "       we are creating a container environment in which to build the python distribution"
 	$(DOCKER_BUILD) Dockerfiles/Dockerfile.$(OS_TARGET)-epmt-build -t $(OS_TARGET)-epmt-build:$(EPMT_VERSION) \
 	--build-arg sqlite_version=$(SQLITE_VERSION) \
 	--build-arg sqlite_year=$(SQLITE_YEAR) \
@@ -217,7 +217,7 @@ docker-dist:
 	@echo
 	@echo
 	@echo " - docker run <STUFF> <use image built from Dockerfiles/Dockerfile.$(OS_TARGET)-epmt-build>"
-	@echo "       within a running contianer of the image we just built, now build the python application."
+	@echo "       within a running container of the image we just built, now build the python application."
 	@echo "       i.e. running make dist python-dist dist-test inside $(OS_TARGET)-epmt-build"
 	$(DOCKER_RUN) $(DOCKER_RUN_OPTS) --privileged \
 	--volume=$(PWD):$(PWD) \

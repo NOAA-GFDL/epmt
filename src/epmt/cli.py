@@ -32,6 +32,9 @@ class DefaultHelpParser(argparse.ArgumentParser):
 
 
 def main():
+    '''
+    primary functional bottleneck for all CLI commands, leading to epmt_cmds.epmt_entrypoint
+    '''
     # Generate config variable for epilog on long help
     config_string_file = StringIO()
     dump_config(config_string_file)
@@ -71,7 +74,7 @@ def main():
         "\teval `epmt source --slurm` for a SLURM prolog.\n\n"
         "Two shell functions/aliases are created to pause/restart instrumentation:\n\n"
         "\tepmt_uninstrument - to pause automatic instrumentation\n"
-        "\tepmt_instrument - to renable automatic instruction.\n\n\n"
+        "\tepmt_instrument - to re-enable automatic instruction.\n\n\n"
         "**SLURM USERS NOTE** Use in SLURM's prolog, requires a special syntax\n"
         "enabled here with the -s or --slurm option. For more info, see:\n"
         "https://slurm.schedmd.com/prolog_epilog.html")
@@ -153,13 +156,13 @@ def main():
         help="Only dump the value for the specified key")
 
     # Schema PARSER
-    db_schema_parser = subparser.add_parser(
+    subparser.add_parser(
         'schema',
         help="Dump the database schema",
         description="schema will dump the database schema")
 
     # Migrate PARSER
-    db_migrate_parser = subparser.add_parser(
+    subparser.add_parser(
         'migrate',
         help="Migrate the database schema",
         description="Migrate the database schema (if needed). Safe to use this option on an already migrated database")
@@ -262,14 +265,8 @@ def main():
         foreground=False, post_process=False,
         no_analyze=False, retire=False)
 
-    # Shell PARSER
-    shell_parser = subparser.add_parser(
-        'shell',
-        help="Start an interactive IPython shell",
-        description="shell runs an interactive IPython shell")
-
     # Gui PARSER
-    gui_parser = subparser.add_parser(
+    subparser.add_parser(
         'gui',
         help="Run the EPMT dashboard GUI",
         description="gui a web-based dashboard accessible at: http://localhost:8050")
@@ -394,7 +391,7 @@ def main():
         help='%(choices)s')
 
     # Check PARSER
-    check_parser = subparser.add_parser(
+    subparser.add_parser(
         'check',
         help='Verify EPMT Installation',
         description="Check will verify basic epmt configuration and functionality.")

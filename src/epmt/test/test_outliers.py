@@ -1,3 +1,7 @@
+'''
+tests for epmt.epmt_outliers
+'''
+
 from json import loads, dumps
 from glob import glob
 import unittest
@@ -32,7 +36,7 @@ def setUpModule():
     datafiles = f'{install_root}/test/data/outliers/*.tgz'
 #    print('setUpModule: importing {0}'.format(datafiles))
     environ['EPMT_TZ'] = 'Asia/Kolkata'
-    with capture() as (out, err):
+    with capture() as (_out, _err):
         epmt_submit(glob(datafiles), dry_run=False)
     # only use madz for outlier detection by default
     settings.univariate_classifiers = ['modified_z_score']
@@ -268,7 +272,7 @@ class OutliersAPI(unittest.TestCase):
         self.assertEqual(sorted_features, ['cpu_time', 'duration', 'num_procs'])
         # ensure df has the right feature order
         self.assertEqual(df_cols[2:], sorted_features)
-        # esnure scores_df has the right order
+        # ensure scores_df has the right order
         self.assertEqual(list(scores_df.columns)[1:], sorted_features)
 
         # ensure tag importance order is correct
@@ -407,7 +411,7 @@ class OutliersAPI(unittest.TestCase):
     @db_session
     def test_ops_refmodel_mvod(self):
         from epmt.epmt_stat import mvod_classifiers
-        with capture() as (out, err):
+        with capture() as (_out, _err):
             r = eq.create_refmodel(
                 ['kern-6656-20190614-190245', 'kern-6656-20190614-191138', 'kern-6656-20190614-194024'],
                 op_tags = [{'op': 'build'}, {'op': 'configure'}],
@@ -693,7 +697,7 @@ class OutliersAPI(unittest.TestCase):
                           'usertime', 'vol_ctxsw', 'wchar', 'write_bytes'])
         self.assertEqual(r.info_dict['pca']['out_features'], ['pca_01', 'pca_02'])
         self.assertEqual(list(r.computed['modified_z_score'].keys()), ['pca_01', 'pca_02'])
-        (df, part) = eod.detect_outlier_jobs(
+        (df, _part) = eod.detect_outlier_jobs(
             ['kern-6656-20190614-190245', 'kern-6656-20190614-191138', 'kern-6656-20190614-192044-outlier'],
             trained_model = r.id, features = [], pca=True)
         self.assertEqual(df.shape, (3, 4))
@@ -757,7 +761,6 @@ class OutliersAPI(unittest.TestCase):
         self.assertEqual(list(df[df.jobid == 'kern-6656-20190614-192044-outlier']['pca_01'].values), [1, 1, 1, 1, 1])
         self.assertEqual(list(df[df.jobid == 'kern-6656-20190614-192044-outlier']['pca_02'].values), [1, 1, 1, 1, 1])
         tags = list(df.tags.values)
-        from epmt.epmtlib import frozen_dict
         tags = [frozen_dict(t) for t in tags]
         self.assertEqual(set(tags),
                          {frozenset({('op', 'configure'), ('op_sequence', '3'), ('op_instance', '3')}),
@@ -775,8 +778,8 @@ class OutliersAPI(unittest.TestCase):
             'kern-6656-20190614-191138',
             'kern-6656-20190614-192044-outlier',
             'kern-6656-20190614-194024']
-        with capture() as (out, err):
-            figure = eod.feature_scatter_plot(jobs, outfile=plotfile)
+        with capture() as (out, _err):
+            eod.feature_scatter_plot(jobs, outfile=plotfile)
         s = out.getvalue()
         self.assertIn('Plotly Cannot export static images, Feature coming soon', s)
 
@@ -799,7 +802,7 @@ class OutliersAPI(unittest.TestCase):
         ref_jobs = eq.get_jobs(tags='exp_name:linux_kernel', fmt='orm', fltr=fltr)
         fltr2 = (Job.jobid.like('%outlier%')) if settings.orm == 'sqlalchemy' else '"outlier" in j.jobid'
         outlier_job = eq.get_jobs(tags='exp_name:linux_kernel', fltr=fltr2, fmt='orm')
-        (res, df, sl) = eod.detect_rootcause(ref_jobs, outlier_job)
+        (res, df, _sl) = eod.detect_rootcause(ref_jobs, outlier_job)
         self.assertTrue(res, 'detect_rootcause returned False')
         self.assertEqual(list(df.columns.values), ['cpu_time', 'duration',
                          'num_procs'], 'wrong order of features returned by RCA')
@@ -813,7 +816,7 @@ class OutliersAPI(unittest.TestCase):
         ref_jobs = eq.get_jobs(tags='exp_name:linux_kernel', fmt='orm', fltr=fltr)
         fltr2 = (Job.jobid.like('%outlier%')) if settings.orm == 'sqlalchemy' else '"outlier" in j.jobid'
         outlier_job = eq.get_jobs(tags='exp_name:linux_kernel', fltr=fltr2, fmt='orm')
-        (res, df, sl) = eod.detect_rootcause_op(ref_jobs, outlier_job, tag='op_sequence:4')
+        (res, df, _sl) = eod.detect_rootcause_op(ref_jobs, outlier_job, tag='op_sequence:4')
         self.assertTrue(res, 'detect_rootcause_op returned False')
         self.assertEqual(list(df.columns.values), ['cpu_time', 'duration',
                          'num_procs'], 'wrong order of features returned by RCA')
@@ -834,7 +837,7 @@ class OutliersAPI(unittest.TestCase):
         self.assertEqual(r1.tags, {'exp_name': 'linux_kernel_test'})
         self.assertFalse(r1.op_tags)
         # pony and sqlalchemy have slightly different outputs
-        # in pony each value in modfied_z_score dictionary is a
+        # in pony each value in modified_z_score dictionary is a
         # a tuple, while in sqlalchemy it's a list. So, we use
         # assertIn to check if either match occurs
         self.assertIn(r1.computed,

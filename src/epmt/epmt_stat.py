@@ -4,18 +4,19 @@ EPMT Statistics Module
 
 This module provides low-level statistical and numerical methods.
 
-Most methods use numpy ndarrays (as opposed to pandas dataframes).
+Most methods use numpy ndarray (as opposed to pandas dataframe).
 We deliberately do not include an EPMT-specific semantic knowledge
 in the functions of this module. The idea is to use them as pure
 stateless mathematical functions. No database connectivity is assumed
 for the functions in this module.
 """
 
-import pandas as pd
-import numpy as np
 import operator
 from logging import getLogger
 from numbers import Number
+
+import numpy as np
+import pandas as pd
 
 import epmt.epmt_settings as settings
 from epmt.epmtlib import logfn
@@ -34,7 +35,7 @@ def get_classifier_name(c):
         return c.__name__
     if hasattr(c, '__module__'):
         return c.__module__
-    raise f'Could not determine classifier name for {c}'
+    raise ValueError(f'Could not determine classifier name for {c}')
 
 
 def is_classifier_mv(c):
@@ -56,7 +57,7 @@ def partition_classifiers_uv_mv(classifiers):
     Partition classifiers into two disjoint sets of univariate and multivariate::Statistics
 
     """
-    mv_set = set([c for c in classifiers if is_classifier_mv(c)])
+    mv_set = {c for c in classifiers if is_classifier_mv(c)}
     uv_set = set(classifiers) - mv_set
     return (uv_set, mv_set)
 
@@ -131,7 +132,7 @@ def iqr(ys, params=()):
             than computing the quartiles on the input vector.
             If not provided (default), the 25% and 75% quartiles
             are computed on the input vector. You should only
-            be prividing params when using this method against
+            be providing params when using this method against
             a trained model.
 
    RETURNS: A tuple (outliers, 0, Q1, Q3), where:
@@ -152,13 +153,13 @@ def iqr(ys, params=()):
             and Q3 stems from being able to use a trained model. We want
             to return some measure from the model run that can
             then be used later. The Q1 and Q3 are derived by solving
-            a simutaneous equations such that the min of the input
+            a simultaneous equations such that the min of the input
             vector fits in the lower bound and the max in the upper
             bound. IOW:
             Ymin = Q1 - 1.5 * (Q3 - Q1)
             Ymax = Q3 + 1.5 * (Q3 - Q1)
 
-            Solving the equations yeilds:
+            Solving the equations yields:
             Q1 = 3*Ymax/8 + 5*Ymin/8
             Q3 = 5*Ymax/8 + 3*Ymin/8
 
@@ -190,7 +191,7 @@ def iqr(ys, params=()):
     outliers = ((ys > upper_bound) | (ys < lower_bound)) + 0
     logger.debug('outliers vec: %s', outliers)
 
-    # If this vector were to be fitted, we can compute artifical
+    # If this vector were to be fitted, we can compute artificial
     # values of Q1 and Q3 based on the equation (see NOTES in the
     # documentation)
     fitted_Q1 = 3 * ys.max() / 8 + 5 * ys.min() / 8
@@ -258,7 +259,7 @@ def outliers_z_score(ys, threshold=thresholds['z_score']):
     return (np.abs(scores) > threshold) + 0
 
 
-def outliers_uv(ys, methods=[outliers_iqr, outliers_z_score, outliers_modified_z_score]):
+def outliers_uv(ys, methods=None):
     '''
     Detects outliers in a vector using one or more univariate classifiers::Statistics
 
@@ -274,6 +275,8 @@ def outliers_uv(ys, methods=[outliers_iqr, outliers_z_score, outliers_modified_z
              value. So, use the outliers_* wrappers instead of methods
              such as iqr, z_score, modified_z_score
     '''
+    if methods is None:
+        methods = [outliers_iqr, outliers_z_score, outliers_modified_z_score]
     ys = np.array(ys)
     logger.debug('input vector: %s', ys)
     out_vec = np.zeros_like(ys)
@@ -340,7 +343,7 @@ def mvod_classifiers(contamination=0.1, warnopts='ignore'):
     return classifiers
 
 
-def mvod_scores(X=None, classifiers=[], warnopts='ignore'):
+def mvod_scores(X=None, classifiers=None, warnopts='ignore'):
     '''
     Perform outlier scoring using multivariate classifiers::Statistics
 
@@ -348,7 +351,7 @@ def mvod_scores(X=None, classifiers=[], warnopts='ignore'):
     numpy array. Returns a numpy array of scores for each
     classifier (same length as the input) where each score
     represents to the anomaly score of the corresponding point
-    in the original array using that classifer.
+    in the original array using that classifier.
     The more the likelihood of a point being an outlier, the
     higher score it will have.
 
@@ -357,7 +360,7 @@ def mvod_scores(X=None, classifiers=[], warnopts='ignore'):
     classifiers will be selected using mvod_classifiers()
 
     X: Multi-dimensional np array. If not provided a random
-       two-dimenstional numpy array is generated
+       two-dimensional numpy array is generated
 
     classifiers is a list of classifier functions like so:
              [
@@ -380,6 +383,8 @@ def mvod_scores(X=None, classifiers=[], warnopts='ignore'):
     {'Angle-based Outlier Detector (ABOD)': array(...),
      'K Nearest Neighbors (KNN)':  array(...) }
     '''
+    if classifiers is None:
+        classifiers = []
 
     if warnopts:
         from warnings import simplefilter
@@ -389,7 +394,7 @@ def mvod_scores(X=None, classifiers=[], warnopts='ignore'):
 
 
     # the contamination below, is *ONLY* used in the model
-    # for preditiction of outliers and used for random data
+    # for prediction of outliers and used for random data
     # The API is confusing and it might appear that we are using the
     # parameter for the classifier, in fact, its' only used for
     # prediction of the outlier. The scores are the *same* regardless
@@ -417,10 +422,9 @@ def mvod_scores(X=None, classifiers=[], warnopts='ignore'):
         while (X is None) or (X[-int(n_pts * contamination):-1].sum() == 0.0):
             X, Y = generate_data(n_train=n_pts, train_only=True, n_features=n_features, contamination=contamination)
         # store outliers and inliers in different numpy arrays
-        x_outliers, x_inliers = get_outliers_inliers(X, Y)
+        #_x_outliers, _x_inliers = get_outliers_inliers(X, Y) # orig line
+        _, _ = get_outliers_inliers(X, Y)
 
-        n_inliers = len(x_inliers)
-        n_outliers = len(x_outliers)
 
     (npts, ndim) = X.shape
     logger.debug('mvod: input length %s, dimensions %s', npts, ndim)
@@ -466,7 +470,7 @@ def mvod_scores(X=None, classifiers=[], warnopts='ignore'):
             logger.debug('%s threshold: %s', clf_name, threshold)
     # print(scores)
     if not scores:
-        # some error occured and we didn't generate scores at all
+        # some error occurred and we didn't generate scores at all
         return False
     logger.debug('mvod: scores')
     logger.debug(scores)
@@ -529,7 +533,7 @@ def mvod_scores_using_model(inp, model_inp, classifier, threshold=None):
     if not retval:
         logger.warning('could not score using %s', c_name)
         return False
-    (model_scores, model_score_max) = retval
+    (_model_scores, model_score_max) = retval
     model_score_max = model_score_max[c_name]
     logger.debug('MVOD %s (threshold=%s)', c_name, threshold)
     from math import isclose
@@ -575,10 +579,12 @@ def mvod_scores_using_model(inp, model_inp, classifier, threshold=None):
 # match the column labels of the ref dataframe. Similarly if inp is a
 # dataframe then it's column labels must match those of ref and in the
 # same order.
-def rca(ref, inp, features, methods=[modified_z_score]):
+def rca(ref, inp, features, methods=None):
     '''
     Perform low-level RCA::Statistics
     '''
+    if methods is None:
+        methods = [modified_z_score]
     # API input checking
     if ref.empty or inp.empty:
         return (False, None, None)
@@ -588,7 +594,7 @@ def rca(ref, inp, features, methods=[modified_z_score]):
 
     # if list(ref.columns.values) != list(inp.columns.values):
     #     logger.error('ref and inp MUST have the same columns and in the same order')
-    #     logger.error('ref has columns: {}\ninp has columns: {}'.format(ref.columns.values, inp.columns.values))
+    #     logger.error('ref has columns: {}\inp has columns: {}'.format(ref.columns.values, inp.columns.values))
     #     return (False, None, None)
 
     if (not features) or (features == '*'):
@@ -692,7 +698,7 @@ def pca_stat(inp_features, desired=2):
 
     logger.debug('input:\n%s', inp_features)
 
-    # the second paramer denotes the number of components usually
+    # the second parameter denotes the number of components usually
     # however if it is less than 1, then it denotes the desired variance.
     # In the latter case the number of components is automatically chosen
     # to achieve the desired variance.
@@ -701,7 +707,7 @@ def pca_stat(inp_features, desired=2):
     else:
         logger.debug('desired variance ratio: %s', desired)
 
-    n_samples, n_dim = inp_features.shape
+    _n_samples, n_dim = inp_features.shape
     assert n_dim > 1
 
     x = StandardScaler().fit_transform(inp_features)
@@ -720,7 +726,7 @@ def pca_stat(inp_features, desired=2):
     return (pc_array, pca)
 
 
-def check_dist(data=[], dist='norm', alpha=0.05):
+def check_dist(data=None, dist='norm', alpha=0.05):
     '''
     Determines the distribution of input data::Statistics
 
@@ -775,6 +781,8 @@ def check_dist(data=[], dist='norm', alpha=0.05):
       DEBUG: epmt_stat: check_dist: 0 tests PASSED, 1 tests FAILED
     (0, 1)
     '''
+    if data is None:
+        data = []
     # https://stackoverflow.com/questions/40845304/runtimewarning-numpy-dtype-size-changed-may-indicate-binary-incompatibility
     import warnings
     warnings.filterwarnings("ignore")
@@ -878,14 +886,14 @@ def get_modes(X, max_modes=10):
     km_scores = []
     for i in range(1, max_modes):
         km = KMeans(n_clusters=i, random_state=0).fit(X_scaled)
-        preds = km.predict(X_scaled)
+        predictions = km.predict(X_scaled)
 
         logger.debug("Score for number of cluster(s) %s: %s", i, km.score(X_scaled))
         km_scores.append(-km.score(X_scaled))
 
         if i > 1:
             # silhouette method only works for n_clusters >= 2
-            silhouette = silhouette_score(X_scaled, preds)
+            silhouette = silhouette_score(X_scaled, predictions)
             km_silhouette.append(silhouette)
             logger.debug("Silhouette score for number of cluster(s) %s: %s", i, silhouette)
 
@@ -910,7 +918,7 @@ def get_modes(X, max_modes=10):
             num_modes = 1
 
     km = KMeans(n_clusters=num_modes, random_state=0).fit(X_scaled)
-    preds = km.predict(X_scaled)
+    predictions = km.predict(X_scaled)
     modes = scaler.inverse_transform(km.cluster_centers_).reshape(num_modes,)
     return modes
 
@@ -992,7 +1000,7 @@ def dframe_append_weighted_row(df, weights, ignore_index=True, use_abs=False):
     return df.append(pd.DataFrame([new_row], columns=df.columns), ignore_index=ignore_index)
 
 
-def dict_outliers(dlist, labels=[], threshold=2.0):
+def dict_outliers(dlist, labels=None, threshold=2.0):
     '''
     Get outliers from a collection of dictionaries::Statistics
 
@@ -1018,6 +1026,8 @@ def dict_outliers(dlist, labels=[], threshold=2.0):
         outliers: set of outlier labels (or indices)
      outl_by_key: dict of outliers
     '''
+    if labels is None:
+        labels = []
     data = {}
     for d in dlist:
         for k in d:

@@ -31,7 +31,7 @@ logger = getLogger(__name__)
 FEATURES = settings.outlier_features
 
 
-def partition_jobs(jobs, features=FEATURES, methods=[], thresholds=thresholds):
+def partition_jobs(jobs, features=None, methods=None, thresholds=None):
     """
     Partition jobs into disjoint sets of reference and outliers::Outlier Detection
 
@@ -77,11 +77,17 @@ def partition_jobs(jobs, features=FEATURES, methods=[], thresholds=thresholds):
                     u'kern-6656-20190614-191138']),
                    set([]))}
     """
+    if features is None:
+        features = FEATURES
+    if methods is None:
+        methods = []
+    if thresholds is None:
+        thresholds = globals()['thresholds']
     (_, parts) = detect_outlier_jobs(jobs, features=features, methods=methods, thresholds=thresholds)
     return parts
 
 
-def partition_jobs_by_ops(jobs, tags=[], features=FEATURES, methods=[modified_z_score], thresholds=thresholds):
+def partition_jobs_by_ops(jobs, tags=None, features=None, methods=None, thresholds=None):
     """
     Partitions operations into disjoint sets of reference and outliers::Outlier Detection
 
@@ -147,13 +153,21 @@ def partition_jobs_by_ops(jobs, tags=[], features=FEATURES, methods=[modified_z_
                                                                   u'kern-6656-20190614-194024']),
                                                               set([u'kern-6656-20190614-192044-outlier']))}
     """
+    if tags is None:
+        tags = []
+    if features is None:
+        features = FEATURES
+    if methods is None:
+        methods = [modified_z_score]
+    if thresholds is None:
+        thresholds = globals()['thresholds']
     (_, parts, _, _, _) = detect_outlier_ops(jobs, tags=tags, features=features, methods=methods, thresholds=thresholds)
     return parts
 
 
 @db_session
-def detect_outlier_jobs(jobs, trained_model=None, features=FEATURES, methods=[],
-                        thresholds=thresholds, sanity_check=True, pca=False):
+def detect_outlier_jobs(jobs, trained_model=None, features=None, methods=None,
+                        thresholds=None, sanity_check=True, pca=False):
     """
     Detects outlier jobs::Outlier Detection
 
@@ -202,7 +216,7 @@ def detect_outlier_jobs(jobs, trained_model=None, features=FEATURES, methods=[],
                  this option to True, you may also set this option to something
                  like: pca = 2, in which case it will mean you want two components
                  in the PCA. Or something like, pca = 0.95, which will be
-                 intepreted as meaning do PCA and automatically select the number
+                 interpreted as meaning do PCA and automatically select the number
                  components to arrive at the number of components in the PCA.
                  If set to True, a 0.85 variance ratio will be set to enable
                  automatic selection of PCA components.
@@ -337,6 +351,12 @@ def detect_outlier_jobs(jobs, trained_model=None, features=FEATURES, methods=[],
     # TODO: Provide examples with multivariate classifiers
 
     """
+    if features is None:
+        features = FEATURES
+    if methods is None:
+        methods = []
+    if thresholds is None:
+        thresholds = globals()['thresholds']
     eq._empty_collection_check(jobs)
     if sanity_check:
         eq._warn_incomparable_jobs(jobs)
@@ -348,7 +368,7 @@ def detect_outlier_jobs(jobs, trained_model=None, features=FEATURES, methods=[],
     # check if any columns contain nans
     nan_columns = jobs.columns[jobs.isnull().any()].tolist()
     if nan_columns:
-        raise ValueError(f'dataframe columns ({nan_columns}) contain atlleast one NaN each')
+        raise ValueError(f'dataframe columns ({nan_columns}) contain at least one NaN each')
 
     model_params = {}
     if trained_model:
@@ -566,8 +586,8 @@ def detect_outlier_jobs(jobs, trained_model=None, features=FEATURES, methods=[],
 # This function can be very expensive. So, we only use a single outlier
 # scoring method by default. Using 2 more really takes too long.
 @db_session
-def detect_outlier_ops(jobs, tags=[], trained_model=None, features=FEATURES,
-                       methods=[], thresholds=thresholds, sanity_check=True, pca=False):
+def detect_outlier_ops(jobs, tags=None, trained_model=None, features=None,
+                       methods=None, thresholds=None, sanity_check=True, pca=False):
     """
     Detects outlier operations::Outlier Detection
 
@@ -617,7 +637,7 @@ def detect_outlier_ops(jobs, tags=[], trained_model=None, features=FEATURES,
                  this option to True, you may also set this option to something
                  like: pca = 2, in which case it will mean you want two components
                  in the PCA. Or something like, pca = 0.95, which will be
-                 intepreted as meaning do PCA and automatically select the number
+                 interpreted as meaning do PCA and automatically select the number
                  components to arrive at the number of components in the PCA.
                  If set to True, a 0.85 variance ratio will be set to enable
                  automatic selection of PCA components.
@@ -684,12 +704,12 @@ def detect_outlier_ops(jobs, tags=[], trained_model=None, features=FEATURES,
     4         1          0
 
     >>> scores_df.head()[['tags','duration','cpu_time']]
-                                                    tags  duration  cpu_time
-    0  {"op": "mv", "op_instance": "13", "op_sequence...    11.530  4043.151
-    1  {"op": "mv", "op_instance": "10", "op_sequence...  1621.426     1.547
-    2  {"op": "hsmget", "op_instance": "6", "op_seque...   824.428     0.973
-    3  {"op": "hsmget", "op_instance": "7", "op_seque...   393.765     1.160
-    4  {"op": "hsmget", "op_instance": "6", "op_seque...   387.099     0.000
+                                                       tags  duration  cpu_time
+    0  {"op": "mv",    "op_instance": "13", "op_sequence...    11.530  4043.151
+    1  {"op": "mv",    "op_instance": "10", "op_sequence...  1621.426     1.547
+    2  {"op": "hsmget", "op_instance": "6", "op_sequence...   824.428     0.973
+    3  {"op": "hsmget", "op_instance": "7", "op_sequence...   393.765     1.160
+    4  {"op": "hsmget", "op_instance": "6", "op_sequence...   387.099     0.000
 
     >>> sorted_tags[:3]
     [ {u'op_instance': u'13', u'op_sequence': u'69', u'op': u'mv'},
@@ -704,10 +724,11 @@ def detect_outlier_ops(jobs, tags=[], trained_model=None, features=FEATURES,
     >>> out_df = eod.detect_outlier_ops(['kern-6656-20190614-190245', 'kern-6656-20190614-191138',
                                          'kern-6656-20190614-192044-outlier', 'kern-6656-20190614-194024'],
                                         features=[], pca = True, methods=[es.modified_z_score])
-   INFO: epmt_outliers: request to do PCA (pca=True). Input features: ['PERF_COUNT_SW_CPU_CLOCK', 'cancelled_write_byte
-s', 'cpu_time', 'delayacct_blkio_time', 'duration', 'guest_time', 'inblock', 'invol_ctxsw', 'majflt', 'minflt', 'num_pr
-ocs', 'numtids', 'outblock', 'processor', 'rchar', 'rdtsc_duration', 'read_bytes', 'rssmax', 'syscr', 'syscw', 'systemt
-ime', 'time_oncpu', 'time_waiting', 'timeslices', 'usertime', 'vol_ctxsw', 'wchar', 'write_bytes']
+   INFO: epmt_outliers: request to do PCA (pca=True). Input features: ['PERF_COUNT_SW_CPU_CLOCK',
+'cancelled_write_bytes', 'cpu_time', 'delayacct_blkio_time', 'duration', 'guest_time', 'inblock',
+'invol_ctxsw', 'majflt', 'minflt', 'num_procs', 'numtids', 'outblock', 'processor', 'rchar', 'rdtsc_duration',
+'read_bytes', 'rssmax', 'syscr', 'syscw', 'systemtime', 'time_oncpu', 'time_waiting', 'timeslices', 'usertime',
+'vol_ctxsw', 'wchar', 'write_bytes']
    INFO: epmt_outliers: 2 PCA components obtained: ['pca_01', 'pca_02']
    INFO: epmt_outliers: PCA variances: [0.66848523 0.24011409] (sum=0.9085993214405101)
    INFO: epmt_outliers: adjusting the PCA scores based on PCA variances
@@ -715,11 +736,11 @@ ime', 'time_oncpu', 'time_waiting', 'timeslices', 'usertime', 'vol_ctxsw', 'wcha
     # pick out the outlier rows
     >>> out_df[out_df.pca_weighted > 0]
                                 jobid                                               tags  pca_weighted  pca_01  pca_02
-2   kern-6656-20190614-192044-outlier  {'op': 'build', 'op_instance': '4', 'op_sequen...           3.8       1       1
-6   kern-6656-20190614-192044-outlier  {'op': 'clean', 'op_instance': '5', 'op_sequen...           3.8       1       1
-10  kern-6656-20190614-192044-outlier  {'op': 'configure', 'op_instance': '3', 'op_se...           3.8       1       1
-14  kern-6656-20190614-192044-outlier  {'op': 'download', 'op_instance': '1', 'op_seq...           3.8       1       1
-18  kern-6656-20190614-192044-outlier  {'op': 'extract', 'op_instance': '2', 'op_sequ...           3.8       1       1
+2   kern-6656-20190614-192044-outlier  {'op': 'build', 'op_instance': '4', 'op_sequence...           3.8       1       1
+6   kern-6656-20190614-192044-outlier  {'op': 'clean', 'op_instance': '5', 'op_sequence...           3.8       1       1
+10  kern-6656-20190614-192044-outlier  {'op': 'configure', 'op_instance': '3', 'op_sequence...       3.8       1       1
+14  kern-6656-20190614-192044-outlier  {'op': 'download', 'op_instance': '1', 'op_sequence...        3.8       1       1
+18  kern-6656-20190614-192044-outlier  {'op': 'extract', 'op_instance': '2', 'op_sequence...         3.8       1       1
 
     # The example below is for MVOD+trained model
     >>> r = eq.create_refmodel(['kern-6656-20190614-190245', 'kern-6656-20190614-191138', 'kern-6656-20190614-194024'],
@@ -729,26 +750,26 @@ ime', 'time_oncpu', 'time_waiting', 'timeslices', 'usertime', 'vol_ctxsw', 'wcha
     >>> df, part = eod.detect_outlier_ops(jobs, methods = es.mvod_classifiers(), trained_model = r['id'])
     >>> df
                                     jobid                                               tags  outlier
-    0           kern-6656-20190614-190245  {'op': 'build', 'op_instance': '4', 'op_sequen...        0
-    1           kern-6656-20190614-191138  {'op': 'build', 'op_instance': '4', 'op_sequen...        0
-    2   kern-6656-20190614-192044-outlier  {'op': 'build', 'op_instance': '4', 'op_sequen...        3
-    3           kern-6656-20190614-194024  {'op': 'build', 'op_instance': '4', 'op_sequen...        0
-    4           kern-6656-20190614-190245  {'op': 'clean', 'op_instance': '5', 'op_sequen...        0
-    5           kern-6656-20190614-191138  {'op': 'clean', 'op_instance': '5', 'op_sequen...        0
-    6   kern-6656-20190614-192044-outlier  {'op': 'clean', 'op_instance': '5', 'op_sequen...        3
-    7           kern-6656-20190614-194024  {'op': 'clean', 'op_instance': '5', 'op_sequen...        0
-    8           kern-6656-20190614-190245  {'op': 'configure', 'op_instance': '3', 'op_se...        0
-    9           kern-6656-20190614-191138  {'op': 'configure', 'op_instance': '3', 'op_se...        0
-    10  kern-6656-20190614-192044-outlier  {'op': 'configure', 'op_instance': '3', 'op_se...        3
-    11          kern-6656-20190614-194024  {'op': 'configure', 'op_instance': '3', 'op_se...        0
-    12          kern-6656-20190614-190245  {'op': 'download', 'op_instance': '1', 'op_seq...        0
-    13          kern-6656-20190614-191138  {'op': 'download', 'op_instance': '1', 'op_seq...        0
-    14  kern-6656-20190614-192044-outlier  {'op': 'download', 'op_instance': '1', 'op_seq...        3
-    15          kern-6656-20190614-194024  {'op': 'download', 'op_instance': '1', 'op_seq...        0
-    16          kern-6656-20190614-190245  {'op': 'extract', 'op_instance': '2', 'op_sequ...        0
-    17          kern-6656-20190614-191138  {'op': 'extract', 'op_instance': '2', 'op_sequ...        0
-    18  kern-6656-20190614-192044-outlier  {'op': 'extract', 'op_instance': '2', 'op_sequ...        3
-    19          kern-6656-20190614-194024  {'op': 'extract', 'op_instance': '2', 'op_sequ...        0
+    0           kern-6656-20190614-190245  {'op': 'build', 'op_instance': '4', 'op_sequence...        0
+    1           kern-6656-20190614-191138  {'op': 'build', 'op_instance': '4', 'op_sequence...        0
+    2   kern-6656-20190614-192044-outlier  {'op': 'build', 'op_instance': '4', 'op_sequence...        3
+    3           kern-6656-20190614-194024  {'op': 'build', 'op_instance': '4', 'op_sequence...        0
+    4           kern-6656-20190614-190245  {'op': 'clean', 'op_instance': '5', 'op_sequence...        0
+    5           kern-6656-20190614-191138  {'op': 'clean', 'op_instance': '5', 'op_sequence...        0
+    6   kern-6656-20190614-192044-outlier  {'op': 'clean', 'op_instance': '5', 'op_sequence...        3
+    7           kern-6656-20190614-194024  {'op': 'clean', 'op_instance': '5', 'op_sequence...        0
+    8           kern-6656-20190614-190245  {'op': 'configure', 'op_instance': '3', 'op_sequence...    0
+    9           kern-6656-20190614-191138  {'op': 'configure', 'op_instance': '3', 'op_sequence...    0
+    10  kern-6656-20190614-192044-outlier  {'op': 'configure', 'op_instance': '3', 'op_sequence...    3
+    11          kern-6656-20190614-194024  {'op': 'configure', 'op_instance': '3', 'op_sequence...    0
+    12          kern-6656-20190614-190245  {'op': 'download', 'op_instance': '1', 'op_sequence...     0
+    13          kern-6656-20190614-191138  {'op': 'download', 'op_instance': '1', 'op_sequence...     0
+    14  kern-6656-20190614-192044-outlier  {'op': 'download', 'op_instance': '1', 'op_sequence...     3
+    15          kern-6656-20190614-194024  {'op': 'download', 'op_instance': '1', 'op_sequence...     0
+    16          kern-6656-20190614-190245  {'op': 'extract', 'op_instance': '2', 'op_sequence...      0
+    17          kern-6656-20190614-191138  {'op': 'extract', 'op_instance': '2', 'op_sequence...      0
+    18  kern-6656-20190614-192044-outlier  {'op': 'extract', 'op_instance': '2', 'op_sequence...      3
+    19          kern-6656-20190614-194024  {'op': 'extract', 'op_instance': '2', 'op_sequence...      0
 
     >>> part
     {'{"op": "build", "op_instance": "4", "op_sequence": "4"}': {'pyod.models.cof': [0, 0, 1, 0],
@@ -774,6 +795,14 @@ ime', 'time_oncpu', 'time_waiting', 'timeslices', 'usertime', 'vol_ctxsw', 'wcha
 
 
     """
+    if tags is None:
+        tags = []
+    if features is None:
+        features = FEATURES
+    if methods is None:
+        methods = []
+    if thresholds is None:
+        thresholds = globals()['thresholds']
     eq._empty_collection_check(jobs)
     if sanity_check:
         eq._warn_incomparable_jobs(jobs)
@@ -1069,7 +1098,7 @@ ime', 'time_oncpu', 'time_waiting', 'timeslices', 'usertime', 'vol_ctxsw', 'wcha
         return (mvod_df, classfiers_od_dict)
 
 
-def detect_outliers(df, features=[], methods=[]):
+def detect_outliers(df, features=None, methods=None):
     """
     Generic function to detect outlier rows in a dataframe::Outlier Detection
 
@@ -1093,6 +1122,10 @@ def detect_outliers(df, features=[], methods=[]):
     This function currently supports only univariate classifiers. Trained models
     are not presently supported, either.
     """
+    if features is None:
+        features = []
+    if methods is None:
+        methods = []
     eq._empty_collection_check(df)
     features = features or list(df.columns.values)
     retval = pd.DataFrame(0, columns=features, index=df.index)
@@ -1112,7 +1145,7 @@ def detect_outliers(df, features=[], methods=[]):
     return retval
 
 
-def detect_outlier_processes(processes, features=['duration', 'cpu_time'], methods=[]):
+def detect_outlier_processes(processes, features=None, methods=None):
     """
     This function detects outlier processes from within the input set::Outlier Detection
 
@@ -1131,10 +1164,14 @@ def detect_outlier_processes(processes, features=['duration', 'cpu_time'], metho
     This function currently supports only univariate classifiers. Trained models
     are not presently supported, either.
     """
+    if features is None:
+        features = ['duration', 'cpu_time']
+    if methods is None:
+        methods = []
     return detect_outliers(processes, features=features, methods=methods)
 
 
-def detect_outlier_threads(threads, features=['usertime', 'systemtime', 'rssmax'], methods=[]):
+def detect_outlier_threads(threads, features=None, methods=None):
     """
     This function detects outlier threads from within the input set::Outlier Detection
 
@@ -1153,11 +1190,15 @@ def detect_outlier_threads(threads, features=['usertime', 'systemtime', 'rssmax'
     This function currently supports only univariate classifiers. Trained models
     are not presently supported, either.
     """
+    if features is None:
+        features = ['usertime', 'systemtime', 'rssmax']
+    if methods is None:
+        methods = []
     return detect_outliers(threads, features=features, methods=methods)
 
 
 @db_session
-def detect_rootcause(jobs, inp, features=FEATURES, methods=[modified_z_score]):
+def detect_rootcause(jobs, inp, features=None, methods=None):
     """
     Performs root-cause analysis on a job given a set of reference jobs::RCA
 
@@ -1188,6 +1229,10 @@ def detect_rootcause(jobs, inp, features=FEATURES, methods=[modified_z_score]):
     for the feature. The sorted_tuples consists of a list of tuples, where each
     tuple (feature,<diff_score>)
     """
+    if features is None:
+        features = FEATURES
+    if methods is None:
+        methods = [modified_z_score]
     if isinstance(jobs, int):
         jobs = eq.conv_jobs(orm_get(ReferenceModel, jobs).jobs, fmt='pandas')
     elif not isinstance(jobs, pd.DataFrame):
@@ -1198,7 +1243,7 @@ def detect_rootcause(jobs, inp, features=FEATURES, methods=[modified_z_score]):
 
 
 @db_session
-def detect_rootcause_op(jobs, inp, tag, features=FEATURES, methods=[modified_z_score]):
+def detect_rootcause_op(jobs, inp, tag, features=None, methods=None):
     """
     Performs root-cause analysis (RCA) for an operation::RCA
 
@@ -1257,6 +1302,10 @@ def detect_rootcause_op(jobs, inp, tag, features=FEATURES, methods=[modified_z_s
     >>> s
     [('cpu_time', 379.350952249517), ('duration', 56.09397944199707), ('num_procs', 0.0)]
     """
+    if features is None:
+        features = FEATURES
+    if methods is None:
+        methods = [modified_z_score]
     if not tag:
         print('You must specify a non-empty tag')
         return (False, None, None)
@@ -1282,7 +1331,7 @@ def detect_rootcause_op(jobs, inp, tag, features=FEATURES, methods=[modified_z_s
     return rca(ref_ops_df, inp_ops_df, features, methods)
 
 
-def pca_feature_combine(inp_df, inp_features=[], desired=2, retain_features=False):
+def pca_feature_combine(inp_df, inp_features=None, desired=2, retain_features=False):
     '''
     Perform PCA on a dataframe with multiple features::Data Reduction
 
@@ -1338,14 +1387,14 @@ pca_variance_ratios_list: List of variance ratios. You should
         >>> df.iloc[:,[0,1,2,3]]
             jobid     pca_01    pca_02                                      all_proc_tags
         0  625151  11.748975 -0.700262  [{'op': 'cp', 'op_instance': '1', 'op_sequence...
-        1  627907  -0.408930  1.383793  [{'op': 'cp', 'op_instance': '11', 'op_sequenc...
-        2  629322  -0.485693  5.288491  [{'op': 'cp', 'op_instance': '11', 'op_sequenc...
-        3  633114  -2.183437 -1.234823  [{'op': 'cp', 'op_instance': '11', 'op_sequenc...
-        4  675992  -1.429851  0.082807  [{'op': 'cp', 'op_instance': '11', 'op_sequenc...
-        5  680163  -1.847891 -1.319421  [{'op': 'cp', 'op_instance': '11', 'op_sequenc...
-        6  685001  -2.000026 -1.283439  [{'op': 'cp', 'op_instance': '11', 'op_sequenc...
-        7  691209  -1.848527 -1.166007  [{'op': 'cp', 'op_instance': '11', 'op_sequenc...
-        8  693129  -1.544619 -1.051139  [{'op': 'cp', 'op_instance': '11', 'op_sequenc...
+        1  627907  -0.408930  1.383793  [{'op': 'cp', 'op_instance': '11', 'op_sequence...
+        2  629322  -0.485693  5.288491  [{'op': 'cp', 'op_instance': '11', 'op_sequence...
+        3  633114  -2.183437 -1.234823  [{'op': 'cp', 'op_instance': '11', 'op_sequence...
+        4  675992  -1.429851  0.082807  [{'op': 'cp', 'op_instance': '11', 'op_sequence...
+        5  680163  -1.847891 -1.319421  [{'op': 'cp', 'op_instance': '11', 'op_sequence...
+        6  685001  -2.000026 -1.283439  [{'op': 'cp', 'op_instance': '11', 'op_sequence...
+        7  691209  -1.848527 -1.166007  [{'op': 'cp', 'op_instance': '11', 'op_sequence...
+        8  693129  -1.544619 -1.051139  [{'op': 'cp', 'op_instance': '11', 'op_sequence...
 
         # Ideally, we want the variances sum to be at least 80% or more to have confidence in PCA
         >>> variances
@@ -1400,7 +1449,7 @@ pca_variance_ratios_list: List of variance ratios. You should
 
         As you can see all the features listed above are important and roughly
         equal in importance (except rdtsc_duration onwards). The irrelevant
-        fetaures are at the bottom of the list. We only check the first PCA
+        features are at the bottom of the list. We only check the first PCA
         component (the first row of features_df) because the other is much
         lower in importance. On the second PCA component, we might care about
         the top few features:
@@ -1449,6 +1498,8 @@ pca_variance_ratios_list: List of variance ratios. You should
 
     IOW, 625151 is an outlier according to pca_01.
     '''
+    if inp_features is None:
+        inp_features = []
 
     from epmt.epmt_stat import pca_stat
     if not isinstance(inp_df, pd.DataFrame):
@@ -1525,7 +1576,7 @@ pca_weight_vec : The newly added PCA weighted vector
 
     And the variances are: [0.75, 0.25]
 
-    A new column is added, by mutiplying the pca_1 column (0.75/0.25 = 3)
+    A new column is added, by multiplying the pca_1 column (0.75/0.25 = 3)
     and pca_2 column by (0.25/0.25 = 1) and the summing the resultant vectors
        jobid  pca_weighted   pca_01     pca_02
        xxxx     3              1          0
@@ -1544,7 +1595,7 @@ pca_weight_vec : The newly added PCA weighted vector
     return (out_df, pca_weighted_vec)
 
 
-def pca_feature_rank(jobs, inp_features=[]):
+def pca_feature_rank(jobs, inp_features=None):
     '''
     Performs 2-component PCA and feature-ranking::Data Reduction
 
@@ -1609,6 +1660,8 @@ def pca_feature_rank(jobs, inp_features=[]):
       ('outblock', 0.0), ('processor', 0.0) ]
 
     '''
+    if inp_features is None:
+        inp_features = []
     from epmt.epmt_stat import dframe_append_weighted_row
 
     jobs_df = eq.get_jobs(jobs, fmt='pandas')
@@ -1627,7 +1680,7 @@ def pca_feature_rank(jobs, inp_features=[]):
     return (sorted_df, sorted_features)
 
 
-def feature_scatter_plot(jobs, features=[], outfile='', annotate=False):
+def feature_scatter_plot(jobs, features=None, outfile='', annotate=False):
     '''
     Create a 2-D scatter plot showing job features::Outlier Detection
 
@@ -1661,6 +1714,8 @@ def feature_scatter_plot(jobs, features=[], outfile='', annotate=False):
     >>> feature_scatter_plot(['625151', '627907', '629322', '633114', '675992', '680163', '685001', '691209', '693129'],
                              features=['cpu_time', 'duration'])
     '''
+    if features is None:
+        features = []
     jobs_df = eq.get_jobs(jobs, fmt='pandas')
     features = sanitize_features(features, jobs_df)
     pca_variances = None
@@ -1692,6 +1747,7 @@ def feature_scatter_plot(jobs, features=[], outfile='', annotate=False):
         xaxis=dict(title_text=features[0] + x_label_ext),)
     if outfile:
         print('Plotly Cannot export static images, Feature coming soon')
+        return None
     else:
         return plt
 
@@ -1760,7 +1816,7 @@ def sanitize_features(f, df, model=None):
     return features
 
 
-def get_feature_distributions(jobs, features=[]):
+def get_feature_distributions(jobs, features=None):
     '''
     Get feature distributions for a collection of jobs::Jobs
 
@@ -1796,6 +1852,8 @@ def get_feature_distributions(jobs, features=[]):
                                        features=['cpu_time', 'rssmax'])
     {'cpu_time': 'unknown', 'rssmax': 'norm'}
     '''
+    if features is None:
+        features = []
     eq._empty_collection_check(jobs)
     eq._warn_incomparable_jobs(jobs)
 

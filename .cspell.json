@@ -1,0 +1,34 @@
+// configuration for spellcheck workflow
+{
+    "version": "0.2",
+    "language": "en",
+    "caseSensitive": false,
+    "dictionaryDefinitions": [
+        {
+            "name": "ok-unknown-words",
+            "path": "./.cspell/ok-unknown-words.txt",
+            "addWords": false
+        }
+    ],
+    "dictionaries": [
+        "ok-unknown-words",
+        // "noaa-words", // TODO sort words into categories
+        // "gfdl-words",
+        // "software-words"
+    ],
+    "ignorePaths": [
+        "cspell.json",
+        "*.cdl",
+		// local packaging and buid byproducts
+        "build",
+        "*.egg-info",
+        "**/*.egg-info/**",
+		"epmtdocs/site/**",
+		// notebooks/ contains lots of html
+		"notebooks",
+        // sample/ contains test workload scripts and staged job data
+        "sample/**",
+        // test/data/ contains binary fixtures, CSVs, and outlier datasets
+        "src/epmt/test/data/**"
+    ]
+}
