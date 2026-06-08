@@ -15,7 +15,7 @@ This document also exists for the purpose of making it easier for me to one day 
 
 Unfortunately, this work failed to produce a model that predicts cpu_time well. The best $R^2$ results were 0.42 using the HistGradientBoostingRegressor.
 
-While this exploratory phase did not yield a model ready for production, it successfully established a strong baseline. This successfully explains 44% of the variance in CPU utilization. However, this may suggest that a significant portion of `cpu_time` variance is likely driven by features not yet explored from or not yet captured by the EPMT database.
+While this exploratory phase did not yield a model ready for production, it successfully established a strong baseline. This successfully explains 42% of the variance in CPU utilization. However, this may suggest that a significant portion of `cpu_time` variance is likely driven by features not yet explored from or not yet captured by the EPMT database.
 
 ## Dataset Curation & Features
 
