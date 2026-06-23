@@ -1,5 +1,8 @@
 name: build_and_test_epmt
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 on:
   push
 
