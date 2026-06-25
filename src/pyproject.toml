@@ -77,7 +77,7 @@ devtest = [
 ]
 # 20231102 caw: pyinstaller is pinned at 5.7.0, latest version doesn't allow the settings.py tactic.
 build = [
-    "pyinstaller==5.7.0",
+    "pyinstaller==6.0.0",
     "pyinstaller-hooks-contrib==2023.11",
 ]
 # Shorthand: install everything (mirrors the old flat dependency list)
