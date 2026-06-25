@@ -2,7 +2,7 @@ To publish new release, cease merging new PRs to `main`, and carefully follow th
 
 
 
-## first, create a new tag for release
+## first, create a new tag for release (IN DEVELOPMENT)
 
 - [ ] create a new branch off `main`, *give it a name different than the exact tag you are creating*
 - [ ] edit the version number in `src/epmt/epmtlib.py` to the desired version tag of format `X.Y.Z` (remove the `.post` suffix)
@@ -11,7 +11,7 @@ To publish new release, cease merging new PRs to `main`, and carefully follow th
 
 
 
-## second, publish release to PyPI, then github, in that order
+## second, publish release to PyPI, then github, in that order (IN DEVELOPMENT)
 
 - [ ] push your locally created tag with `git checkout X.Y.Z; git push origin HEAD:refs/tags/X.Y.Z`
 - [ ] pushing the new tag `X.Y.Z` triggers the `pip` build and publish pipeline, wait for it to finish and find it on PyPI.
@@ -24,7 +24,7 @@ WARNING: *any problems or mistakes after the next step are irreversible due to p
 
 
 
-## third, publish release to `conda-forge` via `epmt-feedstock` fork
+## third, publish release to `conda-forge` via `epmt-feedstock` fork (IN DEVELOPMENT)
 
 - [ ] use (create if needed) an `epmt-feedstock` fork to create a new branch called `epmtX.Y.Z`
 - [ ] adjust the version to `X.Y.Z` and update the `sha256` to what it says on PyPI in `recipe.yaml`
@@ -33,7 +33,7 @@ WARNING: *any problems or mistakes after the next step are irreversible due to p
 
 
 
-## wrap-up
+## wrap-up (IN DEVELOPMENT)
 
 - [ ] back to the `epmt` PR we opened initially.
 - [ ] edit the version number in `src/epmt/epmtlib.py` to `X.Y.Z.post` (bump to next version with `.post` suffix), let the checks pass
