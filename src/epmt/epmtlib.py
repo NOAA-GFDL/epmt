@@ -23,8 +23,8 @@ logger = getLogger(__name__)
 # third element is the patch or bugfix number
 # Since we are saving as a tuple you can do a simple
 # compare of two version tuples and python will do the right thing
-_version = (5, 0, 0)
-__version__ = ".".join([str(i) for i in _version]) + ".post"
+_version = (5, 0, 1)
+__version__ = ".".join([str(i) for i in _version]) # + ".post"
 
 
 def version():
