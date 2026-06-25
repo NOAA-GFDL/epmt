@@ -36,8 +36,20 @@ jobs:
           echo "Building epmt package using python -m build"
           python -m build src/
 
-      - name: Publish package to Test PyPI
+      - name: Upload pip Package Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: epmt-pip-packages
+          path: src/dist/*
+          if-no-files-found: error
+
+      - name: Publish package to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: src/dist/
-          repository-url: https://test.pypi.org/legacy/
+
+#      - name: Publish package to Test PyPI
+#        uses: pypa/gh-action-pypi-publish@release/v1
+#        with:
+#          packages-dir: src/dist/
+#          repository-url: https://test.pypi.org/legacy/
