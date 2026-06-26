@@ -54,5 +54,5 @@ mkdocs-git-committers-plugin
 mkdocs-theme-bootstrap4
 
 # -- build -----------------------------------------------------------------
-pyinstaller==5.7.0
+pyinstaller==6.0.0
 pyinstaller-hooks-contrib==2023.11
