@@ -1,2 +1,3 @@
-recursive-include papiex-epmt-install/lib *.so*
 recursive-include epmt/lib *.so*
+recursive-include epmt/bin *
+include compile_papiex.sh

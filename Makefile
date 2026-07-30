@@ -66,7 +66,7 @@ PWD=$(shell pwd)
 	install-py3-conda install-py3-pyenv install-deps \\
 	dist python-dist dist-test docker-dist docker-dist-test \\
 	epmt-dash \\
-	papiex-dist \\
+	papiex-dist vendor-papiex pip-install \\
 	epmt-full-release check-release \\
 	release \\
 	clean-extra clean-all clean distclean dashclean dockerclean papiexclean \\
@@ -161,10 +161,14 @@ $(EPMT_RELEASE) dist:
 	@echo "**********************************************************"
 	tar -czf $(EPMT_RELEASE) epmt-install
 
-# runs setuptools
-# note that this step requires EPMT_RELEASE and PAPIEX_RELEASE, but we don't explicitly state it here, b.c.
-# when we go in the docker container, the time-zone changes and therefore the timestamp comparison triggers re-making
-# targets that do not need to be remade
+# runs setuptools to build the sdist.
+# Used in the Docker release flow: make papiex-dist (Docker path) builds the papiex
+# tarball, then python-dist extracts the pre-compiled .so files into epmt/lib/ before
+# building the sdist. For bare-metal installs, papiex is compiled at pip install time
+# via compile_papiex.sh instead.
+# NOTE: we don't explicitly list EPMT_RELEASE and PAPIEX_RELEASE as dependencies, b.c.
+# when we go in the docker container, the time-zone changes and therefore the timestamp
+# comparison triggers re-making targets that do not need to be remade
 python-dist:
 	@echo "(python-dist) whoami: $(shell whoami)"
 	@echo "**********************************************************"
@@ -173,6 +177,7 @@ python-dist:
 	cd src && echo "GOOD: cd src" || echo "I FAILED: cd src" ; \
 	tar zxf ../$(PAPIEX_RELEASE) && echo "GOOD: tar -zxf ../PAPIEX_RELEASE" || echo "I FAILED: tar zxf ../PAPIEX_RELEASE" ; \
 	mkdir -p epmt/lib && cp -a papiex-epmt-install/lib/*.so* epmt/lib/ && echo "GOOD: cp papiex libs to epmt/lib" || echo "I FAILED: cp papiex libs to epmt/lib" ; \
+	rm -rf papiex-epmt-install && echo "GOOD: rm papiex-epmt-install" || echo "I FAILED: rm papiex-epmt-install" ; \
 	pip3 install --quiet build && echo "GOOD: pip3 install build" || echo "I FAILED: pip3 install build" ; \
 	python3 -m build --sdist && echo "GOOD: python3 -m build --sdist" || echo "I FAILED: python3 -m build --sdist" ; \
 	chmod a+r dist/* && echo "GOOD: chmod a+r dist/*" || echo "I FAILED: chmod a+r dist/*"
@@ -282,15 +287,7 @@ $(PAPIEX_SRC)/$(PAPIEX_RELEASE): $(PAPIEX_SRC)
 	@echo
 	@echo
 	@echo "################### BEGIN MAKE PAPIEX TARBALL : papiex-dist ########################################"
-	if [ -n "${OUTSIDE_DOCKER}" ]; then \
-	echo "within docker. make and make check within PAPIEX_SRC/PAPIEX_RELEASE target" ; \
-	make -C $(PAPIEX_SRC) CONFIG_PAPIEX_PAPI=$(CONFIG_PAPIEX_PAPI) CONFIG_PAPIEX_DEBUG=$(CONFIG_PAPIEX_DEBUG) OS_TARGET=$(OS_TARGET) distclean install dist ; \
-	make -C $(PAPIEX_SRC) CONFIG_PAPIEX_PAPI=$(CONFIG_PAPIEX_PAPI) CONFIG_PAPIEX_DEBUG=$(CONFIG_PAPIEX_DEBUG) OS_TARGET=$(OS_TARGET) dist-test ; \
-	make -C $(PAPIEX_SRC) CONFIG_PAPIEX_PAPI=$(CONFIG_PAPIEX_PAPI) CONFIG_PAPIEX_DEBUG=$(CONFIG_PAPIEX_DEBUG) OS_TARGET=$(OS_TARGET) check ; \
-	else \
-	echo "outside docker. making docker-dist within PAPIEX_SRC/PAPIEX_RELEASE target" ; \
-	make -C $(PAPIEX_SRC) CONFIG_PAPIEX_PAPI=$(CONFIG_PAPIEX_PAPI) CONFIG_PAPIEX_DEBUG=$(CONFIG_PAPIEX_DEBUG) OS_TARGET=$(OS_TARGET) DOCKER_RUN_OPTS="$(DOCKER_RUN_OPTS)" docker-dist ; \
-	fi
+	make -C $(PAPIEX_SRC) CONFIG_PAPIEX_PAPI=$(CONFIG_PAPIEX_PAPI) CONFIG_PAPIEX_DEBUG=$(CONFIG_PAPIEX_DEBUG) OS_TARGET=$(OS_TARGET) DOCKER_RUN_OPTS="$(DOCKER_RUN_OPTS)" docker-dist
 
 $(PAPIEX_SRC): $(PAPIEX_SRC_TARBALL)
 	@echo "(PAPIEX_SRC) whoami: $(shell whoami)"
@@ -305,6 +302,33 @@ $(PAPIEX_SRC_TARBALL):
 	@echo "(PAPIEX_SRC_TARBALL) whoami: $(shell whoami)"
 	curl -L --fail --retry 3 --retry-delay 5 -O $(PAPIEX_SRC_URL) ; \
 	ls $(PAPIEX_SRC_TARBALL)
+
+# Download papiex source into src/vendor/papiex/ so compile_papiex.sh
+# can find it without needing network access at pip-install time.
+vendor-papiex:
+	@echo "(vendor-papiex) whoami: $(shell whoami)"
+	@echo " ------ VENDOR PAPIEX SOURCE INTO src/vendor/papiex ------- "
+	@echo "PAPIEX_SRC_URL = ${PAPIEX_SRC_URL}"
+	if [ -d "src/vendor/papiex" ] && [ -f "src/vendor/papiex/Makefile" ]; then \
+	echo "src/vendor/papiex already exists, skipping download." ; \
+	else \
+	mkdir -p src/vendor ; \
+	curl -L --fail --retry 3 --retry-delay 5 \
+	-o /tmp/papiex-vendor-$(PAPIEX_SRC_BRANCH).tar.gz $(PAPIEX_SRC_URL) ; \
+	tar zxf /tmp/papiex-vendor-$(PAPIEX_SRC_BRANCH).tar.gz -C /tmp ; \
+	TOP_DIR=$$(tar ztf /tmp/papiex-vendor-$(PAPIEX_SRC_BRANCH).tar.gz | head -1 | cut -d/ -f1) ; \
+	mv /tmp/$${TOP_DIR} src/vendor/papiex ; \
+	rm -f /tmp/papiex-vendor-$(PAPIEX_SRC_BRANCH).tar.gz ; \
+	echo "papiex source vendored at src/vendor/papiex" ; \
+	ls src/vendor/papiex ; \
+	fi
+
+# Install epmt directly from src/ using pip, triggering compile_papiex.sh.
+# Run 'make vendor-papiex' first to avoid a network download at install time.
+pip-install: vendor-papiex
+	@echo "(pip-install) whoami: $(shell whoami)"
+	@echo " ------ PIP INSTALL epmt with PAPIEX COMPILATION ------- "
+	pip3 install ./src
 # ----------- \end PAPIEX THINGS ---------- #
 
 
@@ -453,6 +477,8 @@ papiexclean:
 	@echo "(papiexclean) whoami: $(shell whoami)"
 	- rm -fr $(PAPIEX_SRC) 
 	- rm -f $(PAPIEX_SRC_TARBALL) $(PAPIEX_RELEASE)
+	- rm -rf src/vendor/papiex
+	- rm -rf src/epmt/lib
 # ----------- \end CLEANING ---------- #
 
 

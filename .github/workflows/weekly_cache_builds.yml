@@ -187,24 +187,9 @@ jobs:
           path: src/epmt/ui
           key: epmt-dash-${{ env.EPMT_DASH_SRC_BRANCH }}
 
-      # ── papiex (OUTSIDE_DOCKER) ────────────────────────────────────
-      - name: Build papiex-dist (OUTSIDE_DOCKER)
-        run: make OUTSIDE_DOCKER='YUP' papiex-dist
-
-      - name: Verify papiex tarball exists
-        run: |
-          TARBALL="papiex-epmt-${PAPIEX_VERSION}-${OS_TARGET}.tgz"
-          if [ ! -f "${TARBALL}" ]; then
-            echo "::error::Papiex OUTSIDE_DOCKER tarball '${TARBALL}' not found."
-            exit 1
-          fi
-          echo "Papiex OUTSIDE_DOCKER tarball '${TARBALL}' exists."
-
-      - name: Cache papiex tarball (OUTSIDE_DOCKER)
-        uses: actions/cache/save@v4
-        with:
-          path: papiex-epmt-${{ env.PAPIEX_VERSION }}-${{ env.OS_TARGET }}.tgz
-          key: papiex-outside-docker-${{ env.PAPIEX_VERSION }}-${{ env.OS_TARGET }}
+      # ── papiex (OUTSIDE_DOCKER) removed ─────────────────────────
+      # Bare-metal papiex compilation is now handled by compile_papiex.sh
+      # at pip install time. Only the Docker-based papiex cache remains.
 
       # ── Python + SQLite from source (container-path cache) ──────────
       # Pre-warm the Python/SQLite build cache so build_and_test_epmt

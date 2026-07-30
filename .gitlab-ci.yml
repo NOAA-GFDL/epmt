@@ -36,9 +36,6 @@ build:python3:
     - make dist python-dist dist-test
 
     - pip3 install src/dist/epmt*gz
-    - mkdir -p /usr/lib/python3.10/site-packages/papiex-epmt-install
-    - ln -s  /usr/lib/python3.10/site-packages/epmt/lib /usr/lib/python3.10/site-packages/papiex-epmt-install/
-    - ln -s  /usr/lib/python3.10/site-packages/epmt/bin /usr/lib/python3.10/site-packages/papiex-epmt-install/
 
     - export PATH='/usr/bin:${PATH}:/usr/local/bin:/usr/local/libexec'
 

@@ -40,7 +40,7 @@ profile = False
 # input pattern must match both csv v1 and v2 filenames
 input_pattern = "*-papiex*.[ct]sv"
 
-install_prefix = path.abspath(get_install_root() + "/../papiex-epmt-install/")
+install_prefix = get_install_root()
 
 # install_prefix = path.dirname(path.abspath(__file__)) + "/../papiex-oss/papiex-epmt-install/"
 # install_prefix = path.abspath(this_file_dir + "/../../papiex-epmt-install/")

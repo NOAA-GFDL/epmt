@@ -69,11 +69,6 @@ WORKDIR ${install_path}_archive
 COPY ${epmt_full_release} .
 COPY src/dist/${epmt_python_full_release} .
 RUN python3 -m pip install ${epmt_python_full_release}
-
-RUN mkdir /usr/lib/python3.10/site-packages/papiex-oss \
-    && tar zxf ${epmt_python_full_release}  \
-    && mv epmt-${epmt_version}/papiex-epmt-install /usr/lib/python3.10/site-packages/papiex-oss 
-#    && rm -rf *.tgz
  
 COPY utils/epmt-installer .
 WORKDIR ${install_path}

@@ -63,7 +63,23 @@ src/epmt.egg-info/*
 src/papiex-epmt-install/*
 src/epmt/settings.py
 
+# papiex compile_papiex.sh / pip install artifacts #
+#####################################################
+# vendored papiex C source (populated by 'make vendor-papiex')
+src/vendor/
+# compiled papiex shared libraries (populated by compile_papiex.sh or make python-dist)
+src/epmt/lib/
+# pip build log from setup.py
+install_papiex.log
+
 # virtualenv
 venv*
 
+# setuptools build artifacts
+src/build/
+# papiex compilation byproducts (headers and helper scripts)
+src/epmt/bin/
+src/epmt/include/
 
+# virtualenv
+venv*
