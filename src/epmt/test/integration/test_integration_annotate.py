@@ -1,4 +1,5 @@
-"""Integration tests for epmt annotate functionality.
+"""
+Integration tests for epmt annotate functionality.
 
 Translated from 015-annotate.bats.
 """
@@ -14,31 +15,41 @@ EPMT_DB_URL = f"sqlite:///{EPMT_DB_PATH}"
 
 @pytest.fixture(autouse=True)
 def setup_and_teardown(resource_path):
-    """Setup: run the annotate script; Teardown: clean up."""
+    """
+    run annotate script; yield relevant fields, then tear-down/clean-up.
+    """
     stage_dest = epmt_setting("stage_command_dest")
     assert stage_dest, "stage_command_dest is empty"
     assert os.path.isdir(stage_dest), f"stage_command_dest {stage_dest} does not exist"
+
     epmt_output_prefix = epmt_python_setting(
         "import epmt.epmt_settings as settings; print(settings.epmt_output_prefix);"
     )
     assert epmt_output_prefix, "epmt_output_prefix is empty"
-    user = os.environ.get("USER", "root")
 
+    user = os.environ.get("USER", "root")
     env = {"EPMT_DB_URL": EPMT_DB_URL}
 
     # Clean up any previous test state
     for f in [EPMT_DB_PATH]:
         if os.path.exists(f):
             os.remove(f)
+
     job_dir = os.path.join(epmt_output_prefix, user, "3456")
     if os.path.isdir(job_dir):
         import shutil
         shutil.rmtree(job_dir)
+
     staged_file = os.path.join(stage_dest, "3456.tgz")
     if os.path.exists(staged_file):
         os.remove(staged_file)
+
     run_cmd("epmt delete 3456", env=env)
-    run_cmd(f"{resource_path}/test/integration/epmt-annotate.sh", env=env)
+
+    annotate_out = run_cmd(f"{resource_path}/test/integration/epmt-annotate.sh", env=env)
+    assert annotate_out.returncode == 0, f'epmt-annotate.sh failed:\n{annotate_out.stderr}\n{annotate_out.stdout}'
+    assert os.path.exists(EPMT_DB_PATH), f'does not exist: EPMT_DB_PATH={EPMT_DB_PATH}'
+    assert os.path.exists(f'{stage_dest}/3456.tgz'), f'{stage_dest}/3456.tgz was not created for some reason'
 
     yield {"stage_dest": stage_dest, "env": env}
 
@@ -50,6 +61,7 @@ def setup_and_teardown(resource_path):
         os.remove(staged_file)
     if os.path.exists(EPMT_DB_PATH):
         os.remove(EPMT_DB_PATH)
+
     run_cmd("epmt delete 3456", env=env)
 
 
