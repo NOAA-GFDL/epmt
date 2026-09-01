@@ -8,7 +8,8 @@ import pytest
 from conftest import run_cmd, epmt_setting, epmt_python_setting
 
 # Use a file-based SQLite database for persistence across epmt commands
-EPMT_DB_URL = "sqlite:////tmp/epmt_test_annotate.sqlite"
+EPMT_DB_PATH = '/tmp/epmt_test_annotate.sqlite'
+EPMT_DB_URL = f"sqlite:///{EPMT_DB_PATH}"
 
 
 @pytest.fixture(autouse=True)
@@ -26,7 +27,7 @@ def setup_and_teardown(resource_path):
     env = {"EPMT_DB_URL": EPMT_DB_URL}
 
     # Clean up any previous test state
-    for f in ["/tmp/epmt_test_annotate.sqlite"]:
+    for f in [EPMT_DB_PATH]:
         if os.path.exists(f):
             os.remove(f)
     job_dir = os.path.join(epmt_output_prefix, user, "3456")
@@ -47,8 +48,8 @@ def setup_and_teardown(resource_path):
         shutil.rmtree(job_dir)
     if os.path.exists(staged_file):
         os.remove(staged_file)
-    if os.path.exists("/tmp/epmt_test_annotate.sqlite"):
-        os.remove("/tmp/epmt_test_annotate.sqlite")
+    if os.path.exists(EPMT_DB_PATH):
+        os.remove(EPMT_DB_PATH)
     run_cmd("epmt delete 3456", env=env)
 
 
