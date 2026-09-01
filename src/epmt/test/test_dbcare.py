@@ -247,7 +247,6 @@ class TestTimeLimit(unittest.TestCase):
     def test_retire_stops_at_deadline(self):
         """epmt_retire should stop job retirement when deadline is already passed."""
         import time
-        import epmt.epmt_cmd_retire as retire_mod
 
         call_order = []
 
@@ -260,8 +259,8 @@ class TestTimeLimit(unittest.TestCase):
             return 0
 
         # time_limit=0 means the deadline is immediately in the past
-        with patch.object(retire_mod, 'retire_refmodels', side_effect=mock_retire_refmodels):
-            with patch.object(retire_mod, 'retire_jobs', side_effect=mock_retire_jobs):
+        with patch('epmt.epmt_cmd_retire.retire_refmodels', side_effect=mock_retire_refmodels):
+            with patch('epmt.epmt_cmd_retire.retire_jobs', side_effect=mock_retire_jobs):
                 # Use a very small time limit so deadline passes after model retirement
                 with patch('epmt.epmt_cmd_retire.time') as mock_time:
                     # First call: time.time() for setting deadline returns 100
@@ -350,10 +349,9 @@ class TestTimeLimit(unittest.TestCase):
 
     def test_dbcare_stops_after_retire_at_deadline(self):
         """dbcare should stop after retire if time limit is exceeded."""
-        import epmt.epmt_cmd_dbcare as dbcare_mod
 
-        with patch.object(dbcare_mod, 'epmt_retire') as mock_retire, \
-             patch.object(dbcare_mod, '_vacuum_tables') as mock_vacuum, \
+        with patch('epmt.epmt_cmd_dbcare.epmt_retire') as mock_retire, \
+             patch('epmt.epmt_cmd_dbcare._vacuum_tables') as mock_vacuum, \
              patch('epmt.epmt_cmd_dbcare.time') as mock_time:
 
             # First call: set deadline. Second call: check after retire -> past deadline
