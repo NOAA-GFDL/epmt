@@ -593,8 +593,17 @@ def get_jobs(
 
 #
 @db_session
-def get_procs(jobs=None, tags=None, fltr=None, order=None, offset=0, limit=None, when=None,
-              hosts=None, fmt='dict', merge_threads_sums=True, exact_tag_only=False):
+def get_procs(jobs=None,
+              tags=None,
+              fltr=None,
+              order=None,
+              offset=0,
+              limit=None,
+              when=None,
+              hosts=None,
+              fmt='dict',
+              merge_threads_sums=True,
+              exact_tag_only=False):
     """
     Returns a collection of processes for a set of jobs based on filter criteria::Processes
 
