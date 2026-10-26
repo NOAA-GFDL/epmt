@@ -30,7 +30,7 @@ jobs:
       SLURM_CLUSTER_TAG: "0.9.0"
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # Always build from source to verify the image can still be built.
       # Cache key covers all version identifiers; bumping any one of them
@@ -62,7 +62,7 @@ jobs:
       # If the key already exists (same versions), the save is a no-op, but
       # the build above still ran and verified buildability.
       - name: Cache slurm-cluster image
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: /tmp/slurm-cluster-image.tar
           key: slurm-cluster-${{ env.IMAGE_TAG }}-${{ env.SLURM_TAG }}-v${{ env.SLURM_CLUSTER_TAG }}
@@ -79,7 +79,7 @@ jobs:
       EPMT_DASH_SRC_BRANCH: "main"
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # ── epmt-dash ─────────────────────────────────────────────────────────
       # Downloads the epmt-dash UI tarball from GitHub and extracts it to
@@ -102,7 +102,7 @@ jobs:
       # Save src/epmt/ui so docker_build_test can restore it and skip
       # the download+extraction entirely (make sees the target satisfied).
       - name: Cache epmt-dash
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: src/epmt/ui
           key: epmt-dash-${{ env.EPMT_DASH_SRC_BRANCH }}
@@ -130,7 +130,7 @@ jobs:
       # Save the compiled tarball so docker_build_test can restore it and
       # skip the Docker-based papiex compilation entirely.
       - name: Cache papiex tarball
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: papiex-epmt-${{ env.PAPIEX_VERSION }}-${{ env.OS_TARGET }}.tgz
           key: papiex-${{ env.PAPIEX_VERSION }}-${{ env.OS_TARGET }}
@@ -157,7 +157,7 @@ jobs:
       SQLITE_YEAR: "2025"
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install build dependencies
         run: |
@@ -182,7 +182,7 @@ jobs:
           echo "src/epmt/ui exists."
 
       - name: Cache epmt-dash (container path)
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: src/epmt/ui
           key: epmt-dash-${{ env.EPMT_DASH_SRC_BRANCH }}
@@ -201,7 +201,7 @@ jobs:
           echo "Papiex OUTSIDE_DOCKER tarball '${TARBALL}' exists."
 
       - name: Cache papiex tarball (OUTSIDE_DOCKER)
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: papiex-epmt-${{ env.PAPIEX_VERSION }}-${{ env.OS_TARGET }}.tgz
           key: papiex-outside-docker-${{ env.PAPIEX_VERSION }}-${{ env.OS_TARGET }}
@@ -240,7 +240,7 @@ jobs:
           python3 -V
 
       - name: Cache Python and SQLite build (container path)
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: .cache/python-sqlite
           key: python-sqlite-${{ env.PYTHON_VERSION }}-${{ env.SQLITE_VERSION }}-rocky8-v1
