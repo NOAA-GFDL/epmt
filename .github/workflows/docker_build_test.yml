@@ -1,4 +1,5 @@
 name: docker_build_test
+# Legacy frozen/bundled delivery coverage; not a prerequisite of pip_publish.
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -50,6 +51,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Verify frozen/Python build separation
+        run: python3 -m unittest discover -s packaging/frozen -p test_targets.py
 
       - name: Extract build variables
         run: |
@@ -164,7 +168,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: /tmp/epmt-build-image.tar
-          key: epmt-build-${{ env.OS_TARGET }}-py${{ env.PYTHON_VERSION }}-sqlite${{ env.SQLITE_VERSION }}-${{ hashFiles('Dockerfiles/Dockerfile.rocky-8-epmt-build', 'requirements.txt.py3') }}
+          key: epmt-build-${{ env.OS_TARGET }}-py${{ env.PYTHON_VERSION }}-sqlite${{ env.SQLITE_VERSION }}-${{ hashFiles('Dockerfiles/Dockerfile.rocky-8-epmt-build', 'requirements.txt.py3', 'packaging/frozen/requirements.txt') }}
 
       - name: Load cached epmt-build image
         if: steps.cache-epmt-build.outputs.cache-hit == 'true'
@@ -200,16 +204,16 @@ jobs:
           fi
 
       # Run the actual epmt build inside the (now cached) build image.
-      # This replaces the docker-run half of `make docker-dist`.
-      - name: Build epmt artifacts in container
+      # This replaces the docker-run half of `make frozen-docker-dist`.
+      - name: Build legacy frozen and Python artifacts in container
         run: |
           docker run ${DOCKER_RUN_OPTS} --privileged \
             --volume=$(pwd):$(pwd) -w $(pwd) \
             ${OS_TARGET}-epmt-build:${EPMT_VERSION} \
-            make --debug OS_TARGET=${OS_TARGET} dist python-dist dist-test
+            make --debug OS_TARGET=${OS_TARGET} frozen-dist python-dist frozen-dist-test
 
-      - name: Build epmt-full-release
-        run: make --debug OS_TARGET=${OS_TARGET} DOCKER_RUN_OPTS="${DOCKER_RUN_OPTS}" epmt-full-release
+      - name: Build legacy frozen full release
+        run: make --debug OS_TARGET=${OS_TARGET} DOCKER_RUN_OPTS="${DOCKER_RUN_OPTS}" frozen-full-release
 
       # ── test-release image: layer-cached across runs via --cache-from ──
       # This image changes every commit (new EPMT artifacts baked in), so we

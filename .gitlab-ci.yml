@@ -33,7 +33,7 @@ build:python3:
 
     - make epmt-dash
     - make OUTSIDE_DOCKER="YUP" papiex-dist
-    - make dist python-dist dist-test
+    - make python-dist
 
     - pip3 install dist/epmt*gz
     - tar -xzf papiex-epmt-2.3.16-rocky-8.tgz -C "$(python3 -c 'import sysconfig; print(sysconfig.get_path("purelib"))')"

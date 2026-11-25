@@ -165,7 +165,7 @@ jobs:
 
       - name: make epmt pip-packaging
         run: |
-          make dist python-dist dist-test
+          make python-dist
 
       - name: pip install epmt pip-package
         run: |

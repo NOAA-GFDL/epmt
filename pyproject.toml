@@ -76,14 +76,12 @@ devtest = [ # testing, linting and static analysis
     "pytest",
 ]
 
-build = [ # pyinstaller build reqs
+build = [ # Python sdist/wheel tooling; legacy freezer requirements are separate.
     "build",
     "twine",
-    "pyinstaller==6.0.0",
-    "pyinstaller-hooks-contrib==2023.11",
 ]
 
-all = [ # Shorthand: install everything (mirrors the old flat dependency list)
+all = [ # Application/development extras; excludes the legacy freezer.
     "epmt[notebook,ui,docs,devtest,build]",
 ]
 

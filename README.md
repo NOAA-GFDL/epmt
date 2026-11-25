@@ -122,6 +122,19 @@ tag is a separate, human-approved release action, not part of local validation.
 GitHub release assets are still uploaded manually. Use the validated sdist from
 the workflow (or the identical PyPI file), not a newly rebuilt tarball.
 
+### Legacy frozen distribution
+
+The PyInstaller/bundled distribution is retained as a separate, optional approach
+under [`packaging/frozen/`](packaging/frozen/README.md). Its explicit targets are
+`frozen-dist`, `frozen-dist-test`, and `frozen-release`; the old `dist`, `dist-test`,
+and `release` names remain compatibility aliases.
+
+Normal Python builds and tests do not invoke the freezer. `epmt[build]` and
+`epmt[all]` no longer install PyInstaller; frozen tooling has its own requirements.
+Existing automatic legacy Docker coverage remains enabled. See the frozen
+documentation for known validation defects and the eventual removal checklist.
+This separation does not claim that the currently broken standalone build is repaired.
+
 ## Quickstart: Watch `epmt` work
 
 Try wrapping your commands with `epmt start` / `epmt stop`:

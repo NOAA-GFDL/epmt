@@ -75,7 +75,7 @@ RUN python3 -m pip install ${epmt_python_full_release}
 RUN tar zxf ${papiex_release} -C /usr/lib/python3.10/site-packages/
 #    && rm -rf *.tgz
  
-COPY utils/epmt-installer .
+COPY packaging/frozen/epmt-installer .
 WORKDIR ${install_path}
 RUN ls ${install_path}
 RUN echo -ne "\n\n" | ${install_path}_archive/epmt-installer ${install_path}_archive/EPMT*tgz

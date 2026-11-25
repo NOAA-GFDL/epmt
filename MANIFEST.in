@@ -1,6 +1,7 @@
 include README.md LICENSE
 include utils/check_python_artifacts.py
 include utils/test_check_python_artifacts.py
+prune packaging/frozen
 prune src/epmt/ui
 prune src/epmt/lib
 prune src/papiex-epmt-install

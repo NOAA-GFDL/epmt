@@ -1,5 +1,5 @@
 # CI/Docker convenience file — installs ALL direct dependencies
-# (runtime + every optional extra).  Transitive dependencies are
+# (runtime + every optional extra, excluding the legacy freezer). Transitive dependencies are
 # resolved automatically by pip and are intentionally omitted.
 #
 # The canonical dependency specification lives in pyproject.toml.
@@ -56,5 +56,3 @@ mkdocs-theme-bootstrap4
 # -- build -----------------------------------------------------------------
 build
 twine
-pyinstaller==6.0.0
-pyinstaller-hooks-contrib==2023.11

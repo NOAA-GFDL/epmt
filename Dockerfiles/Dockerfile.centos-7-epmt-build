@@ -47,12 +47,13 @@ RUN pip3 install --upgrade pip
 RUN yum install -y gcc-c++
 
 COPY requirements.txt.py3 /tmp/
-RUN pip3 install -r /tmp/requirements.txt.py3
+COPY packaging/frozen/requirements.txt /tmp/requirements-frozen.txt
+RUN pip3 install -r /tmp/requirements.txt.py3 -r /tmp/requirements-frozen.txt
 
 COPY src/epmt/ui/requirements-ui.txt.py3 /tmp
 # RUN pip3 install -r /tmp/requirements-ui.txt.py3 
 
-RUN rm -f /tmp/requirements.txt.py3 /tmp/requirements-ui.txt.py3
+RUN rm -f /tmp/requirements.txt.py3 /tmp/requirements-ui.txt.py3 /tmp/requirements-frozen.txt
 RUN yum clean all
 RUN rm -rf /usr/src /var/cache/yum
 

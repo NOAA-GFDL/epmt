@@ -7,6 +7,8 @@ import os.path
 from PyInstaller.utils.hooks import collect_submodules, collect_data_files
 from IPython import extensions as IPython_extensions
 
+repo_root = os.path.abspath(os.path.join(SPECPATH, '..', '..'))
+
 hidden = collect_submodules('notebook',filter=lambda name: name.endswith('handlers') and ".tests." not in name)
 uniq = set(hidden)
 hidden = list(uniq)
@@ -41,23 +43,23 @@ for f in files:
     ipe_extra_datas.append((f, '.'))
 
 alembic_extras = []
-alembic_migration_files = glob(os.path.join('migrations/versions', "*.py")) + glob(os.path.join('migrations', "*.py")) 
+alembic_migration_files = glob(os.path.join(repo_root, 'migrations/versions', "*.py")) + glob(os.path.join(repo_root, 'migrations', "*.py"))
 for f in alembic_migration_files:
     alembic_extras.append((f, '.'))
 
 # Move web components into root
 dash_resources = []
-files = glob('src/epmt/ui/components/*.py')
+files = glob(os.path.join(repo_root, 'src/epmt/ui/components/*.py'))
 for f in files:
     dash_resources.append((f, '.'))
 
 # Move Web assets into subdirectory
-files = glob('src/epmt/ui/assets/*')
+files = glob(os.path.join(repo_root, 'src/epmt/ui/assets/*'))
 for f in files:
     dash_resources.append((f, './assets/'))
 
 # Make sure 'test' assets get copied in as well
-files = glob('src/epmt/test/*')
+files = glob(os.path.join(repo_root, 'src/epmt/test/*'))
 for f in files:
     dash_resources.append((f, './test/'))
 
@@ -70,9 +72,9 @@ extra_datas = ipe_extra_datas + alembic_extras + dash_resources + plotly_extra_d
 
 print("Extra data: ",extra_datas)
 
-# see we add the ui directory to 
-a = Analysis(['epmt','src/epmt/ui/index.py'],
-             pathex=['./src/epmt/ui'],
+# see we add the ui directory to
+a = Analysis([os.path.join(repo_root, 'epmt'), os.path.join(repo_root, 'src/epmt/ui/index.py')],
+             pathex=[os.path.join(repo_root, 'src/epmt/ui')],
              binaries=[],
              datas=extra_datas,
              hiddenimports=hidden,

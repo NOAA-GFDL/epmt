@@ -1,0 +1,3 @@
+# Legacy freezer only; install alongside the root requirements.txt.py3.
+pyinstaller==6.0.0
+pyinstaller-hooks-contrib==2023.11

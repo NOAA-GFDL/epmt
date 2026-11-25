@@ -539,7 +539,7 @@ build.
 <!-- markdownlint-disable MD013 MD033 MD060 -->
 | Cache | Cache key components | Invalidation trigger | Notes |
 |---|---|---|---|
-| `epmt-build` Docker image | `OS_TARGET` + `PYTHON_VERSION` +<br/>`SQLITE_VERSION` +<br/>`hashFiles(Dockerfile, requirements.txt.py3)` | Edit the Dockerfile or requirements file, or bump any version variable | Fully content-hash based — closest analogy to `make` |
+| `epmt-build` Docker image | `OS_TARGET` + `PYTHON_VERSION` +<br/>`SQLITE_VERSION` +<br/>`hashFiles(Dockerfile, requirements.txt.py3, packaging/frozen/requirements.txt)` | Edit the Dockerfile or either requirements file, or bump any version variable | Fully content-hash based — closest analogy to `make` |
 | `papiex` compiled tarball | `PAPIEX_VERSION` +<br/>`OS_TARGET` | Bump `PAPIEX_VERSION` in `docker_build_test.yml`,<br/>`weekly_tarball_build.yml`, and `Makefile` | Version-gated; relies on papiex using<br/>immutable release tags |
 | `test-release` Docker image | `OS_TARGET` + `PYTHON_VERSION` +<br/>`SQLITE_VERSION` +<br/>`hashFiles(Dockerfile, requirements.txt.py3)` +<br/>`github.sha` | Always rebuilds (by design) —<br/>`restore-keys` prefix reuses<br/>unchanged early layers via<br/>`--cache-from` | Image content changes<br/>every commit; layer reuse<br/>keeps it fast |
 | `slurm-cluster` Docker image | `IMAGE_TAG` +<br/>`SLURM_TAG` +<br/>`SLURM_CLUSTER_TAG` | Bump any of the three version<br/>variables in `docker_build_test.yml`<br/>and `slurm_image_build.yml` | Version-string based; upstream<br/>tag mutations without a version<br/>bump won't invalidate |
@@ -576,7 +576,8 @@ env:
 ```
 
 The `epmt-build` cache is invalidated automatically whenever
-`Dockerfiles/Dockerfile.rocky-8-epmt-build` or `requirements.txt.py3` is
+`Dockerfiles/Dockerfile.rocky-8-epmt-build`, `requirements.txt.py3`, or
+`packaging/frozen/requirements.txt` is
 modified — no manual version bump is needed.
 
 ### Weekly Pre-warming
