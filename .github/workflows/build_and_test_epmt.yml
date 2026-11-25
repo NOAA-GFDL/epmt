@@ -165,20 +165,19 @@ jobs:
 
       - name: make epmt pip-packaging
         run: |
-          make dist python-dist dist-test
+          make python-dist
 
       - name: pip install epmt pip-package
         run: |
-          ls src/dist/epmt*gz
-          python3 -m pip install src/dist/epmt*gz
+          ls dist/epmt*gz
+          python3 -m pip install dist/epmt*gz
 
-      - name: create links to papiex executables, adjust path
+      - name: Install separate papiex runtime
         run: |
           SITE_PACKAGES=$(python3 -c "import site; print(site.getsitepackages()[0])")
-          mkdir -p ${SITE_PACKAGES}/papiex-epmt-install
-          ln -s  ${SITE_PACKAGES}/epmt/lib ${SITE_PACKAGES}/papiex-epmt-install/
-          ln -s  ${SITE_PACKAGES}/epmt/bin ${SITE_PACKAGES}/papiex-epmt-install/
-          export PATH='/usr/bin:${PATH}:/usr/local/libexec:/usr/local/bin'
+          tar -xzf papiex-epmt-${PAPIEX_VERSION}-${OS_TARGET}.tgz -C "${SITE_PACKAGES}"
+          # pytest imports the checkout; CLI subprocesses use the installed package.
+          tar -xzf papiex-epmt-${PAPIEX_VERSION}-${OS_TARGET}.tgz -C src
 
       - name: Configure epmt to use PostgreSQL
         if: matrix.db_backend == 'postgres'
@@ -193,6 +192,7 @@ jobs:
           bulk_insert = True
           epmt_settings_kind = "pg_container"
           EOFSETTINGS
+          cp "${SITE_PACKAGES}/epmt/settings.py" src/epmt/settings.py
           echo "PostgreSQL settings installed at ${SITE_PACKAGES}/epmt/settings.py"
           cat ${SITE_PACKAGES}/epmt/settings.py
 
@@ -519,4 +519,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: epmt-pip-install-TEST-${{ matrix.db_backend }}
-          path: src/dist/epmt-5.0.0.post.tar.gz
+          path: dist/*
+          if-no-files-found: error

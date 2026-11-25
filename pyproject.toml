@@ -11,6 +11,7 @@ dynamic         = ["version"]
 authors         = [ { name = "Minimal Metrics, LLC", email = "some.where@over.there" } ]
 description     = "Experiment Performance Metrics Toolkit"
 readme          = "README.md"
+license         = {file = "LICENSE"}
 # 3.10/3.11 supported; 3.9 is EOL.
 # 3.12 requires upgrading pandas (1.5→2.x) and SQLAlchemy (1.4→2.x)
 # which dropped distutils; tracked in issue #105.
@@ -75,12 +76,12 @@ devtest = [ # testing, linting and static analysis
     "pytest",
 ]
 
-build = [ # pyinstaller build reqs
-    "pyinstaller==6.0.0",
-    "pyinstaller-hooks-contrib==2023.11",
+build = [ # Python sdist/wheel tooling; legacy freezer requirements are separate.
+    "build",
+    "twine",
 ]
 
-all = [ # Shorthand: install everything (mirrors the old flat dependency list)
+all = [ # Application/development extras; excludes the legacy freezer.
     "epmt[notebook,ui,docs,devtest,build]",
 ]
 
@@ -93,19 +94,20 @@ epmt = "epmt.cli:main"
 
 [tool.setuptools]
 include-package-data = false
+license-files = ["LICENSE"]
 
 [tool.setuptools.dynamic]
 version = {attr = "epmt.epmtlib.__version__"}
 
 [tool.setuptools.packages.find]
-where = ["."]
+where = ["src"]
+include = ["epmt", "epmt.*"]
+exclude = ["epmt.ui", "epmt.ui.*"]
+namespaces = false
 
 [tool.setuptools.package-data]
 epmt = [
-    "lib/*.so*",
-
     "alembic.ini",
-    "preset_settings/*.py",
 
     "epmt_migrations/README",
     "epmt_migrations/env.py",

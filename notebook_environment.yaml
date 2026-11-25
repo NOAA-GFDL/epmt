@@ -10,7 +10,7 @@
 #   conda activate epmt
 #
 # Editable install (from the repo root, ~/Working/epmt):
-#   pip install -e src/
+#   pip install -e .
 #
 # After pulling new commits, re-run the pip install line above if
 # pyproject.toml dependencies changed.
@@ -25,7 +25,7 @@ dependencies:
   - python>=3.10,<3.12
   - sqlite>=3.49           # epmt's DB layer requires SQLite >= 3.49
 
-  # --- runtime dependencies (mirrors src/pyproject.toml) -----------------
+  # --- runtime dependencies (mirrors pyproject.toml) -----------------
   - conda-forge::alembic
   - conda-forge::flask
   - conda-forge::kneed
@@ -55,4 +55,4 @@ dependencies:
   - conda-forge::jupyterlab>=4
 
   - pip:
-    - -e src/              # editable install of epmt into this environment
+    - -e .                 # editable install of epmt into this environment

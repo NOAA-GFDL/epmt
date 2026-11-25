@@ -52,7 +52,7 @@ jobs:
 
       - name: Install epmt
         run: |
-          pip install src/
+          pip install .
 
       - name: run pylint on epmt module, ignoring ui (epmt-dash)
         run: |

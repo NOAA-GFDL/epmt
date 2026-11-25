@@ -1,8 +1,8 @@
 # CI/Docker convenience file — installs ALL direct dependencies
-# (runtime + every optional extra).  Transitive dependencies are
+# (runtime + every optional extra, excluding the legacy freezer). Transitive dependencies are
 # resolved automatically by pip and are intentionally omitted.
 #
-# The canonical dependency specification lives in src/pyproject.toml.
+# The canonical dependency specification lives in pyproject.toml.
 # If you only need the runtime package: pip install epmt
 # For a specific extra:                 pip install epmt[test]
 # For everything:                       pip install epmt[all]
@@ -54,5 +54,5 @@ mkdocs-git-committers-plugin
 mkdocs-theme-bootstrap4
 
 # -- build -----------------------------------------------------------------
-pyinstaller==6.0.0
-pyinstaller-hooks-contrib==2023.11
+build
+twine

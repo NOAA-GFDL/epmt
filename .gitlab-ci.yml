@@ -33,12 +33,10 @@ build:python3:
 
     - make epmt-dash
     - make OUTSIDE_DOCKER="YUP" papiex-dist
-    - make dist python-dist dist-test
+    - make python-dist
 
-    - pip3 install src/dist/epmt*gz
-    - mkdir -p /usr/lib/python3.10/site-packages/papiex-epmt-install
-    - ln -s  /usr/lib/python3.10/site-packages/epmt/lib /usr/lib/python3.10/site-packages/papiex-epmt-install/
-    - ln -s  /usr/lib/python3.10/site-packages/epmt/bin /usr/lib/python3.10/site-packages/papiex-epmt-install/
+    - pip3 install dist/epmt*gz
+    - tar -xzf papiex-epmt-2.3.16-rocky-8.tgz -C "$(python3 -c 'import sysconfig; print(sysconfig.get_path("purelib"))')"
 
     - export PATH='/usr/bin:${PATH}:/usr/local/bin:/usr/local/libexec'
 
