@@ -84,8 +84,8 @@ just `command -v`.
 
 ## Build Commands
 ```bash
-make dist python-dist dist-test   # build sdist
-python3 -m pip install src/dist/epmt-*.tar.gz  # install
+make python-dist-test   # build and validate Python artifacts without native staging
+python3 -m pip install dist/epmt-*.whl  # install
 TZ=UTC pytest -x -vv src/epmt/test/test_query.py  # run a specific test
 pylint --rcfile pylintrc --fail-under 7.1 --ignore-paths src/epmt/ui src/epmt  # lint
 ```

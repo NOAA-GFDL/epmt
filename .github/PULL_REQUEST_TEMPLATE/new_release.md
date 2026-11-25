@@ -6,6 +6,8 @@ To publish new release, cease merging new PRs to `main`, and carefully follow th
 
 - [ ] create a new branch off `main`, *give it a name different than the exact tag you are creating*
 - [ ] edit the version number in `src/epmt/epmtlib.py` to the desired version tag of format `X.Y.Z` (remove the `.post` suffix)
+- [ ] from a clean checkout, install `build` and `twine`, then run `make python-dist-test`.
+      Check the sdist and wheel in `dist/`; do not stage papiex libraries or epmt-dash into Python artifacts.
 - [ ] open a PR to `main` in this repository after making the version change
 - [ ] if checks pass, create the tag from the branch locally in your terminal, with `git tag X.Y.Z;`
 
@@ -13,13 +15,19 @@ To publish new release, cease merging new PRs to `main`, and carefully follow th
 
 ## second, publish release to PyPI, then github, in that order (IN DEVELOPMENT)
 
+- [ ] obtain explicit human approval before pushing the tag; there is no additional manual environment gate.
 - [ ] push your locally created tag with `git checkout X.Y.Z; git push origin HEAD:refs/tags/X.Y.Z`
-- [ ] pushing the new tag `X.Y.Z` triggers the `pip` build and publish pipeline, wait for it to finish and find it on PyPI.
+- [ ] pushing the new tag `X.Y.Z` triggers the `pip_publish` pipeline.
+      Source/tag/artifact version checks and clean-install tests on Python 3.10/3.11 must pass before publishing.
+      Publication uses the same validated artifacts, without rebuilding.
+- [ ] wait for the pipeline to finish and find the release on PyPI.
 - [ ] on PyPI, download the built package `tar.gz` file for version `X.Y.Z`
 
 WARNING: *any problems or mistakes after the next step are irreversible due to package immutability so make sure things are working before continuing*
 
-- [ ] on github, create a new release *including the tarball you downloaded in the previous step*, generate contribution notes, and save the release
+- [ ] compare the PyPI sdist SHA256 with the validated workflow artifact before uploading it elsewhere.
+- [ ] with human approval, create a GitHub release *including the tarball you downloaded in the previous step*,
+      generate contribution notes, and save the release
 - [ ] check that the release looks right: it needs the PyPI `tar.gz` file with the `X.Y.Z` tag, and contribution notes.
 
 

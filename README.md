@@ -55,7 +55,7 @@ If you already have an environment created that you wish to install `epmt`, and 
 ```bash
 git clone https://github.com/NOAA-GFDL/epmt.git
 cd epmt
-pip install src/
+pip install .
 ```
 
 ### Verifying an Installation
@@ -72,6 +72,56 @@ Verify the version:
 epmt -V
 ```
 
+The Python distribution supplies the EPMT CLI and library, migrations, and test
+fixtures. It does not bundle papiex native libraries or the separately maintained
+epmt-dash application. Collection requires a working papiex installation;
+`epmt check` checks collection capabilities as well as the Python installation.
+Installing `epmt[ui]` installs UI dependencies, not the epmt-dash application.
+
+### Building and validating Python distributions
+
+From the repository root, using Python 3.10 or 3.11:
+
+```bash
+python -m pip install build twine
+make python-dist-test
+```
+
+`make python-dist` builds an sdist and a wheel **from that sdist** into `dist/`,
+checks their metadata and matching contents, and rejects staged native libraries,
+UI code, and editor backups. Use an empty output directory when changing versions;
+stale artifacts fail validation rather than being silently published.
+
+`make python-dist-test` additionally installs the exact wheel in a temporary
+environment outside the checkout, checks dependencies, versions and resources,
+and runs focused installed-package tests. Each test module runs in a separate
+process. The temporary environment is removed when validation ends.
+
+To validate existing artifacts without rebuilding:
+
+```bash
+python utils/check_python_artifacts.py --install
+```
+
+These packaging checks do not replace collection, analytical compatibility,
+PostgreSQL, or SLURM suites.
+
+### Python publication
+
+The `pip_publish` workflow validates builds on pull requests, pushes to `main`,
+and tags. **Only a tag push can publish to PyPI.** Tag versions must match the
+source and artifact versions after PEP 440 normalization.
+
+Publication waits for artifact checks and clean-install tests on Python 3.10 and
+3.11, then downloads and publishes the same validated sdist and wheel without
+rebuilding. Only the publishing job has OIDC publishing permission.
+
+Tag pushes still trigger publication automatically after these checks; this
+change does not introduce a manual approval environment. Creating or pushing a
+tag is a separate, human-approved release action, not part of local validation.
+GitHub release assets are still uploaded manually. Use the validated sdist from
+the workflow (or the identical PyPI file), not a newly rebuilt tarball.
+
 ## Quickstart: Watch `epmt` work
 
 Try wrapping your commands with `epmt start` / `epmt stop`:
@@ -86,7 +136,7 @@ epmt submit
 Or use the **--auto** (`-a`) flag to automate the start/stop cycle:
 
 ```bash
-epmt -a run ./compute_the_world --debug
+epmt run -a -- ./compute_the_world --debug
 epmt submit
 ```
 
