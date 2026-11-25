@@ -1,4 +1,16 @@
-"""Validate EPMT distributions and, optionally, their clean installation."""
+"""Validate EPMT distributions and, optionally, their clean installation.
+
+This is build/release tooling, not part of the installed EPMT application. It
+lives outside ``src/epmt/`` so archive validation can run before EPMT is installed,
+without importing the application or initializing its settings/database. Only
+the explicit installed-package check imports EPMT from the environment under
+test, rather than relying on an import from the source checkout.
+
+The source distribution includes this tool for maintainers; the runtime wheel
+does not. Its regression tests live beside it in
+``utils/test_check_python_artifacts.py``, separate from EPMT's installed
+application tests in ``src/epmt/test/``.
+"""
 
 import argparse
 from configparser import ConfigParser

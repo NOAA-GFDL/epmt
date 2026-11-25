@@ -1,4 +1,15 @@
-"""Focused regressions for the distribution validation gate."""
+"""Focused regressions for the distribution validation gate.
+
+EPMT's application tests generally live in ``src/epmt/test/`` and are shipped
+inside the package so they can exercise an installed application. These tests
+are an intentional exception: they test the repository's build/release tool
+``utils/check_python_artifacts.py``, using synthetic, sometimes deliberately
+invalid distributions rather than EPMT application behavior.
+
+They live beside that tool in ``utils/``, rather than in ``src/epmt/test/``,
+so the validation gate can be tested before installing EPMT. Both the tool and
+these tests are included in the source distribution, not the runtime wheel.
+"""
 
 import io
 from pathlib import Path

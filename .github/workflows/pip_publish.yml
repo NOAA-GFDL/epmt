@@ -34,7 +34,7 @@ jobs:
           python -m pip install build twine
 
       - name: Test artifact validation
-        run: python -m unittest discover -s tests -p test_python_artifacts.py
+        run: python -m unittest discover -s utils -p test_check_python_artifacts.py
 
       - name: Build epmt pip Package
         run: |
