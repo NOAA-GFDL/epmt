@@ -176,6 +176,8 @@ jobs:
         run: |
           SITE_PACKAGES=$(python3 -c "import site; print(site.getsitepackages()[0])")
           tar -xzf papiex-epmt-${PAPIEX_VERSION}-${OS_TARGET}.tgz -C "${SITE_PACKAGES}"
+          # pytest imports the checkout; CLI subprocesses use the installed package.
+          tar -xzf papiex-epmt-${PAPIEX_VERSION}-${OS_TARGET}.tgz -C src
 
       - name: Configure epmt to use PostgreSQL
         if: matrix.db_backend == 'postgres'
@@ -190,6 +192,7 @@ jobs:
           bulk_insert = True
           epmt_settings_kind = "pg_container"
           EOFSETTINGS
+          cp "${SITE_PACKAGES}/epmt/settings.py" src/epmt/settings.py
           echo "PostgreSQL settings installed at ${SITE_PACKAGES}/epmt/settings.py"
           cat ${SITE_PACKAGES}/epmt/settings.py
 

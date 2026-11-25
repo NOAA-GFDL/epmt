@@ -17,11 +17,17 @@ from epmt.orm.sqlalchemy.models import Job
 
 install_root=get_install_root()
 
-# MCD (Minimum Covariance Determinant) scores are version-dependent: NaN on
-# Python 3.9, valid but varying values on 3.10/3.11.  Filter it out of result
-# dicts so assertions are stable across all supported Python versions.
-def _exclude_mcd(d):
-    return {k: v for k, v in d.items() if k != 'pyod.models.mcd'}
+def _reference_mvod_classifiers():
+    """Use explicit detectors for fixed numerical reference fixtures.
+
+    The default ensemble includes estimators whose fit/predictions on these
+    small samples vary across dependency versions. Test it separately without
+    assuming those additional estimators fail.
+    """
+    from pyod.models.cof import COF
+    from pyod.models.hbos import HBOS
+    from pyod.models.ocsvm import OCSVM
+    return [COF(), HBOS(), OCSVM()]
 
 def do_cleanup():
     eq.delete_jobs(['kern-6656-20190614-190245', 'kern-6656-20190614-191138',
@@ -233,17 +239,13 @@ class OutliersAPI(unittest.TestCase):
 
     @db_session
     def test_outlier_jobs_trained_mvod(self):
-        from epmt.epmt_stat import mvod_classifiers
         r = eq.create_refmodel( ['kern-6656-20190614-190245', 'kern-6656-20190614-191138','kern-6656-20190614-194024'],
-                                methods = mvod_classifiers(), fmt='orm' )
+                                methods = _reference_mvod_classifiers(), fmt='orm' )
         (df, _) = eod.detect_outlier_jobs(
             ['kern-6656-20190614-190245', 'kern-6656-20190614-191138',
              'kern-6656-20190614-192044-outlier', 'kern-6656-20190614-194024'],
-            trained_model = r.id, methods = mvod_classifiers())
+            trained_model = r.id, methods = _reference_mvod_classifiers())
         df.sort_values(by=['jobid'], inplace=True)
-        # MCD succeeds on Python 3.10+ but not 3.9, so the outlier count
-        # for the flagged job varies (2 on 3.9, 3 on 3.10+).  Check
-        # non-outliers are 0 and the outlier is flagged by at least 2.
         outlier_vals = list(df['outlier'].values)
         self.assertEqual(outlier_vals[0:2] + outlier_vals[3:], [0, 0, 0])
         self.assertGreaterEqual(outlier_vals[2], 2)
@@ -318,21 +320,18 @@ class OutliersAPI(unittest.TestCase):
 
     @db_session
     def test_outlier_ops_trained_mvod(self):
-        from epmt.epmt_stat import mvod_classifiers
         jobs = eq.get_jobs(tags='exp_name:linux_kernel', fmt='terse')
         model_jobs = [ j for j in jobs if not 'outlier' in j ]
         self.assertEqual(set(model_jobs),
                          set(['kern-6656-20190614-190245', 'kern-6656-20190614-191138', 'kern-6656-20190614-194024']))
-        r = eq.create_refmodel(model_jobs, op_tags='*', methods = mvod_classifiers(), fmt='orm')
+        r = eq.create_refmodel(model_jobs, op_tags='*', methods = _reference_mvod_classifiers(), fmt='orm')
         self.assertEqual(set([j.jobid for j in r.jobs]), set(model_jobs))
-        df, part = eod.detect_outlier_ops(jobs, methods = mvod_classifiers(), trained_model = r.id)
+        df, part = eod.detect_outlier_ops(jobs, methods = _reference_mvod_classifiers(), trained_model = r.id)
         self.assertEqual(df.shape, (20, 3))
         outliers = df[df.outlier > 0]
         self.assertEqual(outliers.shape, (5, 3))
         # only the outlier jobid is found in the outliers df
         self.assertEqual(set(outliers.jobid.values), {'kern-6656-20190614-192044-outlier'})
-        # MCD succeeds on Python 3.10+ but not 3.9, so the outlier count
-        # varies (2 on 3.9, possibly 3 on 3.10+).  Check each >= 2.
         self.assertTrue(all(v >= 2 for v in outliers.outlier.values))
         self.assertEqual(set([ dumps(x) for x in outliers.tags.values ]),
                          {'{"op": "build", "op_instance": "4", "op_sequence": "4"}',
@@ -340,10 +339,7 @@ class OutliersAPI(unittest.TestCase):
                           '{"op": "configure", "op_instance": "3", "op_sequence": "3"}',
                           '{"op": "download", "op_instance": "1", "op_sequence": "1"}',
                           '{"op": "extract", "op_instance": "2", "op_sequence": "2"}'})
-        # MCD scores are version-dependent (NaN on 3.9, valid on 3.10+);
-        # strip it from each op_tag entry so the assertion is portable.
-        part_stable = {tag: _exclude_mcd(clfs) for tag, clfs in part.items()}
-        self.assertEqual(part_stable,
+        self.assertEqual(part,
                          {'{"op": "build", "op_instance": "4", "op_sequence": "4"}':
                           {'pyod.models.cof': [0, 0, 1, 0],
                            'pyod.models.hbos': [0, 0, 1, 0],
@@ -410,31 +406,27 @@ class OutliersAPI(unittest.TestCase):
 
     @db_session
     def test_ops_refmodel_mvod(self):
-        from epmt.epmt_stat import mvod_classifiers
         with capture() as (_out, _err):
             r = eq.create_refmodel(
                 ['kern-6656-20190614-190245', 'kern-6656-20190614-191138', 'kern-6656-20190614-194024'],
                 op_tags = [{'op': 'build'}, {'op': 'configure'}],
                 features = ['cpu_time', 'num_procs', 'duration'],
-                methods = mvod_classifiers(), fmt='orm')
+                methods = _reference_mvod_classifiers(), fmt='orm')
         self.assertEqual(r.op_tags,
                          [{'op': 'build'}, {'op': 'configure'}])
         self.assertEqual(set([j.jobid for j in r.jobs]),
                          {'kern-6656-20190614-190245', 'kern-6656-20190614-194024', 'kern-6656-20190614-191138'})
         self.assertEqual(set(r.computed.keys()),
                          {'{"op": "configure"}', '{"op": "build"}'})
-        # MCD scores are version-dependent: NaN on Python 3.9, valid but
-        # varying values on 3.10/3.11.  Filter it out so the assertion is
-        # stable across all supported Python versions.
         scores = { k: v['cpu_time,duration,num_procs'][0]
-                   for (k,v) in _exclude_mcd(r.computed['{"op": "configure"}']).items() }
+                   for (k,v) in r.computed['{"op": "configure"}'].items() }
         self.assertEqual( scores,
                           {'pyod.models.cof': 1.3176, 'pyod.models.hbos': 9.9656, 'pyod.models.ocsvm': -0.0})
         scores = { k: v['cpu_time,duration,num_procs'][0]
-                   for (k,v) in _exclude_mcd(r.computed['{"op": "build"}']).items() }
+                   for (k,v) in r.computed['{"op": "build"}'].items() }
         self.assertEqual(scores,
                          {'pyod.models.cof': 1.0355, 'pyod.models.hbos': 9.9657, 'pyod.models.ocsvm': -0.0})
-        self.assertEqual( _exclude_mcd(r.computed['{"op": "build"}']),
+        self.assertEqual( r.computed['{"op": "build"}'],
                           {
                            'pyod.models.cof': {'cpu_time,duration,num_procs': [1.0355,
                                                                                [[380807266.0, 2158730624.0, 9549.0],
@@ -448,7 +440,7 @@ class OutliersAPI(unittest.TestCase):
                                [[380807266.0, 2158730624.0, 9549.0],
                                 [381619141.0, 2203839312.0, 9549.0],
                                 [381227732.0, 2253935203.0, 9549.0]]]}})
-        self.assertEqual(_exclude_mcd(r.computed['{"op": "configure"}']),
+        self.assertEqual(r.computed['{"op": "configure"}'],
                          {
                           'pyod.models.cof': {'cpu_time,duration,num_procs': [1.3176,
                                                                               [[20735346.0, 249388754.0, 1044.0],
@@ -462,6 +454,27 @@ class OutliersAPI(unittest.TestCase):
                                                                                 [[20735346.0, 249388754.0, 1044.0],
                                                                                  [20476970.0, 203959083.0, 1044.0],
                                                                                  [20718776.0, 236011451.0, 1044.0]]]}})
+
+    @db_session
+    def test_outlier_ops_default_mvod(self):
+        """Check ensemble vote consistency without fixing dependency-specific votes."""
+        from epmt.epmt_stat import mvod_classifiers
+        jobs = eq.get_jobs(tags='exp_name:linux_kernel', fmt='terse')
+        model_jobs = [job for job in jobs if 'outlier' not in job]
+        model = eq.create_refmodel(
+            model_jobs, op_tags='*', methods=mvod_classifiers(), fmt='orm')
+        frame, partitions = eod.detect_outlier_ops(
+            jobs, methods=mvod_classifiers(), trained_model=model.id)
+        self.assertEqual(len(frame), len(jobs) * len(partitions))
+        total_votes = 0
+        for classifiers in partitions.values():
+            self.assertTrue(classifiers)
+            for predictions in classifiers.values():
+                self.assertEqual(len(predictions), len(jobs))
+                self.assertTrue(set(predictions) <= {0, 1})
+                total_votes += sum(predictions)
+        self.assertGreater(total_votes, 0)
+        self.assertEqual(frame['outlier'].sum(), total_votes)
 
     @db_session
     def test_detect_outliers(self):
