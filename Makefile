@@ -118,8 +118,6 @@ $(EPMT_RELEASE) dist:
 	@echo "WARNING removing directories: rm -rf epmt-install build"
 	rm -rf epmt-install build && mkdir -p epmt-install/epmt/epmtdocs
 	@echo "DONE removing epmt-install/ build/ and recreating epmt-install/epmt/epmt-docs"
-#	README
-	cp README.md src/README.md && echo "README.md copy went well"
 	@echo
 	@echo
 	@echo "**********************************************************"
@@ -161,21 +159,16 @@ $(EPMT_RELEASE) dist:
 	@echo "**********************************************************"
 	tar -czf $(EPMT_RELEASE) epmt-install
 
-# runs setuptools
-# note that this step requires EPMT_RELEASE and PAPIEX_RELEASE, but we don't explicitly state it here, b.c.
-# when we go in the docker container, the time-zone changes and therefore the timestamp comparison triggers re-making
-# targets that do not need to be remade
+# Build the wheel from the sdist without native/UI staging prerequisites.
 python-dist:
-	@echo "(python-dist) whoami: $(shell whoami)"
-	@echo "**********************************************************"
-	@echo "********** python3 -m build --sdist **********************"
-	@echo "**********************************************************"	
-	cd src && echo "GOOD: cd src" || echo "I FAILED: cd src" ; \
-	tar zxf ../$(PAPIEX_RELEASE) && echo "GOOD: tar -zxf ../PAPIEX_RELEASE" || echo "I FAILED: tar zxf ../PAPIEX_RELEASE" ; \
-	mkdir -p epmt/lib && cp -a papiex-epmt-install/lib/*.so* epmt/lib/ && echo "GOOD: cp papiex libs to epmt/lib" || echo "I FAILED: cp papiex libs to epmt/lib" ; \
-	pip3 install --quiet build && echo "GOOD: pip3 install build" || echo "I FAILED: pip3 install build" ; \
-	python3 -m build --sdist && echo "GOOD: python3 -m build --sdist" || echo "I FAILED: python3 -m build --sdist" ; \
-	chmod a+r dist/* && echo "GOOD: chmod a+r dist/*" || echo "I FAILED: chmod a+r dist/*"
+	set -eu
+	python3 -m build
+	python3 utils/check_python_artifacts.py
+	python3 -m twine check --strict dist/*
+
+.PHONY: python-dist-test
+python-dist-test: python-dist
+	python3 utils/check_python_artifacts.py --install
 
 # creates a tarball containing test directories. If the test directory exists, clobber and re-create
 test-$(EPMT_RELEASE) dist-test:
@@ -330,6 +323,7 @@ build-check-release: $(EPMT_FULL_RELEASE)
 	--build-arg install_prefix=$(EPMT_INSTALL_PREFIX) \
 	--build-arg epmt_full_release=$(EPMT_FULL_RELEASE) \
 	--build-arg epmt_python_full_release=$(EPMT_PYTHON_FULL_RELEASE) \
+	--build-arg papiex_release=$(PAPIEX_RELEASE) \
 	--build-arg sqlite_version=$(SQLITE_VERSION) \
 	--build-arg sqlite_year=$(SQLITE_YEAR) \
 	--build-arg python_version=$(PYTHON_VERSION) .
@@ -435,7 +429,7 @@ clean:
 
 distclean:
 	@echo "(distclean) whoami: $(shell whoami)"
-	- rm -f settings.py $(EPMT_RELEASE) test-$(EPMT_RELEASE) $(EPMT_FULL_RELEASE) src/dist/*
+	- rm -f settings.py $(EPMT_RELEASE) test-$(EPMT_RELEASE) $(EPMT_FULL_RELEASE) dist/*
 	- rm -rf epmtdocs/site 
 
 dashclean:

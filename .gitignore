@@ -57,6 +57,7 @@ OutliersData/*.dir
 ######################
 epmtdocs/site/*
 build/*
+dist/
 epmt-install/*
 papiex/*
 src/epmt.egg-info/*

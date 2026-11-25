@@ -258,6 +258,7 @@ jobs:
             --build-arg install_path=${EPMT_INSTALL_PATH} \
             --build-arg epmt_full_release=${EPMT_FULL_RELEASE} \
             --build-arg epmt_python_full_release=${EPMT_PYTHON_FULL_RELEASE} \
+            --build-arg papiex_release=papiex-epmt-${PAPIEX_VERSION}-${OS_TARGET}.tgz \
             --build-arg sqlite_version=${SQLITE_VERSION} \
             --build-arg sqlite_year=${SQLITE_YEAR} \
             --build-arg python_version=${PYTHON_VERSION} .

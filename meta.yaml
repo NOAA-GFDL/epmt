@@ -8,8 +8,8 @@ source:
 
 build:
   script:
-    # Install from the src/ subdirectory, where pyproject.toml lives.
-    - {{ PYTHON }} -m pip install src/ -vv
+    # Project metadata lives at the repository root.
+    - {{ PYTHON }} -m pip install . -vv
   noarch: python
   number: 0
 
